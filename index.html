@@ -5371,7 +5371,7 @@ ph.addEventListener('click',e=>{if(!e.target.closest('.fbar'))m.hidden=true});
 m.onclick=e=>{const x=e.target.closest('button');if(!x)return;const a=x.dataset.a;m.hidden=true;
  if(a==='rond')window.__addRond&&window.__addRond();else if(a==='proche')window.__addProche&&window.__addProche();else if(a==='souv')window.__addSouv&&window.__addSouv();else if(a==='mom')document.getElementById('ffadd').click();else document.querySelector('#ftrim [data-s="'+a+'"]').click()}})();</script>
 <script type="text/x-en">(()=>{const $=id=>document.getElementById(id),ph=$('mvfiche'),DM=$('fdim'),V=$('fpview'),F=$('fpform'),POP=$('fppop');
-let P=[{n:'Thomas',l:'mon cœur',r:1,d:'1 an ½',a:'il me rassure',s:''},{n:'Maman',l:'ma mère',r:1,d:'toujours',a:'',s:''},{n:'Papa',l:'mon père',r:1,d:'toujours',a:'',s:''},{n:'Mamie',l:'ma grand-mère',r:1,d:'toujours',a:'',s:''},{n:'Léa',l:'amie d’enfance',r:2,d:'la primaire',a:'',s:''},{n:'Inès',l:'amie de fac',r:2,d:'',a:'',s:''},{n:'Camille',l:'collègue',r:2,d:'',a:'',s:''},{n:'Hugo',l:'ami',r:2,d:'',a:'',s:''}];{const _s=window.__enLive&&window.__enLive('pfp',()=>P);P.splice(0,P.length,...(_s||[]))}
+let P=[{n:'Thomas',l:'mon cœur',r:1,d:'1 an ½',a:'il me rassure',s:''},{n:'Maman',l:'ma mère',r:1,d:'toujours',a:'',s:''},{n:'Papa',l:'mon père',r:1,d:'toujours',a:'',s:''},{n:'Mamie',l:'ma grand-mère',r:1,d:'toujours',a:'',s:''},{n:'Léa',l:'amie d’enfance',r:2,d:'la primaire',a:'',s:''},{n:'Inès',l:'amie de fac',r:2,d:'',a:'',s:''},{n:'Camille',l:'collègue',r:2,d:'',a:'',s:''},{n:'Hugo',l:'ami',r:2,d:'',a:'',s:''}];window.__enPfP=()=>P;{const _s=window.__enLive&&window.__enLive('pfp',()=>P);P.splice(0,P.length,...(_s||[]))}
 let cur=-1,fEdit=-1,fRow=1,fPh='',lpT=null,lpDone=false;const cap=x=>x?x.charAt(0).toUpperCase()+x.slice(1):'';
 const img=(el,p)=>{el.style.backgroundImage=p.ph?'url('+p.ph+')':'';el.querySelector('b')&&(el.querySelector('b').textContent=p.ph?'':(p.n||'?')[0])};
 function rend(){[1,2].forEach(r=>{$('farow'+r).innerHTML=P.map((p,i)=>p.r!==r?'':'<button type="button" class="farc'+(r===1?' big':'')+'" data-i="'+i+'"><span class="faim"'+(p.ph?' style="background-image:url('+p.ph+')"':'')+'><b>'+(p.ph?'':p.n[0])+'</b></span><span class="fanm">'+p.n+'</span><span class="falk">'+p.l.toUpperCase()+'</span></button>').join('')})}
@@ -5991,7 +5991,7 @@ function wheel(cols,on){const w=document.createElement('div');w.className='kwh';
  requestAnimationFrame(()=>init.forEach(f=>f()));return w}
 /* ---------- volet d'ajout / modification ---------- */
 function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;const s=ev?JSON.parse(JSON.stringify(ev)):{t:'rdv',n:'',y:dt0.getFullYear(),m:dt0.getMonth(),d:dt0.getDate(),h:9,mi:0,res:'neutre',rap:1,rep:1,ou:0,prep:1,veille:1,chaque:1,genre:0,mot:'',lieu:'',note:''};
- let ti=TY.findIndex(x=>x[0]===s.t);
+ window.__calCur=s;let ti=TY.findIndex(x=>x[0]===s.t);
  const o=document.createElement('div');o.className='kov';o.style.top=ph.scrollTop+'px';o.style.height=ph.clientHeight+'px';
  o.innerHTML='<div class="ksh"><div class="gr"></div><div class="t">'+(edit?'MODIFIER':'AJOUTER')+'</div><div class="fl"><i></i>✦<i></i></div><div class="kcar'+(edit?' lock':'')+'">'+TY.map(t=>'<img alt="" data-t="'+t[0]+'" src="illus/ajout2/'+t[0]+'.webp">').join('')+'</div><div class="knm"></div><div class="kdots"'+(edit?' hidden':'')+'></div><div class="kform"></div><button type="button" class="ksave">ENREGISTRER</button>'+(edit?'<button type="button" class="kdel">supprimer cette date</button>':'<p class="khint">glisse vers le bas pour annuler</p>')+'<div class="kok"><b>✦</b>C’est noté.</div></div>';
  ph.appendChild(o);ph.style.overflowY='hidden';requestAnimationFrame(()=>o.classList.add('on'));
@@ -6024,7 +6024,7 @@ function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;co
  function fill(){form.innerHTML='';open=null;
   if(s.t==='rdv'){big('Son nom…');date(false);hour();ress();choice('rap','rappel doux',['aucun','la veille','le matin même']);text('lieu','lieu','ajouter');note('note','petite note')}
   else if(s.t==='psy'){big('Avec qui ?');date(false);hour();choice('rep','répétition',['une fois','chaque semaine','toutes les deux semaines','chaque mois']);choice('ou','où',['au cabinet','en visio']);ress();toggle('prep','préparer ma séance');form.insertAdjacentHTML('beforeend','<p class="knote">La veille, je te propose un petit résumé de ta semaine.</p>')}
-  else if(s.t==='anniv'){if(!edit&&s.y>=TODAY.getFullYear())s.y=0;const pr=document.createElement('div');pr.className='kpr';pr.innerHTML=['Thomas','Maman','Léa','Julie'].map(n=>'<button type="button" class="'+(s.n===n?'on':'')+'"><span></span>'+n+'</button>').join('')+'<button type="button" data-o="1"><span>+</span>autre</button>';form.appendChild(pr);
+  else if(s.t==='anniv'){if(!edit&&s.y>=TODAY.getFullYear())s.y=0;const pr=document.createElement('div');pr.className='kpr';pr.innerHTML=((window.__enPfP?window.__enPfP():[]).map(x=>x&&x.n).filter(Boolean).slice(0,5)).map(n=>'<button type="button" class="'+(s.n===n?'on':'')+'"><span></span>'+n+'</button>').join('')+'<button type="button" data-o="1"><span>+</span>autre</button>';form.appendChild(pr);
    const inp=big('Son prénom…');pr.querySelectorAll('button').forEach(b=>b.onclick=()=>{pr.querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b));if(b.dataset.o){s.n='';inp.value='';inp.focus({preventScroll:true})}else{s.n=b.textContent;inp.value=s.n}inp.dispatchEvent(new Event('input'))});
    date(false);line('y','année de naissance',()=>s.y?String(s.y):'facultatif',(x,up)=>{const YS=[...Array(90)].map((_,i)=>1936+i);x.appendChild(wheel([[YS,Math.max(0,YS.indexOf(s.y||1995))]],v=>{s.y=YS[v[0]];up();form.querySelector('.kage').textContent=ageT()}))});
    form.insertAdjacentHTML('beforeend','<p class="knote kage" style="text-align:center">'+ageT()+'</p>');toggle('veille','me prévenir la veille');line('souv','relier un souvenir',()=>'choisir',x=>x.innerHTML='<p class="knote">Tes souvenirs de la boîte apparaîtront ici.</p>');form.insertAdjacentHTML('beforeend','<p class="knote kmot">'+motT()+'</p>')}
@@ -7377,7 +7377,7 @@ const more=$('mjmore');if(more)more.addEventListener('click',e=>{e.stopPropagati
 BK.addEventListener('click',e=>{if(S.stack.length){e.stopImmediatePropagation();back()}},true);
 window.__mjWrite=()=>{S.stack=[];render(1);ph.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(ways,450)};
 window.__mjBack=()=>{if(S.stack.length){S.search=0;back();return true}return false};
-window.__mjHome=()=>{S.stack=[];render(1);ph.scrollIntoView({behavior:'smooth',block:'center'})};
+window.__mjRender=()=>{try{render(1)}catch(e){}};window.__mjHome=()=>{S.stack=[];render(1);ph.scrollIntoView({behavior:'smooth',block:'center'})};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-mjtoday]');if(!b)return;D.todayWritten=!D.todayWritten;b.textContent=D.todayWritten?'Aujourd’hui : pas encore écrit':'Aujourd’hui : déjà écrit';S.stack=[];render(1)});
 /* barre du bas de l'accueil : Journal ouvre Mon journal */
 const nav=[...document.querySelectorAll('#home .nav span')].find(s=>/Journal/.test(s.textContent));if(nav){nav.style.cursor='pointer';nav.addEventListener('click',()=>window.__mjHome())}
@@ -8490,6 +8490,64 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
    RG.secH=await H(v);toast('✦ Ton code secret est gardé');open()}
   px.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(c.length>=4)return;c+=b.dataset.d;paint();if(c.length===4)setTimeout(done,150)});
   px.querySelector('[data-x]').onclick=()=>{c=c.slice(0,-1);paint()};fg.onclick=()=>set('acc');set(mode)}
+})();
+
+/* 11 · « Ajouter à mon iPhone » : le rendez-vous part dans le Calendrier d'Apple (fichier .ics) */
+(function(){const p2=n=>String(n).padStart(2,'0');
+ const esc=t=>String(t||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/([,;])/g,'\\$1');
+ function ics(s){const now=new Date();const st=now.getUTCFullYear()+p2(now.getUTCMonth()+1)+p2(now.getUTCDate())+'T'+p2(now.getUTCHours())+p2(now.getUTCMinutes())+'00Z';
+  const y=(s.t==='anniv'||s.t==='moi')?(s.y&&s.t==='moi'?s.y:new Date().getFullYear()):s.y;const day=y+p2(s.m+1)+p2(s.d);
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Entre nous//FR','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+(s.id||Date.now())+'-'+day+'@entre-nous','DTSTAMP:'+st];
+  if(s.t==='rdv'||s.t==='psy'){const h=s.h||0,mi=s.mi||0,e=new Date(y,s.m,s.d,h+1,mi);
+   L.push('DTSTART:'+day+'T'+p2(h)+p2(mi)+'00','DTEND:'+e.getFullYear()+p2(e.getMonth()+1)+p2(e.getDate())+'T'+p2(e.getHours())+p2(e.getMinutes())+'00');
+   L.push('SUMMARY:'+esc(s.t==='psy'?'Séance'+(s.n?' avec '+s.n:' psy'):(s.n||'Rendez-vous')));
+   if(s.t==='psy'&&s.rep)L.push('RRULE:'+['','FREQ=WEEKLY','FREQ=WEEKLY;INTERVAL=2','FREQ=MONTHLY'][s.rep]);
+   if(s.lieu)L.push('LOCATION:'+esc(s.lieu));if(s.t==='psy')L.push('LOCATION:'+(s.ou?'En visio':'Au cabinet'));
+   const al=s.t==='psy'?(s.veille?'-P1D':''):(s.rap===1?'-P1D':s.rap===2?'-PT2H':'');
+   if(al)L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc(s.n||'Rendez-vous'),'TRIGGER:'+al,'END:VALARM')}
+  else{const e=new Date(y,s.m,s.d+1);L.push('DTSTART;VALUE=DATE:'+day,'DTEND;VALUE=DATE:'+e.getFullYear()+p2(e.getMonth()+1)+p2(e.getDate()),'RRULE:FREQ=YEARLY','TRANSP:TRANSPARENT');
+   L.push('SUMMARY:'+esc(s.t==='anniv'?'Anniversaire de '+(s.n||'…'):(s.n||'Ma date')));
+   L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+esc(s.n||''),'TRIGGER:-PT15H','END:VALARM')}
+  if(s.note)L.push('DESCRIPTION:'+esc(s.note));L.push('END:VEVENT','END:VCALENDAR');return L.join('\r\n')+'\r\n'}
+ window.__enIcs=ics;
+ function send(s){const name=(s.n||'rendez-vous').replace(/[^\wÀ-ÿ -]/g,'').trim()||'rendez-vous';const blob=new Blob([ics(s)],{type:'text/calendar;charset=utf-8'});
+  const f=typeof File==='function'?new File([blob],name+'.ics',{type:'text/calendar'}):null;
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.rel='noopener';
+  if(!/iP(hone|ad|od)/.test(navigator.userAgent))a.download=name+'.ics';
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
+  toast('Ton iPhone te propose de l’ajouter à ton Calendrier')}
+ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('kov'))return;const sv=n.querySelector('.ksave');if(!sv||n.querySelector('.en-ics'))return;
+  const b=document.createElement('button');b.type='button';b.className='kdel en-ics';b.textContent='ajouter aussi au Calendrier de mon iPhone';
+  b.onclick=e=>{e.stopPropagation();const s=window.__calCur;if(!s)return;if(!s.n&&s.t!=='psy'){toast('Donne-lui un nom d’abord');return}send(s)};sv.after(b)}))).observe(document.body,{childList:true,subtree:true});
+})();
+
+/* 12 · Page du jour → Journal : ce que tu écris aujourd'hui devient ta page d'aujourd'hui, pour de vrai */
+(function(){const D=window.__MJ;if(!D)return;const p2=n=>String(n).padStart(2,'0');
+ const iso=(d=new Date())=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+ const hm=(d=new Date())=>d.getHours()+' h '+p2(d.getMinutes());
+ const rp=document.getElementById('rpage'),gc=document.getElementById('gchat'),vd=document.getElementById('vdep'),vp=document.getElementById('vpage');
+ let st={d:iso(),r:null,g:null};const sv=window.__enLive&&window.__enLive('pdjd',()=>st);if(sv&&sv.d)st=Object.assign(st,sv);
+ let dirty=false;
+ function day(){const t=iso();D.today=t;let x=D.days.find(y=>y.d===t);if(!x){x={d:t,th:[],v:50,em:[],parts:[]};D.days.unshift(x)}return x}
+ function prune(x){x.parts=x.parts.filter(p=>p.f==='guider'?p.qa.length:String(p.x||'').trim()||p.media);if(!x.parts.length&&!x.moodSet){D.days=D.days.filter(y=>y!==x);D.todayWritten=false}else D.todayWritten=true}
+ function part(x,key,f){let p=st[key]!=null&&x.parts.find(q=>q.uid===st[key]);if(!p){p={uid:'p'+Date.now()+key,f,h:hm()};if(f==='guider')p.qa=[];else p.x='';x.parts.push(p);st[key]=p.uid}return p}
+ const plain=el=>{const c=el.cloneNode(true);c.querySelectorAll('figure,.gvoice,.rx,button').forEach(n=>n.remove());c.querySelectorAll('br').forEach(b=>b.replaceWith('\n'));c.querySelectorAll('div,p,h3,h4,li,blockquote').forEach(b=>b.append('\n'));return c.textContent.replace(/ /g,' ').replace(/\n{3,}/g,'\n\n').trim()};
+ function syncR(){if(!rp)return;const x=day();const t=plain(rp);const p=part(x,'r','raconter');p.x=t;const im=rp.querySelector('figure img');if(im&&!x.photo&&/^data:/.test(im.src)&&im.src.length<600000)x.photo=im.src;prune(x);dirty=true}
+ function syncG(){if(!gc)return;const qa=[];let q='';[...gc.querySelectorAll('.gb')].forEach(b=>{const t=b.textContent.trim();if(!t)return;if(b.classList.contains('gme')){qa.push([q||'',t]);q=''}else if(b.classList.contains('gai'))q=t});
+  if(!qa.length&&st.g==null)return;const x=day();const p=part(x,'g','guider');p.qa=qa;prune(x);dirty=true}
+ let tr=null;const later=f=>{clearTimeout(tr);tr=setTimeout(f,600)};
+ if(rp)rp.addEventListener('input',()=>later(syncR));
+ if(gc)new MutationObserver(()=>later(syncG)).observe(gc,{childList:true,subtree:true,characterData:true});
+ if(vd)vd.addEventListener('click',()=>{if(vd.classList.contains('off')||!vp)return;const t=plain(vp);if(!t)return;const x=day();x.parts.push({uid:'v'+Date.now(),f:'vider',h:hm(),x:t});prune(x);dirty=true},true);
+ document.addEventListener('mood',()=>{const m=window.__mood;if(!m)return;const x=day();x.v=m.v;x.em=m.es||[];x.moodSet=1;prune(x);dirty=true});
+ /* un nouveau jour : la page du jour repart blanche (hier reste dans ton journal) */
+ function newDay(){if(st.d===iso())return;st={d:iso(),r:null,g:null};
+  const L=window.localStorage;const ks=[];for(let i=0;i<L.length;i++){const k=L.key(i);if(k&&/^en-save:pdj\//.test(k))ks.push(k)}ks.forEach(k=>L.removeItem(k));
+  if(rp)rp.innerHTML='';const g=document.getElementById('greset');if(g)g.click();D.today=iso();D.todayWritten=!!D.days.find(y=>y.d===D.today);dirty=true}
+ newDay();document.addEventListener('visibilitychange',()=>{if(!document.hidden)newDay()});
+ /* le journal se redessine quand tu y vas */
+ const mj=document.getElementById('mj');if(mj)new MutationObserver(()=>{if(dirty&&mj.classList.contains('en-on')){dirty=false;window.__mjRender&&window.__mjRender()}}).observe(mj,{attributes:true,attributeFilter:['class']});
+ D.today=iso();D.todayWritten=!!D.days.find(y=>y.d===D.today);
 })();
 })();</script>
 
