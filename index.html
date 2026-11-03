@@ -138,9 +138,20 @@ try{Object.defineProperty(window,'localStorage',{value:shim,configurable:true})}
 /* données des modules : reprises dès leur création */
 const PERSIST={__MJ:['mj',['days']],__SV:['sv',['ch','s']],__SX:['sx',['cv','pages']],__PP:['pp',['items']]};
 const LIVE={};
-Object.entries(PERSIST).forEach(([g,[k,fields]])=>{let v;Object.defineProperty(window,g,{configurable:true,get:()=>v,set:o=>{v=o;LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]})}})});
+/* la vraie app démarre vide : les exemples de la maquette ne sont jamais montrés */
+const REEL=()=>M.ls['en-reel']==='1';
+const VIDE={mj:o=>{o.days=[];o.todayWritten=false},sv:o=>{o.ch=[];o.s=[]},sx:o=>{o.pages=[]},pp:o=>{o.items=[]}};
+Object.entries(PERSIST).forEach(([g,[k,fields]])=>{let v;Object.defineProperty(window,g,{configurable:true,get:()=>v,set:o=>{v=o;LIVE[k]={o,fields};const sv=M.st[k];
+ if(sv&&o&&REEL())fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});else if(o&&VIDE[k])VIDE[k](o)}})});
+/* objets entiers (réglages, profil…) et listes (rendez-vous…) */
+window.__enKeep=(k,o)=>{const sv=M.st[k];if(sv&&REEL())Object.assign(o,sv);LIVE[k]={o,fields:'*'};return o};
+window.__enKeepArr=(k,a)=>{const sv=M.st[k];a.splice(0,a.length,...((sv&&REEL()&&Array.isArray(sv.a))?sv.a:[]));LIVE[k]={o:{get a(){return a}},fields:['a']};return a};
+window.__enGet=k=>LIVE[k]&&LIVE[k].o;
+window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').trim()};
+window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).trim()};
+window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
-function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
+function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
 let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
 async function save(force){if(!DEK||!W.code)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;dirty=false;last=s;M.st=st;
@@ -174,7 +185,8 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   if(/Invalid login/i.test(m))return 'E-mail ou mot de passe incorrect.';if(/not confirmed/i.test(m))return 'Ton adresse n’est pas encore confirmée : ouvre le mail reçu.';
   if(/already registered|already been registered/i.test(m))return 'Un carnet existe déjà avec cet e-mail : choisis « J’ai déjà un carnet ».';if(/Password should|at least/i.test(m))return 'Le mot de passe doit faire au moins 8 caractères.';
   if(/rate limit|too many/i.test(m))return 'Trop d’essais, réessaie dans un moment.';if(/valid email|invalid format/i.test(m))return 'Cette adresse e-mail ne semble pas valide.';return m||'Ça n’a pas marché, réessaie.'};
- const auth=async(path,body)=>{const r=await fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await err(r));return r.json()};
+ const APPURL='https://eliera9.github.io/entre-nous/';
+ const auth=async(path,body)=>{if(/^(signup|recover)/.test(path))path+=(path.includes('?')?'&':'?')+'redirect_to='+encodeURIComponent(APPURL);const r=await fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await err(r));return r.json()};
  async function token(){await load();if(!S)return null;if(S.expires_at-60>Date.now()/1000)return S.access_token;
   try{const j=await auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token});await keep(j);return S.access_token}catch(e){return null}}
  async function rest(method,path,body,extra){const t=await token();if(!t)throw new Error('pas connectée');const r=await fetch(SB+'/rest/v1/'+path,{method,headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json',...(extra||{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(await err(r));return r.status===204?null:r.json()}
@@ -209,7 +221,7 @@ Element.prototype.scrollIntoView=function(o){const ph=this.closest&&this.closest
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
  L.forEach(s=>{const n=document.createElement('script');n.textContent=s.textContent;s.replaceWith(n)});
- document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'))}
+ document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel()}
 function mount(first){
  const app=document.createElement('div');app.id='en-app';document.body.appendChild(app);
  const HIDE=new Set(['wdgp','wdge','open']);
@@ -248,8 +260,11 @@ function lockUI(meta,onOk,onSec){
 }
 
 /* ---------- départ ---------- */
-async function recoveryPage(){/* lien « mot de passe oublié » ouvert dans Safari */
- const h=new URLSearchParams(location.hash.slice(1));if(h.get('type')!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
+async function recoveryPage(){/* liens des mails (confirmation, mot de passe oublié) ouverts dans Safari */
+ const h=new URLSearchParams(location.hash.slice(1));const ty=h.get('type');
+ if(h.get('error_description')||(ty&&ty!=='recovery'&&h.get('access_token'))){const ok=!h.get('error_description');const el=document.createElement('div');el.id='en-lock';
+  el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Retourne dans l’app Entre nous et touche « Continuer ».':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
+ if(ty!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
  const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
  document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
 async function boot(){
@@ -4354,12 +4369,12 @@ b.addEventListener('click',()=>{const on=!h.classList.contains('anniv');h.classL
 
 <script type="text/x-en">
 (function(){const h=document.getElementById('home'),b=document.getElementById('firsttog'),t=document.getElementById('hmott');let keep='';
-b.addEventListener('click',()=>{const on=!h.classList.contains('first');h.classList.toggle('first',on);if(on){keep=t.textContent;t.textContent='Bienvenue, Elisa. Cet espace est à toi, prends ton temps.'}else t.textContent=keep;b.textContent=on?'Revenir à l\'accueil rempli':'Voir la première ouverture';if(window.fitCards)fitCards()});})();
+b.addEventListener('click',()=>{const on=!h.classList.contains('first');h.classList.toggle('first',on);if(on){keep=t.textContent;t.textContent='Bienvenue, '+window.__P0()+'. Cet espace est à toi, prends ton temps.'}else t.textContent=keep;b.textContent=on?'Revenir à l\'accueil rempli':'Voir la première ouverture';if(window.fitCards)fitCards()});})();
 </script>
 
 <script type="text/x-en">
 (function(){const b=document.getElementById('festtog'),t=document.getElementById('hmott');let i=-1,keep='';
-const F=[["Ton anniversaire","Joyeux anniversaire, Elisa. Regarde tout le chemin déjà fait."],["Anniversaire d'un proche","Aujourd'hui, Léa fête son anniversaire."],["Noël","Que ce jour soit doux, à ta façon."],["Nouvel An","Une nouvelle page, rien ne presse."],["Une de tes dates","Le mot que tu auras écrit toi-même."]];
+const F=[["Ton anniversaire","Joyeux anniversaire, "+window.__P()+". Regarde tout le chemin déjà fait."],["Anniversaire d'un proche","Aujourd'hui, Léa fête son anniversaire."],["Noël","Que ce jour soit doux, à ta façon."],["Nouvel An","Une nouvelle page, rien ne presse."],["Une de tes dates","Le mot que tu auras écrit toi-même."]];
 b.addEventListener('click',()=>{if(i<0)keep=t.textContent;i++;if(i>=F.length){i=-1;t.textContent=keep;b.textContent='Voir un jour de fête';}else{t.textContent=F[i][1];b.textContent=F[i][0]+' · suivant';}if(window.fitCards)fitCards()});})();
 </script>
 
@@ -4667,7 +4682,7 @@ document.querySelector('#mv2 .mvbk').onclick=()=>document.getElementById('mv').s
 </script>
 <script type="text/x-en">
 (function(){const box=document.getElementById('mvbubs'),ph=document.getElementById('mv2');let T=[];
-const first=()=>{const i=document.querySelector('#onb input[autocomplete="given-name"], #onb .oname, #onb input[name="prenom"]');return (i&&i.value.trim())||'Elisa'};
+const first=()=>{const i=document.querySelector('#onb input[autocomplete="given-name"], #onb .oname, #onb input[name="prenom"]');return (i&&i.value.trim())||window.__P0()};
 function bub(t){const b=document.createElement('p');b.className='mvbub';b.textContent=t;box.appendChild(b);return b}
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';box.appendChild(b);return b}
 function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';let w=wait();
@@ -4836,7 +4851,7 @@ N.an_det={q:()=>'Oh, '+(/^(chienne|chatte|tortue)/.test(P.espece)?'une ':'un ')+
 function addStory(){const c=document.getElementById('mvcards');if(!c||c.querySelector('[data-c="histoire"]'))return;const b=document.createElement('button');b.type='button';b.className='mvc';b.dataset.c='histoire';b.innerHTML='<span class="mvch"><b>NOTRE HISTOIRE</b></span><small>'+(P.partenaire?'toi et '+P.partenaire:'votre histoire à deux')+', à ton rythme</small><span class="mvpr"><span class="mvpg"><i style="width:0%"></i></span><em class="mvcnt">0 SUR 9</em></span><span class="mvres">commencer par « la rencontre » ›</span>';c.appendChild(b)}
 let T=[],busy=false,queue=[],th=0,cur=null,curId=null,sel=[];
 const pet=()=>'illus/eveil-'+(window.__pet||'chat')+'.webp';
-const first=()=>{const x=document.getElementById('o2in');return P.surnom||(x&&x.value.trim())||'Elisa'};
+const first=()=>{const x=document.getElementById('o2in');return P.surnom||(x&&x.value.trim())||window.__P0()};
 function scroll(){chat.scrollTop=chat.scrollHeight}
 function row(el){const r=document.createElement('div');r.className='mvrow';r.innerHTML=`<span class="mvring"><img src="${pet()}" alt=""></span>`;r.appendChild(el);chat.appendChild(r);scroll();return r}
 function say(t,then){busy=true;const w=document.createElement('p');w.className='mvbub wt';w.innerHTML='<i></i><i></i><i></i>';const last=chat.lastElementChild;if(last&&last.classList.contains('mvrow'))last.querySelector('.mvring').classList.add('mvgh');row(w);
@@ -5014,7 +5029,7 @@ histoire:`NOTRE HISTOIRE (si tu es en couple ; utilise le prénom de ton amour)
 - Pour chaque grande étape : la date, ce qui s'est passé, une phrase qu'il ou elle t'a dite, le lieu, votre chanson, ce que tu portais, ce que vous avez mangé ou bu, la météo ou la saison, ce que tu as ressenti, un détail à garder.`};
 const PETN={chat:'le petit chat',panda:'le petit panda',lapin:'le petit lapin',chien:'le petit chien',herisson:'le petit hérisson'};
 window.__aiPrompt=function(scope){
- const name=window.__petName||PETN[window.__pet||'chat'];const x=document.getElementById('o2in');const me=(x&&x.value.trim())||'Elisa';
+ const name=window.__petName||PETN[window.__pet||'chat'];const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();
  const acc={f:'au féminin',m:'au masculin',n:'de façon neutre'}[window.__accord||'f'];
  const keys=scope&&CH[scope]?[scope]:Object.keys(CH);
  const themes=keys.map(k=>CH[k]).join('\n\n');
@@ -5065,7 +5080,7 @@ document.querySelectorAll('#mv2 .mvai button').forEach(b=>b.onclick=()=>window._
 document.getElementById('mvaic').onclick=()=>window.__aiOpen('chatgpt','moi');
 document.querySelectorAll('.aisw').forEach(b=>b.onclick=()=>{set(b.dataset.ai);play()});
 document.getElementById('aicopy').onclick=()=>{pre.hidden=!pre.hidden};
-const share=()=>{const x=document.getElementById('o2in');const me=(x&&x.value.trim())||'Elisa';window.__iaShare({ph,ai,title:(scope?'Ce chapitre':'Faire connaissance')+' avec '+LAB[ai],
+const share=()=>{const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();window.__iaShare({ph,ai,title:(scope?'Ce chapitre':'Faire connaissance')+' avec '+LAB[ai],
  parts:[{id:'prenom',label:'Mon prénom',hint:'« Je m’appelle '+me+'. »',on:false,personal:true}],
  build:sel=>{const q=window.__aiPrompt(scope);return sel.has('prenom')?q:q.replace(' Je m\'appelle '+me+'.','')},
  back:{label:'J’en reviens : coller mon portrait',fn:()=>document.getElementById('mvaiback').click()}})};
@@ -5161,7 +5176,7 @@ const SH={'Vit avec':'Avec','Travail ou études':'Travail','Ressenti sur le trav
 const low=x=>x.charAt(0).toLowerCase()+x.slice(1);
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';bub.appendChild(b);return b}
 function say(list){bub.innerHTML='';let t=200;list.forEach(l=>{let w;setTimeout(()=>{w=wait()},t);t+=1000;setTimeout(()=>{w.remove();const p=document.createElement('p');p.className='mvbub';p.textContent=l;bub.appendChild(p)},t);t+=300})}
-window.__showRetenu=function(P){const x=document.getElementById('o2in');const me=(x&&x.value.trim())||'Elisa';document.getElementById('mvretpet').src='illus/eveil-'+(window.__pet||'chat')+'.webp';
+window.__showRetenu=function(P){const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();document.getElementById('mvretpet').src='illus/eveil-'+(window.__pet||'chat')+'.webp';
  say(['Merci '+me+', j’ai tout lu.','Voilà ce que j’ai compris. Tu peux corriger ce qui ne va pas.']);
  box.innerHTML='';CH.forEach(([k,title,tpl])=>{const rows=(P[k]||[]);if(!rows.length&&k==='histoire')return;
   const known=new Set(rows.map(r=>r[0]).filter(Boolean));const miss=tpl.filter(t=>!known.has(t));const total=tpl.length+(k==='proches'?rows.filter(r=>!r[0]).length:0);const filled=rows.length;const pct=Math.round(Math.min(1,filled/Math.max(total,1))*100);
@@ -5178,7 +5193,7 @@ new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting&&!box.children.length
 <script type="text/x-en">
 (function(){const f=document.getElementById('fbandfile'),b=document.getElementById('fband');document.getElementById('fbandedit').onclick=()=>f.click();
 f.onchange=()=>{const x=f.files[0];if(!x)return;const r=new FileReader();r.onload=()=>{b.style.backgroundImage='url('+r.result+')';b.classList.add('img')};r.readAsDataURL(x);f.value=''};
-document.getElementById('mvpgo').addEventListener('click',()=>setTimeout(()=>{const x=document.getElementById('o2in');document.getElementById('fname').textContent=(x&&x.value.trim())||'Elisa';document.getElementById('fphoto').src='illus/eveil-'+(window.__pet||'chat')+'.webp'},500));})();
+document.getElementById('mvpgo').addEventListener('click',()=>setTimeout(()=>{const x=document.getElementById('o2in');document.getElementById('fname').textContent=(x&&x.value.trim())||window.__P0();document.getElementById('fphoto').src='illus/eveil-'+(window.__pet||'chat')+'.webp'},500));})();
 </script>
 <script type="text/x-en">(()=>{const ph=document.getElementById('mvfiche'),sh=document.getElementById('fsh'),dm=document.getElementById('fdim'),$=id=>document.getElementById(id);
 const V='à compléter';
@@ -5533,8 +5548,8 @@ document.getElementById('mvretok').onclick=()=>document.getElementById('mvfiche'
 const $=id=>document.getElementById(id);
 const main=$('rg'),page=$('rgp'),mb=$('rgmain'),pb=$('rgpb'),pt=$('rgpt');
 const goTo=id=>{const t=$(id);t&&t.scrollIntoView({behavior:'smooth',block:'center'})};
-const S={};/* état des réglages */
-const me=()=>(($('o2in')||{}).value||'').trim()||'Elisa';
+const S=window.__enKeep?window.__enKeep('rg',{}):{};/* état des réglages */
+const me=()=>(($('o2in')||{}).value||'').trim()||window.__P0();
 const pet=()=>window.__pet||'chat';
 const petImg=()=>'illus/eveil-'+pet()+'.webp';
 const PETS=['chat','panda','lapin','chien','herisson'],PETN={chat:'chat',panda:'panda',lapin:'lapin',chien:'chien',herisson:'hérisson'};
@@ -5641,8 +5656,8 @@ compte:{t:'mon compte',r:()=>[
    rm.onclick=()=>{S.photo=null;const i=$('rgbigi');i.classList.remove('me');i.src=petImg();drawMain();x.hidden=rm.hidden=true;cam.classList.remove('on')}}},
  {t:'sc',l:'QUI JE SUIS'},
  {t:'text',k:'prenom',l:'Prénom',v:me(),on:()=>drawMain()},
- {t:'text',k:'nom',l:'Nom',v:'Sounard'},
- {t:'text',k:'petit',l:'Petit nom',v:'Eli',help:'C’est ainsi que Plume t’appellera.'},
+ {t:'text',k:'nom',l:'Nom',v:''},
+ {t:'text',k:'petit',l:'Petit nom',v:'',help:'C’est ainsi que Plume t’appellera.'},
  {t:'wheel',k:'naiss',l:'Date de naissance',d:[13,4,46],cols:()=>[[...Array(31)].map((_,i)=>i+1),MOIS,[...Array(61)].map((_,i)=>1950+i)],fmt:v=>(v[0]+1)+' '+MOIS[v[1]]+' '+(1950+v[2]),help:'Plume te laissera un petit mot ce jour-là.'},
  {t:'choice',k:'accord',l:'On m’écrit au',o:['féminin','masculin','neutre'],help:'Tous les petits mots de Plume s’accordent.'},
  {t:'choice',k:'langue',l:'Langue',o:['français','english']},
@@ -5698,7 +5713,7 @@ notifications:{t:'notifications',ic:'notifications',r:()=>[
  {t:'sub',l:'pour écrire'},
  {t:'x',k:'rapx',l:'Rappel pour écrire',kw:'soir heure',v:()=>S.rap===false?'désactivé':(S.wheelRap||[21,0])[0]+' h'+((S.wheelRap||[21,0])[1]?' '+MIN[S.wheelRap[1]]:''),fill:(x,ph,paint)=>{
   render([{t:'toggle',k:'rap',l:'Activer',v:true,on:()=>{paint();stateNotif()}},{t:'wheel',k:'wheelRap',l:'Heure',d:[21,0],cols:()=>[HRS,MIN],fmt:v=>tfmt(...v),on:()=>{paint();stateNotif()}}],x,ph);
-  if(!S.jours)S.jours=[1,1,1,1,1,0,1];x.insertAdjacentHTML('beforeend','<p class="rgh rghl">jours</p><div class="rgdays">'+'LMMJVSD'.split('').map((d,i)=>'<button type="button" class="'+(S.jours[i]?'on':'')+'" data-i="'+i+'">'+d+'</button>').join('')+'</div><p class="rgh rghl">aperçu</p><p class="rgbub">« '+esc(S.petit||'Eli')+', tu veux me raconter ta journée ? »</p>');
+  if(!S.jours)S.jours=[1,1,1,1,1,0,1];x.insertAdjacentHTML('beforeend','<p class="rgh rghl">jours</p><div class="rgdays">'+'LMMJVSD'.split('').map((d,i)=>'<button type="button" class="'+(S.jours[i]?'on':'')+'" data-i="'+i+'">'+d+'</button>').join('')+'</div><p class="rgh rghl">aperçu</p><p class="rgbub">« '+esc(S.petit||window.__P())+', tu veux me raconter ta journée ? »</p>');
   x.querySelectorAll('.rgdays button').forEach(b=>b.onclick=()=>{S.jours[b.dataset.i]^=1;b.classList.toggle('on')})}},
  {t:'x',k:'motsx',l:'Petits mots de Plume',v:()=>['jamais','parfois','souvent'][S.freq??1],fill:(x,ph,paint)=>{if(S.freq===undefined)S.freq=1;
   const ex=document.createElement('div');const dex=()=>{const L=[];if(S.m0!==false)L.push('« Je pensais à toi, ça va ? »');if(S.m1!==false)L.push('« Tu as souri aujourd’hui ? »');if(S.m2)L.push('« Je suis fière de toi, tu sais. »');ex.innerHTML=L.length?L.map(t=>'<p class="rgbub">'+t+'</p>').join(''):'<p class="rgh">Aucun petit mot pour l’instant.</p>'};
@@ -5738,8 +5753,8 @@ journal:{t:'mon journal',ic:'journal',r:()=>[
   x.querySelectorAll('[data-s]').forEach(b=>b.onclick=e=>{e.stopPropagation();const k=b.dataset.s;if(k==='r'){f.click();return}const res=k==='a'?window.__enSave.archive():window.__enSave.lisible();Promise.resolve(res).then(r=>toast(ph,r==='ok'?(k==='a'?'Archive proposée au téléchargement':'Version à lire proposée au téléchargement'):r==='declined'?'Rien n’a été téléchargé':'Le téléchargement n’est pas possible ici'))})}}
 ]},
 voix:{t:'voix et oral',ic:'voix',r:()=>[
- {t:'html',h:'<div class="rgcard"><span><img alt="" src="'+petImg()+'"></span><p>« Bonsoir '+esc(S.petit||'Eli')+', je t’écoute. »<span class="rgwave">'+[6,10,14,8,12,5,9,13,7].map(h=>'<i style="height:'+h+'px"></i>').join('')+'</span></p><button type="button" class="rgplay" id="rgplay" aria-label="Écouter">▶</button></div>',
-  init:(b,ph)=>{$('rgplay').onclick=()=>{if(!speak('Bonsoir '+(S.petit||'Eli')+', je t’écoute.'))toast(ph,'La voix n’est pas disponible ici')}}},
+ {t:'html',h:'<div class="rgcard"><span><img alt="" src="'+petImg()+'"></span><p>« Bonsoir '+esc(S.petit||window.__P())+', je t’écoute. »<span class="rgwave">'+[6,10,14,8,12,5,9,13,7].map(h=>'<i style="height:'+h+'px"></i>').join('')+'</span></p><button type="button" class="rgplay" id="rgplay" aria-label="Écouter">▶</button></div>',
+  init:(b,ph)=>{$('rgplay').onclick=()=>{if(!speak('Bonsoir '+(S.petit||window.__P())+', je t’écoute.'))toast(ph,'La voix n’est pas disponible ici')}}},
  {t:'sub',l:'la voix de Plume'},
  {t:'x',k:'voixx',l:'Voix',v:()=>VOICES[S.voix??0][0],fill:(x,ph,paint)=>{if(S.voix===undefined)S.voix=0;
   VOICES.forEach((v,i)=>x.insertAdjacentHTML('beforeend','<div class="rgl" data-i="'+i+'"><span class="rgll"><button type="button" class="rgpb" aria-label="Écouter '+v[0]+'">▶</button><span>'+v[0]+'<small>'+v[1]+'</small></span></span><span class="rgck">'+(i===S.voix?'✓':'')+'</span></div>'));
@@ -5864,7 +5879,7 @@ let uid=1;const E=[
  {t:'rdv',n:'Coiffeur',y:2026,m:9,d:28,h:17,mi:0,res:'ressourcant',rap:1},{t:'rdv',n:'Soirée d’Halloween',y:2026,m:9,d:31,h:20,mi:0,res:'excitant',rap:1},
  {t:'anniv',n:'Thomas',y:1995,m:1,d:2,veille:1},{t:'anniv',n:'Maman',y:0,m:5,d:18,veille:1},{t:'moi',n:'Notre rencontre',y:2021,m:2,d:12,chaque:1,genre:0,mot:'Tout a commencé ici…'},
  {t:'rdv',n:'Brunch',y:2026,m:10,d:11,h:11,mi:0,res:'joyeux',rap:0},{t:'rdv',n:'Médecin',y:2026,m:5,d:18,h:11,mi:0,res:'fatigant',rap:1},{t:'rdv',n:'Mariage de Julie',y:2026,m:7,d:21,h:15,mi:0,res:'excitant',rap:1},
- {t:'rdv',n:'Réveillon',y:2026,m:11,d:24,h:19,mi:0,res:'joyeux',rap:1},{t:'rdv',n:'Concert',y:2026,m:3,d:2,h:20,mi:0,res:'excitant',rap:0}].map(e=>(e.id=uid++,e));
+ {t:'rdv',n:'Réveillon',y:2026,m:11,d:24,h:19,mi:0,res:'joyeux',rap:1},{t:'rdv',n:'Concert',y:2026,m:3,d:2,h:20,mi:0,res:'excitant',rap:0}].map(e=>(e.id=uid++,e));window.__enKeepArr&&window.__enKeepArr('kal',E);try{uid=Math.max(uid,...E.map(x=>(x.id||0)+1))}catch(_){}
 /* vraie date : les rendez-vous d'exemple autour du 28 octobre 2026 suivent le jour réel ; fêtes et anniversaires restent à leur date ; la séance psy hebdomadaire tombe demain, comme dans l'espace Psy */
 E.forEach(e=>{if(e.t==='psy'){const d=window.__TD();d.setDate(d.getDate()+1-28);e.y=d.getFullYear();e.m=d.getMonth();e.d=d.getDate();return}if(e.t!=='rdv'||/Halloween|Réveillon/.test(e.n))return;const k=Math.round((new Date(e.y,e.m,e.d)-new Date(2026,9,28))/864e5);if(k<-75||k>45)return;const d=window.__DSH(e.y,e.m,e.d);e.y=d.getFullYear();e.m=d.getMonth();e.d=d.getDate()});
 const PG={'2026-9-27':['#D9A0A6','« Grosse journée, mais fière de moi. »'],'2026-9-28':['#E8B9B0','« Ce matin, le café avait un goût de vacances… »'],'2026-9-26':['#C9A3AE','« Un lundi tout doux. »'],'2026-9-6':['#B98A93','« Pas facile, le dentiste… »']};
@@ -6066,7 +6081,7 @@ const mi=k=>'<img data-mi="'+k+'" alt="">';
 const GEAR='<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>';
 const goTo=id=>{const t=document.getElementById(id);t&&t.scrollIntoView({behavior:'smooth',block:'center'})};
 function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
- const me=((document.getElementById('o2in')||{}).value||'').trim()||'Elisa',pet=window.__pet||'chat',photo=document.getElementById('fphoto');
+ const me=((document.getElementById('o2in')||{}).value||'').trim()||window.__P0(),pet=window.__pet||'chat',photo=document.getElementById('fphoto');
  const d=document.createElement('div');d.className='sbdim';d.hidden=true;const r=document.createElement('nav');r.className='sbdr';r.setAttribute('aria-label','Menu');
  r.innerHTML='<button type="button" class="sbpr"><span class="sbav"><span><img alt="" src="'+(photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp')+'"></span><i><img alt="" src="illus/eveil-'+pet+'.webp"></i></span><span><span class="sbn">'+me+'</span><span class="sbsub">voir mon profil ›</span></span></button>'
  +'<p class="sbsc">MES PAGES</p>'+PAGES.filter(p=>!(window.__noPsy&&p[0]==='psy')).map(p=>{const g=GRP(act)===p[0],ph0=photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp';return '<div class="sbgrp'+(g&&p[3].length?' open':'')+'"><button type="button" class="sbit sbg'+(p[0]===act?' on':'')+'" data-go="'+p[0]+'" data-subs="'+p[3].length+'">'+mi(p[2]==='@photo'?'espace':p[2])+p[1]+(p[3].length?'<i class="sbch">›</i>':'')+'</button>'+(p[3].length?'<div class="sbsubs">'+p[3].map(q=>'<button type="button" class="sbsub2'+(q[0]===act?' on':'')+'" data-go="'+(q[0]||'')+'">'+q[1]+'</button>').join('')+'</div>':'')+'</div>'}).join('')
@@ -7488,11 +7503,11 @@ const clickHidden=sel=>()=>{const b=document.querySelector(sel);if(!b)return;b.s
 const moment=()=>{const h=new Date().getHours();return h<12?'matin':h<18?'aprem':h<22?'soir':'nuit'};
 const QUOTES=['« La plus grande chose du monde, c’est de savoir être à soi. » Montaigne','« Le cœur a ses raisons que la raison ne connaît point. » Pascal','« Le seul bien qui me reste au monde est d’avoir quelquefois pleuré. » Musset','« Chaque paysage est un état de l’âme. » Amiel, dans son journal intime','« Il n’y a qu’un bonheur dans la vie, c’est d’aimer et d’être aimé. » George Sand','« Même la nuit la plus sombre prendra fin et le soleil se lèvera. » Victor Hugo','« Ce n’est pas parce que les choses sont difficiles que nous n’osons pas, c’est parce que nous n’osons pas qu’elles sont difficiles. » Sénèque','« Le véritable voyage de découverte ne consiste pas à chercher de nouveaux paysages, mais à avoir de nouveaux yeux. » Proust','Tu n’as pas besoin d’aller mieux pour mériter de la douceur.','Ce que tu ressens a le droit d’exister, même sans explication.','Tu peux être en chantier et précieuse en même temps.','Petit à petit, l’oiseau fait son nid.'];
 const MSG={
- home:()=>pick([{matin:'Bonjour Eli. Une journée toute neuve, rien à prouver.',aprem:'Pense à boire un verre d’eau et à souffler un peu.',soir:'Bonsoir Eli. Tu as le droit de ralentir, ce soir.',nuit:'Il est tard. Pose ta tête, demain sera là.'}[moment()],'Tu te sentais un peu fatiguée ces jours-ci. Doucement avec toi aujourd’hui.','Coiffeur à 17 h : un petit moment rien qu’à toi.',pick(QUOTES)]),
- mj:()=>window.__MJ&&window.__MJ.todayWritten?pick(['Tu as déjà écrit ce matin. On continue un peu ?','Ta page d’aujourd’hui a déjà de jolis mots.']):pick(['Ta page t’attend, Eli. Même trois mots, c’est déjà beaucoup.','Raconte-moi ta journée, comme elle vient.']),
+ home:()=>pick([{matin:'Bonjour '+window.__P()+'. Une journée toute neuve, rien à prouver.',aprem:'Pense à boire un verre d’eau et à souffler un peu.',soir:'Bonsoir '+window.__P()+'. Tu as le droit de ralentir, ce soir.',nuit:'Il est tard. Pose ta tête, demain sera là.'}[moment()],'Tu te sentais un peu fatiguée ces jours-ci. Doucement avec toi aujourd’hui.','Coiffeur à 17 h : un petit moment rien qu’à toi.',pick(QUOTES)]),
+ mj:()=>window.__MJ&&window.__MJ.todayWritten?pick(['Tu as déjà écrit ce matin. On continue un peu ?','Ta page d’aujourd’hui a déjà de jolis mots.']):pick(['Ta page t’attend, '+window.__P()+'. Même trois mots, c’est déjà beaucoup.','Raconte-moi ta journée, comme elle vient.']),
  mjday:()=>pick(['Relire, c’est aussi prendre soin de soi.','C’est beau de voir le chemin parcouru.']),
  pdj:()=>'Comment tu te sens, là ?',
- mvfiche:()=>pick(['Tu as changé de ville, de vie, et tu es toujours toi. J’aime bien ça.','Trois petits pas cette semaine. Tu avances, Eli.','Toi qui aimes dessiner : n’oublie pas de garder du temps pour ça.']),
+ mvfiche:()=>pick(['Tu as changé de ville, de vie, et tu es toujours toi. J’aime bien ça.','Trois petits pas cette semaine. Tu avances, '+window.__P()+'.','Toi qui aimes dessiner : n’oublie pas de garder du temps pour ça.']),
  mvdit:()=>'Tu veux relire quoi ?',
  rg:()=>pick(['Tu veux que je t’écrive moins souvent ?','Tu préfères l’app plus sombre le soir ?','Tu veux me parler autrement ?']),
  calp:()=>'Un rendez-vous à noter ?',
@@ -8021,7 +8036,7 @@ const MOTS=["« Une année toute neuve ne te demande rien. Elle s’ouvre, simpl
 const S={i:0,night:null,mot:MOTS[(()=>{const d=new Date(),C=[0,31,59,90,120,151,181,212,243,273,304,334];return C[d.getMonth()]+Math.min(d.getDate(),d.getMonth()===1?28:31)-1})()]};
 const night=()=>S.night!=null?S.night:!!(window.__W&&window.__W.night&&window.__W.night());
 const written=()=>!!(window.__MJ&&window.__MJ.todayWritten);
-const name=()=>(window.__profil&&window.__profil.prenom)||'Elisa';
+const name=()=>(window.__profil&&window.__profil.prenom)||window.__P0();
 const N=()=>night();
 const plume=()=>N()?'illus/dort-chat-nuit.webp':'illus/eveil-chat.webp';
 const stars=(a)=>a.map(([x,y,z])=>`<span class="st" style="${x};${y};font-size:${z}px">✦</span>`).join('');
@@ -8117,7 +8132,7 @@ render();
 })();
 </script>
 <script type="text/x-en">(()=>{/* Se déconnecter (03.11.2026) : Plume dit au revoir dans un volet, avant de revenir à l'écran d'ouverture */
-const name=()=>{const x=document.getElementById('o2in');return(window.__profil&&window.__profil.prenom)||(x&&x.value.trim())||'Elisa'};
+const name=()=>{const x=document.getElementById('o2in');return(window.__profil&&window.__profil.prenom)||(x&&x.value.trim())||window.__P0()};
 const night=ph=>/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'))||ph.classList.contains('nuit');
 window.__decoOpen=(ph,go)=>{if(!ph){go&&go();return}ph.querySelectorAll('.ad-dim,.ad-sh').forEach(x=>x.remove());
  const pet=window.__pet||'chat',img=`illus/dort-${pet}${night(ph)?'-nuit':''}.webp`;
@@ -8166,7 +8181,7 @@ if(fg){fg.setAttribute('role','button');fg.tabIndex=0;fg.style.cursor='pointer';
 </script>
 <script type="text/x-en">(()=>{/* Visite sur les vrais écrans (03.11.2026) : après l'inscription, un projecteur montre chaque endroit de l'accueil */
 const H=document.getElementById('home');if(!H)return;
-const name=()=>{const x=document.getElementById('o2in');return(x&&x.value.trim())||'Elisa'};
+const name=()=>{const x=document.getElementById('o2in');return(x&&x.value.trim())||window.__P0()};
 const hasPsy=()=>{const n=[...H.querySelectorAll('.nav span')].find(s=>/Psy/.test(s.textContent));return !!n&&n.offsetParent!==null};
 const navOf=t=>[...H.querySelectorAll('.nav span')].find(s=>s.textContent.trim()===t);
 const STEPS=()=>[
@@ -8337,6 +8352,12 @@ function accSheet(done){const el=document.createElement('div');el.className='en-
   catch(x){say(x.message,1)}finally{if(bt.isConnected)bt.textContent='CONTINUER'}}}
 window.__enAccSheet=accSheet;
 new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySelector('.rgl[data-l="Adresse mail"]'))compte(r)}).observe(document.getElementById('rgp')||document.body,{subtree:true,childList:true});
+
+/* 5 · ton prénom : gardé dans tes réglages, repris partout */
+(function(){const RG=window.__enGet&&window.__enGet('rg');const x=document.getElementById('o2in');if(!RG||!x)return;
+ if(RG.prenom&&!x.value)x.value=RG.prenom;
+ x.addEventListener('input',()=>{RG.prenom=x.value.trim()});
+ const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P0()?', '+window.__P0():'')+'.';})();
 })();</script>
 
 </body>
