@@ -147,6 +147,7 @@ Object.entries(PERSIST).forEach(([g,[k,fields]])=>{let v;Object.defineProperty(w
 window.__enKeep=(k,o)=>{const sv=M.st[k];if(sv&&REEL())Object.assign(o,sv);LIVE[k]={o,fields:'*'};return o};
 window.__enKeepArr=(k,a)=>{const sv=M.st[k];a.splice(0,a.length,...((sv&&REEL()&&Array.isArray(sv.a))?sv.a:[]));LIVE[k]={o:{get a(){return a}},fields:['a']};return a};
 window.__enGet=k=>LIVE[k]&&LIVE[k].o;
+window.__enLive=(k,fn)=>{const sv=REEL()&&M.st[k]?M.st[k].v:null;LIVE[k]={o:{get v(){return fn()}},fields:['v']};return sv};
 window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').trim()};
 window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).trim()};
 window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis']){M.ls['en-depuis']=String(Date.now());touch()}};
@@ -281,6 +282,23 @@ async function boot(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
+
+(()=>{/* 6 · Psy : la prochaine séance vient du calendrier */
+const J=['DIM.','LUN.','MAR.','MER.','JEU.','VEN.','SAM.'],MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'],MOL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+function nextPsy(){const E=window.__calE||[];const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ for(let i=0;i<120;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);for(const e of E){if(e.t!=='psy')continue;const s=new Date(e.y,e.m,e.d);let on=false;
+  if(e.rep){if(dt>=s){const k=Math.round((dt-s)/864e5);on=e.rep===1?k%7===0:e.rep===2?k%14===0:e.rep===3?dt.getDate()===e.d:false}}else on=+s===+dt;
+  if(on){const at=new Date(dt);at.setHours(e.h||0,e.mi||0);if(at<now&&i===0)continue;return {e,dt,i}}}}return null}
+const hh=e=>(e.h??0)+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
+window.__enPsyEph=()=>{const n=nextPsy();
+ if(!n)return `<div class="ps-eph"><div class="d"><b>✦</b><small>À VENIR</small></div><div class="m"><p>Pas encore de séance prévue</p><span>ajoute-la à ton calendrier</span></div><button class="ps-btn2" data-a="enaddpsy">AJOUTER</button></div>`;
+ const rel=n.i===0?'aujourd’hui':n.i===1?'demain':'dans '+n.i+' jours';const ou=['au cabinet','en visio'][n.e.ou||0]||'au cabinet';
+ return `<div class="ps-eph"><div class="d"><b>${n.dt.getDate()}</b><small>${J[n.dt.getDay()]} ${MOC[n.dt.getMonth()]}</small></div><div class="m"><p>Ta séance</p><span>${hh(n.e)} · ${ou}<br>${rel}</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>`};
+window.__enPsySeance=(L,ap)=>{const d=new Date();const sel=ap.ressens&&ap.ressens.sel?[...ap.ressens.sel]:[];
+ L.unshift({id:'s'+Date.now(),y:d.getFullYear(),mo:MOL[d.getMonth()].toUpperCase()+' '+d.getFullYear(),j:JL[d.getDay()].toUpperCase()+' '+d.getDate(),jl:JL[d.getDay()]+' '+d.getDate()+' '+MOL[d.getMonth()]+' '+d.getFullYear(),
+  q:(ap.retiens&&ap.retiens.a)?'« '+ap.retiens.a+' »':'',emo:sel,star:(ap.ressens&&ap.ressens.star)||sel[0]||'',suj:Object.keys((ap.parler&&ap.parler.ck)||{}),prev:[],notes:[],
+  apres:{parler:(ap.parler&&(Object.values(ap.parler.txt||{}).join(' ')||ap.parler.plus))||'',retiens:(ap.retiens&&[ap.retiens.a,ap.retiens.b,ap.retiens.c].filter(Boolean).join(' '))||'',ressens:sel.join(', '),pas:''}})};
+window.__enNextPsy=nextPsy;window.__enHH=hh;})();
 
 </script>
 </head>
@@ -6341,7 +6359,7 @@ const SEANCES=[
  {id:'s0612',y:2025,mo:'JUIN 2025',j:'JEUDI 12',jl:'jeudi 12 juin 2025',q:'« Tu avances, même quand tu ne le vois pas. »',emo:['pensive','émue'],star:'émue',suj:['le travail'],prev:[],notes:[],apres:{}},
  {id:'s0522',y:2025,mo:'MAI 2025',j:'JEUDI 22',jl:'jeudi 22 mai 2025',q:'« Ta colère est légitime. »',emo:['en colère','soulagée'],star:'en colère',suj:['ma mère'],prev:[],notes:[],apres:{}},
  {id:'s0410',y:2025,mo:'AVRIL 2025',j:'JEUDI 10',jl:'jeudi 10 avril 2025',q:'« On a le temps. »',emo:['inquiète','calme'],star:'inquiète',suj:['Thomas'],prev:[],notes:[],apres:{}},
- {id:'s0313',y:2025,mo:'MARS 2025',j:'JEUDI 13',jl:'jeudi 13 mars 2025',q:'« Je ne sais pas par où commencer. »',emo:['perdue','angoissée'],star:'perdue',suj:['Thomas','le travail'],prev:[],notes:[],apres:{}}];
+ {id:'s0313',y:2025,mo:'MARS 2025',j:'JEUDI 13',jl:'jeudi 13 mars 2025',q:'« Je ne sais pas par où commencer. »',emo:['perdue','angoissée'],star:'perdue',suj:['Thomas','le travail'],prev:[],notes:[],apres:{}}];window.__enKeepArr&&window.__enKeepArr('psyse',SEANCES);
 const PHRASES=[['« Ta fatigue a le droit d\'exister. »',(__DF('2026-10-15','{d} {mo}','u','2026-10-28')+" · PHRASE")],['Respirer en carré','CE QUI M\'A AIDÉE · EXERCICE'],['« Tu as le droit de dire non. »',(__DF('2026-09-30','{d} {mo}','u','2026-10-28')+" · PHRASE")],['« On avance à ton rythme. »',(__DF('2026-09-16','{d} {mo}','u','2026-10-28')+" · PHRASE")]];
 const NOTES0=()=>[
  {id:'n1',k:'THOMAS',t:'Thomas est parti sans rien dire',o:'PAGE DU 24',pg:("PAGE DU "+__DF('2026-10-24','{d} {mo}','u','2026-10-28')),txt:'Ce soir encore, je l\'ai attendu. <mark>Thomas est parti sans rien dire</mark>, et j\'ai fait comme si ça m\'était égal. Ça ne l\'était pas.',ck:0},
@@ -6364,7 +6382,7 @@ function reset(mode){S={mode,stack:[],tab:mode==='soir'?'apres':'avant',notes:mo
  if(mode==='first')S.stack=[{v:'intro'}];
  
 }
-reset('avant');
+reset('avant');{const sv=window.__enLive&&window.__enLive('psy',()=>({notes:S.notes,pas:S.pas,mode:S.mode,first:S.first}));if(sv){reset(sv.mode==='first'?'first':'vide');S.notes=sv.notes||[];S.pas=sv.pas||[];if(sv.first)S.first=sv.first}else reset('first')}
 const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
 const go=(v,o)=>{S.stack.push(Object.assign({v},o||{}));render(1)};
 const back=()=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro'))S.stack.pop();render(1)};
@@ -6380,11 +6398,11 @@ const ctx=()=>S.mode==='soir'?{d:(__DF('2026-10-29','{d} {mo}','u','2026-10-28')
 
 /* ---------- AVANT ---------- */
 function tAvant(){
- if(S.mode==='vide')return`<div class="ps-eph"><div class="d"><b>${__DF('2026-10-29','{d}','l','2026-10-28')}</b><small>${__DF('2026-10-29','{wd}','u','2026-10-28').slice(0,3)}. ${__DF('2026-10-29','{ma}','u','2026-10-28')}</small></div><div class="m"><p>Ta séance</p><span>18 h · au cabinet<br>demain</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>
+ if(S.mode==='vide')return`${window.__enPsyEph()}
  <div class="ps-empty"><p class="ps-s">Rien à aborder pour l'instant.<br>Tes notes s'ajouteront ici au fil des jours.</p></div>${aborder()}`;
  const hum=['remuée','fatiguée','pensive','fatiguée','légère','pensive','calme'];
  const sa=S.sumAdd;
- return`<div class="ps-eph" data-a="calrdv" role="button"><div class="d"><b>${__DF('2026-10-29','{d}','l','2026-10-28')}</b><small>${__DF('2026-10-29','{wd}','u','2026-10-28').slice(0,3)}. ${__DF('2026-10-29','{ma}','u','2026-10-28')}</small></div><div class="m"><p>Ta séance</p><span>18 h · au cabinet<br>demain</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>
+ return`${window.__enPsyEph()}
  <div class="ps-card ps-sum"><div class="ps-k" style="text-align:left;color:var(--sacc)">✦ DEPUIS TA DERNIÈRE SÉANCE</div><div class="ps-s" style="text-align:left">${__DR('2026-10-15','2026-10-28','l','2026-10-28')}</div>
  <p style="margin:8px 0 0;font:italic 15px/1.45 'Cormorant Garamond',serif">Une semaine en dents de scie. Thomas est revenu souvent dans tes pages, et tes nuits ont été courtes. Mais tu as pris soin de toi, deux fois.</p>
  <div class="ln"><b>HUMEURS</b><span class="pearls">${hum.map(h=>perle([h],h,11)).join('')}</span></div>
@@ -6722,7 +6740,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'parep':ap.pasAdded[d.i].rep=d.k;render();break;
  case'relance':toast(d.t.replace('si tu bloques : ',''));break;
  case'range':fillVrac();S.stack=S.stack.filter(x=>x.v!=='vrac');go('parts');toast('Plume a rangé ton vrac dans tes quatre cartes');break;
- case'apsave':ap.saved=1;S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
+ case'apsave':ap.saved=1;try{window.__enPsySeance&&window.__enPsySeance(SEANCES,ap)}catch(_){};S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
  /* petits pas */
  case'pasck':{const p=S.pas.find(x=>x.id===d.i);if(S.pasYay===p.id){S.pasYay=null}else S.pasYay=p.id;render();break}
  case'pasfeel':{const p=S.pas.find(x=>x.id===d.i);p.done=1;p.feel=d.k;p.day='AUJOURD\'HUI';S.pasYay=null;render();break}
@@ -8361,6 +8379,14 @@ new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySe
  const hi=()=>['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(e){const w=e.textContent.trim().split(/\s+/)[0];e.textContent=w+(window.__P0()?' '+window.__P0():'')}});
  x.addEventListener('input',()=>{RG.prenom=x.value.trim();hi()});hi();
  const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P0()?', '+window.__P0():'')+'.';})();
+
+const nextPsy=window.__enNextPsy,hh=window.__enHH;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a="enaddpsy"]');if(!b)return;e.stopImmediatePropagation();window.__enShow('calp');setTimeout(()=>window.__calOpen&&window.__calOpen(null,new Date()),250)},true);
+/* carte « Demain, ta séance » sur l'accueil */
+function psyCard(){const pv=document.getElementById('psyv');if(!pv)return;const n=nextPsy();const show=n&&n.i<=1;pv.hidden=!show;
+ const mot=document.querySelector('#home .mot');if(mot)mot.style.display=show?'none':'';
+ if(show){const k=pv.querySelector('.pk');if(k)k.innerHTML=(n.i===0?'Aujourd’hui':'Demain')+', ta séance · '+hh(n.e).replace(' ','&nbsp;')}}
+psyCard();setInterval(psyCard,60000);document.addEventListener('click',()=>setTimeout(psyCard,400));
 })();</script>
 
 </body>
