@@ -71,6 +71,33 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 #en-cc .pad button.del{border:0;font-size:18px}
 #en-cc .lk{all:unset;margin-top:10px;padding:8px;font:italic 500 14px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
 @media (prefers-reduced-motion:reduce){#en-cc,#en-cc .in{transition:none}}
+#en-lock .sh .sec{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+#en-lock .sh .sec input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;font:500 16px/1 'Cormorant SC',serif;letter-spacing:.12em;color:#6B3F55;text-align:center}
+#en-lock .sh .er{color:#8A3B4E!important;font-size:14px!important}
+/* volets de l'app (code de secours, compte) */
+.en-sh{position:fixed;inset:0;z-index:95;background:rgba(42,30,38,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .3s}
+.en-sh.on{opacity:1}
+.en-sh .in{width:100%;box-sizing:border-box;background:#F7E6DC;color:#6B3F55;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:9px;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s;max-height:92%;overflow:auto}
+.en-sh.on .in{transform:none}
+.en-sh .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566;text-align:center}
+.en-sh .t{margin:2px 0 0;font:italic 500 20px/1.2 'Cormorant Garamond',serif;text-align:center}
+.en-sh .s{margin:0;font:500 15px/1.35 'Cormorant Garamond',serif;color:#7A5566;text-align:center}
+.en-sh .cd{margin:6px 0;padding:14px 8px;border:1px dashed #B97E8E;border-radius:14px;text-align:center;font:500 19px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.14em;user-select:all;-webkit-user-select:all}
+.en-sh .b{all:unset;box-sizing:border-box;text-align:center;padding:13px;border-radius:26px;background:#6B3F55;color:#F7E6DC;font:500 13px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
+.en-sh .b.ol{background:transparent;color:#6B3F55;border:1px solid #6B3F55}
+.en-sh .lk{all:unset;text-align:center;padding:6px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
+.en-sh input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:rgba(255,255,255,.35);font:500 16px/1.2 'Cormorant Garamond',serif;color:#6B3F55}
+.en-sh .tb{display:flex;border:1px solid #D9B0B5;border-radius:20px;padding:3px}
+.en-sh .tb button{all:unset;flex:1;text-align:center;padding:8px 4px;border-radius:16px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
+.en-sh .tb button.on{background:#EBCFCB;color:#6B3F55}
+.en-er{color:#8A3B4E!important}
+.en-acc{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
+.en-acc .st{margin:0;font:italic 500 13px/1.35 'Cormorant Garamond',serif;color:var(--smuted,#7A5566);text-align:center}
+.en-acc .b{all:unset;box-sizing:border-box;text-align:center;padding:11px;border-radius:22px;background:var(--sacc,#6B3F55);color:var(--sbg,#F7E6DC);font:500 11px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
+.en-acc .b.ol{background:transparent;color:var(--sacc,#6B3F55);border:1px solid var(--sacc,#6B3F55)}
+.en-toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));translate:-50% 10px;z-index:99;max-width:86%;padding:10px 16px;border-radius:18px;background:#6B3F55;color:#F7E6DC;font:italic 500 14px/1.3 'Cormorant Garamond',serif;text-align:center;opacity:0;transition:opacity .3s,translate .3s}
+.en-toast.on{opacity:1;translate:-50% 0}
+@media (prefers-reduced-motion:reduce){.en-sh,.en-sh .in,.en-toast{transition:none}}
 
 </style>
 <script>
@@ -97,8 +124,14 @@ async function deriveKey(code,salt){const base=await crypto.subtle.importKey('ra
 async function seal(key,obj){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));return {iv:b64(iv),ct:b64(ct)}}
 async function open(key,box){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub64(box.iv)},key,ub64(box.ct));return JSON.parse(dec.decode(pt))}
 
-/* ---------- mémoire de l'app (déchiffrée, seulement en mémoire) ---------- */
-const M={ls:{},st:{}};let KEYC=null,SALT=null,dirty=false,saving=null;
+/* ---------- coffre v2 : une clé de données (DEK) qui chiffre tout ; elle est elle-même enfermée par ton code et par ton code de secours ---------- */
+const M={ls:{},st:{}};let DEK=null,DEKRAW=null,W={code:null,sec:null},dirty=false,saving=null,META={};
+async function newDek(){DEK=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);DEKRAW=b64(await crypto.subtle.exportKey('raw',DEK))}
+async function useDek(raw){DEKRAW=raw;DEK=await crypto.subtle.importKey('raw',ub64(raw),{name:'AES-GCM'},true,['encrypt','decrypt'])}
+async function wrap(secret){const salt=crypto.getRandomValues(new Uint8Array(16));const k=await deriveKey(secret,salt);return {s:b64(salt),i:ITER,...await seal(k,DEKRAW)}}
+async function unwrap(w,secret){const k=await deriveKey(secret,ub64(w.s));return open(k,w)}
+const normSec=x=>String(x||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+function genSec(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';const r=crypto.getRandomValues(new Uint8Array(16));let s='';r.forEach((n,i)=>{s+=A[n%A.length];if(i%4===3&&i<15)s+='-'});return s}
 /* localStorage de l'app : en mémoire, puis dans le coffre chiffré */
 const shim={getItem:k=>Object.prototype.hasOwnProperty.call(M.ls,k)?M.ls[k]:null,setItem:(k,v)=>{M.ls[k]=String(v);touch()},removeItem:k=>{delete M.ls[k];touch()},clear:()=>{M.ls={};touch()},key:i=>Object.keys(M.ls)[i]??null,get length(){return Object.keys(M.ls).length}};
 try{Object.defineProperty(window,'localStorage',{value:shim,configurable:true})}catch(e){}
@@ -110,23 +143,55 @@ window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)f
 function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
 let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
-async function save(){if(!KEYC)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty)return;dirty=false;last=s;M.st=st;
- const box=await seal(KEYC,{ls:M.ls,st});saving=dbPut(KEY,{v:1,salt:b64(SALT),iter:ITER,box,at:Date.now(),nm:META.nm||''});await saving}
-setInterval(()=>{if(KEYC)save()},4000);
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&KEYC)save()});
-addEventListener('pagehide',()=>{if(KEYC)save()});
-let META={};
-/* appelé par l'inscription quand le code est choisi */
-window.__vaultSetCode=async code=>{SALT=crypto.getRandomValues(new Uint8Array(16));KEYC=await deriveKey(code,SALT);dirty=true;await save()};
-/* vérifier le code actuel (changer mon code) */
-window.__vaultCheck=async code=>{try{const v=await dbGet(KEY);if(!v)return false;const k=await deriveKey(code,ub64(v.salt));await open(k,v.box);return true}catch(e){return false}};
+async function save(force){if(!DEK||!W.code)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;dirty=false;last=s;M.st=st;
+ const rec={v:2,w:W,box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:META.nm||''};saving=dbPut(KEY,rec);await saving;CLOUD.push(rec)}
+setInterval(()=>{if(DEK)save()},4000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&DEK)save()});
+addEventListener('pagehide',()=>{if(DEK)save()});
+/* déverrouiller : par le code (v1 → v2 au passage) ou par le code de secours */
+async function unlockCode(v,code){
+ if(v.v===1||!v.w){const k=await deriveKey(code,ub64(v.salt));const data=await open(k,v.box);await newDek();W={code:await wrap(code),sec:null};return data}
+ await useDek(await unwrap(v.w.code,code));W={code:v.w.code,sec:v.w.sec||null};return open(DEK,v.box)}
+async function unlockSec(v,sec){if(!v.w||!v.w.sec)throw 0;await useDek(await unwrap(v.w.sec,normSec(sec)));W={code:v.w.code,sec:v.w.sec};return open(DEK,v.box)}
+/* appelé par l'inscription (et « changer mon code ») */
+window.__vaultSetCode=async code=>{if(!DEK)await newDek();W.code=await wrap(code);dirty=true;await save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),400)};
+window.__vaultCheck=async code=>{try{await unwrap(W.code,code);return true}catch(e){return false}};
+window.__vaultMakeSecours=async()=>{const c=genSec();W.sec=await wrap(normSec(c));dirty=true;await save(true);return c};
+window.__vaultHasSecours=()=>!!W.sec;
 window.__vaultName=n=>{META.nm=String(n||'').trim().split(/\s+/)[0].slice(0,24);dirty=true};
 window.__vaultLock=()=>{save().finally(()=>location.reload())};
-/* sauvegarde : le coffre chiffré tel quel (illisible sans ton code) */
-window.__vaultExport=async()=>{await save();const v=await dbGet(KEY);const blob=new Blob([JSON.stringify({app:'Entre nous',type:'coffre',...v})],{type:'application/json'});
+window.__vaultExport=async()=>{await save(true);const v=await dbGet(KEY);const blob=new Blob([JSON.stringify({app:'Entre nous',type:'coffre',...v})],{type:'application/json'});
  const d=new Date(),n='entre-nous-sauvegarde-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.json';
  const f=new File([blob],n,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sauvegarde Entre nous'});return}catch(e){if(e&&e.name==='AbortError')return}}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)};
+
+/* ---------- compte en ligne (Supabase) : on n'y envoie que le coffre déjà chiffré ---------- */
+const SB='https://aoafqsipzymeehcswzto.supabase.co',SBK='sb_publishable_aLrH54IP-QcApvBF6jEfcw_Rb3x9GgH';
+const CLOUD=(()=>{let S=null,loaded=false,pt=null;
+ const load=async()=>{if(!loaded){try{S=await dbGet('session')||null}catch(e){S=null}loaded=true}return S};
+ const keep=async s=>{S=s?{access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(s.expires_in||3600),user:{id:s.user.id,email:s.user.email,created_at:s.user.created_at}}:null;if(S)await dbPut('session',S);else await dbDel('session')};
+ const err=async r=>{let j={};try{j=await r.json()}catch(e){}const m=(j.msg||j.error_description||j.message||j.error||'')+'';
+  if(/Invalid login/i.test(m))return 'E-mail ou mot de passe incorrect.';if(/not confirmed/i.test(m))return 'Ton adresse n’est pas encore confirmée : ouvre le mail reçu.';
+  if(/already registered|already been registered/i.test(m))return 'Un carnet existe déjà avec cet e-mail : choisis « J’ai déjà un carnet ».';if(/Password should|at least/i.test(m))return 'Le mot de passe doit faire au moins 8 caractères.';
+  if(/rate limit|too many/i.test(m))return 'Trop d’essais, réessaie dans un moment.';if(/valid email|invalid format/i.test(m))return 'Cette adresse e-mail ne semble pas valide.';return m||'Ça n’a pas marché, réessaie.'};
+ const auth=async(path,body)=>{const r=await fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await err(r));return r.json()};
+ async function token(){await load();if(!S)return null;if(S.expires_at-60>Date.now()/1000)return S.access_token;
+  try{const j=await auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token});await keep(j);return S.access_token}catch(e){return null}}
+ async function rest(method,path,body,extra){const t=await token();if(!t)throw new Error('pas connectée');const r=await fetch(SB+'/rest/v1/'+path,{method,headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json',...(extra||{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(await err(r));return r.status===204?null:r.json()}
+ return {
+  async session(){return load()},
+  async signUp(email,password){const j=await auth('signup',{email,password});if(j.access_token){await keep(j);return {ok:true}}return {ok:true,confirm:true}},
+  async signIn(email,password){const j=await auth('token?grant_type=password',{email,password});await keep(j);return {ok:true}},
+  async recover(email){await auth('recover',{email});return true},
+  async signOut(){try{const t=await token();if(t)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t}})}catch(e){}await keep(null)},
+  async pull(){await load();if(!S)return null;const r=await rest('GET','coffres?select=coffre,maj&user_id=eq.'+S.user.id);return r&&r[0]?r[0].coffre:null},
+  push(rec){clearTimeout(pt);pt=setTimeout(async()=>{try{await load();if(!S||!navigator.onLine)return;await rest('POST','coffres?on_conflict=user_id',{user_id:S.user.id,coffre:rec,maj:new Date(rec.at).toISOString()},{Prefer:'resolution=merge-duplicates,return=minimal'});window.__enCloudOk=Date.now()}catch(e){window.__enCloudErr=e.message}},2500)},
+  async setPassword(t,password){const r=await fetch(SB+'/auth/v1/user',{method:'PUT',headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({password})});if(!r.ok)throw new Error(await err(r));return true}
+ }})();
+window.__enCloud=CLOUD;
+/* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
+window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;await dbPut(KEY,rec);location.reload();return true};
+window.__vaultPushNow=()=>save(true);
 
 /* ---------- écrans : un seul à la fois ---------- */
 const BASE=302;let cur=null;
@@ -162,13 +227,13 @@ function mount(first){
 }
 
 /* ---------- écran de code ---------- */
-function lockUI(meta,onOk){
+function lockUI(meta,onOk,onSec){
  const h=new Date().getHours(),mo=h<12?'matin':h<18?'aprem':h<22?'soir':'nuit',m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
  const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
  const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=nuit?'nuit':'';
  el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?'<span></span>':`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
- <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi.</p><p>Si tu as une sauvegarde, tu peux tout effacer ici puis la reprendre avec le code que tu avais à ce moment-là.</p><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
+ <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);
  let code='',busy=false,fails=0,until=0;const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
  const paint=()=>dots.forEach((x,i)=>x.classList.toggle('on',i<code.length));
@@ -178,15 +243,24 @@ function lockUI(meta,onOk){
    const dd=el.querySelector('#en-ld');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');code='';paint();sb.textContent='Pas tout à fait… on recommence doucement';busy=false},700)}}});
  const sh=el.querySelector('#en-sh');el.querySelector('#en-fg').onclick=()=>{sh.hidden=false};el.querySelector('#en-shx').onclick=()=>{sh.hidden=true};
  el.querySelector('#en-wipe').onclick=async e=>{const b=e.currentTarget;if(!b.dataset.c){b.dataset.c=1;b.textContent='TOUCHE ENCORE POUR TOUT EFFACER';return}await dbDel(KEY);location.reload()};
- el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(o.app!=='Entre nous'||!o.box)throw 0;await dbPut(KEY,{v:1,salt:o.salt,iter:o.iter||ITER,box:o.box,at:Date.now(),nm:o.nm||''});location.reload()}catch(x){sh.querySelector('.k').textContent='CE FICHIER N’EST PAS UNE SAUVEGARDE'}};
+ el.querySelector('#en-secgo').onclick=async()=>{const x=el.querySelector('#en-secin').value,er=el.querySelector('#en-secer');er.hidden=true;const ok=await onSec(x);if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{er.textContent='Ce code de secours ne correspond pas.';er.hidden=false}};
+ el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(o.app!=='Entre nous'||!o.box)throw 0;const {app,type,...rec}=o;await dbPut(KEY,{...rec,at:Date.now()});location.reload()}catch(x){sh.querySelector('.k').textContent='CE FICHIER N’EST PAS UNE SAUVEGARDE'}};
 }
 
 /* ---------- départ ---------- */
+async function recoveryPage(){/* lien « mot de passe oublié » ouvert dans Safari */
+ const h=new URLSearchParams(location.hash.slice(1));if(h.get('type')!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
+ const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
+ document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
 async function boot(){
+ if(await recoveryPage())return;
  let v=null;try{v=await dbGet(KEY)}catch(e){}
+ /* connectée : si le coffre en ligne est plus récent (autre appareil), on le prend */
+ try{if(navigator.onLine&&await CLOUD.session()){const r=await Promise.race([CLOUD.pull(),new Promise(res=>setTimeout(()=>res(null),4000))]);if(r&&r.box&&(!v||(r.at||0)>(v.at||0))){v=r;await dbPut(KEY,r)}}}catch(e){}
  if(!v){/* premier lancement : l'inscription choisit le code */mount(true);runScripts();return}
- lockUI(v,async code=>{try{SALT=ub64(v.salt);const k=await deriveKey(code,SALT);const data=await open(k,v.box);KEYC=k;M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);
-  mount(false);runScripts();return true}catch(e){KEYC=null;return false}});
+ const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);runScripts();if(migr)save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
+ lockUI(v,async code=>{try{const data=await unlockCode(v,code);go(data,v.v!==2);return true}catch(e){DEK=null;return false}},
+  async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
@@ -8187,13 +8261,13 @@ function tidy(root){
 }
 let t;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(()=>tidy(document),30)}).observe(document.getElementById('en-app')||document.body,{subtree:true,childList:true});tidy(document);
 /* 2 · changer mon code */
-function codeSheet(){if($('#en-cc'))return;const el=document.createElement('div');el.id='en-cc';
+function codeSheet(opt){opt=opt||{};if($('#en-cc'))return;const el=document.createElement('div');el.id='en-cc';
  el.innerHTML=`<div class="in"><p class="k">CHANGER MON CODE</p><p class="t" id="en-cct">Ton code actuel</p><p class="s" id="en-ccs">pour être sûre que c’est toi</p><div class="dots" id="en-ccd"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?'<span></span>':`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="lk" id="en-ccx">finalement, je garde mon code</button></div>`;
  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
- let st=0,cur='',first='',busy=false;const D=[...el.querySelectorAll('#en-ccd i')],T=el.querySelector('#en-cct'),S=el.querySelector('#en-ccs');
+ let st=opt.nouveau?1:0,cur='',first='',busy=false;const D=[...el.querySelectorAll('#en-ccd i')],T=el.querySelector('#en-cct'),S=el.querySelector('#en-ccs');
  const paint=()=>D.forEach((d,i)=>d.classList.toggle('on',i<cur.length));const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
  const shake=(m,s)=>{const d=el.querySelector('#en-ccd');d.classList.add('shake');setTimeout(()=>{d.classList.remove('shake');cur='';paint();T.textContent=m;S.textContent=s;busy=false},650)};
- el.querySelector('#en-ccx').onclick=close;
+ el.querySelector('#en-ccx').onclick=close;if(opt.nouveau){T.textContent='Ton nouveau code';S.textContent='4 chiffres, rien que pour toi';el.querySelector('#en-ccx').textContent='plus tard';el.querySelector('.k').textContent='CHOISIR UN NOUVEAU CODE'}
  el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(b.classList.contains('del')){cur=cur.slice(0,-1);paint();return}if(cur.length>=4)return;cur+=b.textContent;paint();if(cur.length<4)return;busy=true;
   if(st===0){if(await window.__vaultCheck(cur)){st=1;setTimeout(()=>{cur='';paint();T.textContent='Ton nouveau code';S.textContent='4 chiffres, rien que pour toi';busy=false},250)}else shake('Pas tout à fait…','ton code actuel, doucement');return}
   if(st===1){first=cur;st=2;setTimeout(()=>{cur='';paint();T.textContent='Encore une fois';S.textContent='pour être sûre';busy=false},250);return}
@@ -8201,8 +8275,69 @@ function codeSheet(){if($('#en-cc'))return;const el=document.createElement('div'
 }
 document.addEventListener('click',e=>{const r=e.target.closest&&e.target.closest('.rgl[data-l="Code d’accès"]');if(r){e.stopImmediatePropagation();e.preventDefault();codeSheet()}},true);
 window.__enCodeSheet=codeSheet;
-})();
-</script>
+
+/* 3 · code de secours */
+function secSheet(){if($('#en-sec'))return;const el=document.createElement('div');el.id='en-sec';el.className='en-sh';
+ el.innerHTML=`<div class="in"><p class="k">TON CODE DE SECOURS</p><p class="t">Si un jour tu oublies ton code, celui-ci rouvre ton journal.</p><p class="s">Je ne le garde nulle part en clair : note-le sur papier ou dans tes notes, rien que pour toi.</p><div class="cd" id="en-secv">…</div><button type="button" class="b ol" id="en-seccp">COPIER</button><button type="button" class="b" id="en-secok">JE L’AI NOTÉ</button><button type="button" class="lk" id="en-seclt">plus tard</button></div>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
+ window.__vaultMakeSecours().then(c=>{el.querySelector('#en-secv').textContent=c;el.querySelector('#en-seccp').onclick=async e=>{try{await navigator.clipboard.writeText(c);e.target.textContent='✓ COPIÉ'}catch(x){e.target.textContent='SÉLECTIONNE-LE POUR LE COPIER'}}});
+ el.querySelector('#en-secok').onclick=close;el.querySelector('#en-seclt').onclick=close}
+window.__enSecours=secSheet;
+document.addEventListener('click',e=>{const r=e.target.closest&&e.target.closest('.rgl[data-l="Code oublié"]');if(r){e.stopImmediatePropagation();e.preventDefault();secInfo()}},true);
+function secInfo(){const has=window.__vaultHasSecours();const el=document.createElement('div');el.id='en-seci';el.className='en-sh';
+ el.innerHTML=`<div class="in"><p class="k">CODE OUBLIÉ</p><p class="t">${has?'Ton code de secours rouvre ton journal si tu oublies ton code.':'Tu n’as pas encore de code de secours.'}</p><p class="s">Sur l’écran de code, touche « Code oublié ? » puis entre ton code de secours. ${has?'Si tu l’as perdu, crée-en un nouveau : l’ancien ne marchera plus.':''}</p><button type="button" class="b" id="en-sinew">${has?'CRÉER UN NOUVEAU CODE DE SECOURS':'CRÉER MON CODE DE SECOURS'}</button><button type="button" class="lk" id="en-six">fermer</button></div>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
+ el.querySelector('#en-six').onclick=close;el.querySelector('#en-sinew').onclick=()=>{close();setTimeout(secSheet,320)}}
+
+/* 4 · compte en ligne */
+const C=window.__enCloud;
+const fmtD=iso=>{try{return new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}catch(e){return''}};
+/* inscription : seulement l'e-mail pour l'instant (Apple demande un compte payant, Google arrive bientôt) */
+const acc=document.querySelector('#onb .oacc');if(acc)[...acc.querySelectorAll('button')].forEach(b=>{if(!/e-mail/i.test(b.textContent))b.style.display='none'});
+const g2=document.getElementById('ogo2');
+if(g2){const orig=g2.onclick;const hint=document.getElementById('ohint'),em=document.querySelector('#oform input[type=email]'),pw=document.getElementById('opw');
+ const mode=()=>{const b=document.querySelector('#onb .otabs button.on');return b?b.dataset.m:'new'};
+ const say=(m,er)=>{hint.hidden=false;hint.textContent=m;hint.classList.toggle('en-er',!!er)};
+ let busy=false;
+ g2.onclick=async e=>{if(busy)return;const mail=(em.value||'').trim(),pass=pw.value||'';if(!mail||!pass){say('Entre ton e-mail et ton mot de passe.',1);return}busy=true;g2.textContent='…';
+  try{if(mode()==='new'){let r={ok:true};try{r=await C.signUp(mail,pass)}catch(x){if(/déjà un carnet/.test(x.message))throw x;r=await C.signIn(mail,pass)}
+    if(r.confirm){try{await C.signIn(mail,pass);r={ok:true}}catch(x){say('Je t’ai envoyé un mail : touche le lien pour confirmer ton adresse, puis reviens ici et touche « Continuer ».');return}}
+    orig&&orig.call(g2,e)}
+   else{await C.signIn(mail,pass);const rec=await C.pull();if(rec){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
+  catch(x){say(x.message,1)}finally{busy=false;g2.textContent='Continuer'}};
+ const fg=document.getElementById('oforgot');if(fg)fg.onclick=async()=>{const mail=(em.value||'').trim();if(!mail){say('Entre d’abord ton e-mail.',1);return}try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
+}
+/* Mon compte : la vraie connexion */
+async function compte(root){const b=root.querySelector('.rgl[data-l="Adresse mail"]');if(!b||b.dataset.en)return;b.dataset.en=1;const S=await C.session();
+ ['Téléphone','Apple','Google'].forEach(l=>{const r=root.querySelector(`.rgl[data-l="${l}"]`);if(r)r.style.display='none'});
+ const v=b.querySelector('.v');if(v)v.textContent=S?S.user.email:'pas encore de compte';
+ const cr=root.querySelector('.rgl[data-l="Compte créé le"] .rglr');if(cr){if(S&&S.user.created_at)cr.textContent=fmtD(S.user.created_at);else cr.closest('.rgl').style.display='none'}
+ const mp=root.querySelector('.rgl[data-l="Mot de passe"]');if(mp){if(!S)mp.style.display='none';else mp.addEventListener('click',async ev=>{ev.stopImmediatePropagation();try{await C.recover(S.user.email);toast('Je t’ai envoyé un mail pour changer ton mot de passe.')}catch(x){toast(x.message)}},true)}
+ const box=document.createElement('div');box.className='en-acc';
+ box.innerHTML=S?`<p class="st">✦ ton journal est gardé en ligne, chiffré</p><button type="button" class="b ol" id="en-out">ME DÉCONNECTER DE MON COMPTE</button>`:`<p class="st">Avec un compte, ton journal chiffré est gardé en ligne et te suit sur un autre téléphone.</p><button type="button" class="b" id="en-in">CRÉER MON COMPTE OU ME CONNECTER</button>`;
+ (mp||b).after(box);
+ const o=box.querySelector('#en-out');if(o)o.onclick=async()=>{if(!o.dataset.c){o.dataset.c=1;o.textContent='TOUCHE ENCORE : ton journal reste sur ce téléphone';return}await C.signOut();toast('Déconnectée. Ton journal reste sur ce téléphone.');root.querySelectorAll('[data-en]').forEach(x=>delete x.dataset.en);box.remove();compte(root)};
+ const i=box.querySelector('#en-in');if(i)i.onclick=()=>accSheet(()=>{box.remove();delete b.dataset.en;compte(root)})}
+function toast(m){const t=document.createElement('div');t.className='en-toast';t.textContent=m;document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('on'));setTimeout(()=>{t.classList.remove('on');setTimeout(()=>t.remove(),300)},3200)}
+function accSheet(done){const el=document.createElement('div');el.className='en-sh';el.id='en-accs';
+ el.innerHTML=`<div class="in"><p class="k">MON COMPTE</p><div class="tb"><button type="button" class="on" data-m="new">Créer mon compte</button><button type="button" data-m="back">J’ai déjà un compte</button></div><input type="email" id="en-am" placeholder="ton@email.fr" autocomplete="email"><input type="password" id="en-ap" placeholder="mot de passe · 8 caractères minimum" autocomplete="new-password"><p class="s" id="en-amsg"></p><button type="button" class="b" id="en-ago">CONTINUER</button><button type="button" class="lk" id="en-afg" hidden>mot de passe oublié ?</button><button type="button" class="lk" id="en-ax">plus tard</button></div>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};let m='new';
+ el.querySelectorAll('.tb button').forEach(x=>x.onclick=()=>{m=x.dataset.m;el.querySelectorAll('.tb button').forEach(y=>y.classList.toggle('on',y===x));el.querySelector('#en-afg').hidden=m!=='back'});
+ const msg=el.querySelector('#en-amsg'),say=(t,er)=>{msg.textContent=t;msg.classList.toggle('en-er',!!er)};
+ el.querySelector('#en-ax').onclick=close;
+ el.querySelector('#en-afg').onclick=async()=>{const mail=el.querySelector('#en-am').value.trim();if(!mail)return say('Entre d’abord ton e-mail.',1);try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
+ el.querySelector('#en-ago').onclick=async e=>{const bt=e.currentTarget,mail=el.querySelector('#en-am').value.trim(),pass=el.querySelector('#en-ap').value;if(!mail||!pass)return say('Entre ton e-mail et ton mot de passe.',1);bt.textContent='…';
+  try{if(m==='new'){let r=await C.signUp(mail,pass);if(r.confirm){try{await C.signIn(mail,pass)}catch(x){say('Je t’ai envoyé un mail : touche le lien pour confirmer ton adresse, puis reviens ici et touche « Continuer ».');return}}}
+   else await C.signIn(mail,pass);
+   const rec=await C.pull();
+   if(rec&&rec.box){el.querySelector('.in').innerHTML=`<p class="k">DEUX JOURNAUX</p><p class="t">Un journal existe déjà en ligne pour ce compte.</p><p class="s">Lequel veux-tu garder ? L’autre sera remplacé.</p><button type="button" class="b" id="en-kl">GARDER CELUI DE CE TÉLÉPHONE</button><button type="button" class="b ol" id="en-kr">REPRENDRE CELUI EN LIGNE (${new Date(rec.at).toLocaleDateString('fr-FR')})</button>`;
+    el.querySelector('#en-kl').onclick=async()=>{await window.__vaultPushNow();close();toast('✦ Ton journal est gardé en ligne.');done&&done()};
+    el.querySelector('#en-kr').onclick=()=>window.__vaultAdopt(rec);return}
+   await window.__vaultPushNow();close();toast('✦ Ton journal est gardé en ligne.');done&&done()}
+  catch(x){say(x.message,1)}finally{if(bt.isConnected)bt.textContent='CONTINUER'}}}
+window.__enAccSheet=accSheet;
+new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySelector('.rgl[data-l="Adresse mail"]'))compte(r)}).observe(document.getElementById('rgp')||document.body,{subtree:true,childList:true});
+})();</script>
 
 </body>
 </html>
