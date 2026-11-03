@@ -103,6 +103,25 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 #onb .o2pills select{all:unset;-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;cursor:pointer;text-align:center;text-align-last:center;padding:8px 4px;border-radius:999px;border:.7px solid var(--sline);font:italic 14px/1 'Cormorant Garamond',Georgia,serif;color:var(--smuted);background:transparent}
 #onb .o2pills select.set{color:var(--sink);border-color:var(--sacc)}
 .pfcode .en-secf{all:unset;cursor:pointer;display:block;margin:14px auto 0;padding:8px;font:italic 14px 'Cormorant Garamond',serif;color:var(--smuted)}
+/* vocaux et musique */
+.gvoice.en-voc,.gvoice.en-mus{cursor:pointer;-webkit-user-select:none;user-select:none}
+.en-voc .gvw,.en-mus .gvw{display:flex;align-items:center;gap:2px}
+.en-voc .gvw i{display:inline-block;width:2px;border-radius:1px;background:currentColor;opacity:.55;margin:0 1px}
+.en-voc .en-h1{height:4px}.en-voc .en-h2{height:8px}.en-voc .en-h3{height:11px}.en-voc .en-h4{height:14px}.en-voc .en-h5{height:17px}
+.en-voc.on .gvw i{opacity:.95}
+.en-pl{display:inline-flex;width:24px;height:24px;margin-right:6px;border-radius:50%;align-items:center;justify-content:center;font-size:10px;background:color-mix(in srgb,var(--sacc,#6B3F55) 16%,transparent);color:var(--sink,#6B3F55);flex:none}
+.en-tm{margin-left:8px;font:italic 13px 'Cormorant Garamond',serif}
+.en-mus .en-mt{font:italic 500 14px/1.25 'Cormorant Garamond',serif;color:var(--sink,#6B3F55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.en-mus .en-sv{margin-left:8px;font:500 9.5px 'Cormorant SC',serif;letter-spacing:.12em;color:var(--smuted,#7A5566)}
+.gme-v{align-self:flex-end;margin-left:auto}
+.en-mlist{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.en-mbar{display:flex;gap:8px;margin:8px 0 2px;flex-wrap:wrap}
+.en-mb{all:unset;cursor:pointer;padding:7px 12px;border-radius:16px;border:.7px solid var(--sline,#D9B0B5);font:italic 14px/1 'Cormorant Garamond',serif;color:var(--sink,#6B3F55)}
+.en-mb.rec{border-color:#C9766E;color:#C9766E}
+.en-pend:empty{display:none}
+.en-pend .gvoice{position:relative;padding-right:26px}
+.en-rm{position:absolute;right:6px;top:50%;translate:0 -50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--smuted,#7A5566);cursor:pointer}
+.en-avin{all:unset;width:84px;padding:4px 8px;border-radius:14px;border:.7px solid var(--sline,#D9B0B5);font:italic 13px 'Cormorant Garamond',serif}
 
 </style>
 <script>
@@ -199,6 +218,7 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
  async function rest(method,path,body,extra){const t=await token();if(!t)throw new Error('pas connectée');const r=await fetch(SB+'/rest/v1/'+path,{method,headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json',...(extra||{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(await err(r));return r.status===204?null:r.json()}
  return {
   async session(){return load()},
+  tok:()=>token(),
   async signUp(email,password){const j=await auth('signup',{email,password});if(j.access_token){await keep(j);return {ok:true}}return {ok:true,confirm:true}},
   async signIn(email,password){const j=await auth('token?grant_type=password',{email,password});await keep(j);return {ok:true}},
   async recover(email){await auth('recover',{email});return true},
@@ -207,6 +227,22 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   push(rec){clearTimeout(pt);pt=setTimeout(async()=>{try{await load();if(!S||!navigator.onLine)return;await rest('POST','coffres?on_conflict=user_id',{user_id:S.user.id,coffre:rec,maj:new Date(rec.at).toISOString()},{Prefer:'resolution=merge-duplicates,return=minimal'});window.__enCloudOk=Date.now()}catch(e){window.__enCloudErr=e.message}},2500)},
   async setPassword(t,password){const r=await fetch(SB+'/auth/v1/user',{method:'PUT',headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({password})});if(!r.ok)throw new Error(await err(r));return true}
  }})();
+/* ---------- médias (vocaux…) : chiffrés avec la même clé que ton journal, gardés ici et copiés dans ton compte ---------- */
+CLOUD.mput=async(id,bytes)=>{const S=await CLOUD.session();if(!S||!navigator.onLine)return false;const t=await CLOUD.tok();if(!t)return false;
+ const r=await fetch(SB+'/storage/v1/object/medias/'+S.user.id+'/'+id,{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/octet-stream','x-upsert':'true'},body:bytes});return r.ok};
+CLOUD.mget=async id=>{const S=await CLOUD.session();if(!S)return null;const t=await CLOUD.tok();if(!t)return null;
+ const r=await fetch(SB+'/storage/v1/object/authenticated/medias/'+S.user.id+'/'+id,{headers:{apikey:SBK,Authorization:'Bearer '+t}});return r.ok?await r.arrayBuffer():null};
+const MED={
+ async put(blob){if(!DEK)throw new Error('coffre fermé');const id=[...crypto.getRandomValues(new Uint8Array(12))].map(x=>x.toString(36).padStart(2,'0')).join('').slice(0,20);
+  const ty=enc.encode(String(blob.type||'application/octet-stream').slice(0,120));const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},DEK,await blob.arrayBuffer()));
+  const out=new Uint8Array(1+ty.length+12+ct.length);out[0]=ty.length;out.set(ty,1);out.set(iv,1+ty.length);out.set(ct,13+ty.length);
+  await dbPut('m:'+id,out.buffer);const q=(await dbGet('mq'))||[];q.push(id);await dbPut('mq',q);MED.flush();return id},
+ async get(id){let b=await dbGet('m:'+id);if(!b){try{b=await CLOUD.mget(id)}catch(e){}if(b)await dbPut('m:'+id,b)}if(!b||!DEK)return null;
+  const u=new Uint8Array(b),n=u[0],ty=dec.decode(u.slice(1,1+n)),iv=u.slice(1+n,13+n);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},DEK,u.slice(13+n));return new Blob([pt],{type:ty})},
+ async flush(){if(MED.busy)return;MED.busy=1;try{let q=(await dbGet('mq'))||[];for(const id of q.slice()){const b=await dbGet('m:'+id);if(!b){q=q.filter(x=>x!==id);continue}if(await CLOUD.mput(id,b))q=q.filter(x=>x!==id);else break}await dbPut('mq',q)}catch(e){}MED.busy=0}};
+window.__enMedia=MED;addEventListener('online',()=>MED.flush());
 window.__enCloud=CLOUD;
 window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.email}).catch(()=>{});
 /* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
@@ -281,7 +317,7 @@ async function boot(){
  /* connectée : si le coffre en ligne est plus récent (autre appareil), on le prend */
  try{if(navigator.onLine&&await CLOUD.session()){const r=await Promise.race([CLOUD.pull(),new Promise(res=>setTimeout(()=>res(null),4000))]);if(r&&r.box&&(!v||(r.at||0)>(v.at||0))){v=r;await dbPut(KEY,r)}}}catch(e){}
  if(!v){/* premier lancement : l'inscription choisit le code */mount(true);window.__profil=window.__enKeep('profil',{});runScripts();return}
- const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
+ const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);setTimeout(()=>MED.flush(),5000);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
  lockUI(v,async code=>{try{const data=await unlockCode(v,code);go(data,v.v!==2);return true}catch(e){DEK=null;return false}},
   async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}});
 }
@@ -7006,7 +7042,7 @@ function vCh(o){const c=D.ch.find(x=>x.id===o.i);const L=ord(D.s.filter(s=>s.c==
  L.forEach(s=>{if(s.y!==y){y=s.y;h+=H(String(y))}h+=row(s)});return h+(L.length?'':`<p class="ps-s" style="margin-top:16px">Pas encore de souvenir dans ce chapitre.</p>`)}
 function vFiche(o){const s=D.s.find(x=>x.id===o.i);const c=D.ch.find(x=>x.id===s.c);
  return`<div class="sv-cov big" style="background-image:url(${s.img})"><button class="sv-more" data-a="more" aria-label="Plus d'actions">⋯</button></div><p class="ps-t" style="margin-top:12px">${esc(s.t)}</p><div class="sv-ty">${sym(s.ty)}<span>${SY[s.ty][0]}</span></div>
- <p class="sv-rc">${esc(s.r)}</p>${H('LE SOUVENIR')}
+ <p class="sv-rc">${esc(s.r)}</p>${window.__enMediaHTML?window.__enMediaHTML(s):''}${H('LE SOUVENIR')}
  <div class="sv-l"><b>QUAND</b><span>${s.m} ${s.y}</span></div>${s.avec?`<div class="sv-l"><b>AVEC</b><span>${esc(s.avec)}</span></div>`:''}${s.ou?`<div class="sv-l"><b>OÙ</b><span>${esc(s.ou)}</span></div>`:''}<div class="sv-l"><b>CHAPITRE</b><span>${esc(c.t)}</span></div>${s.g?`<div class="sv-l"><b>J'EN GARDE</b><span class="g">${esc(s.g)}</span></div>`:''}
  ${S.ab[s.id]?`<p class="ps-s" style="margin-top:12px">✦ à aborder avec ta psy</p>`:''}${S.nr[s.id]?`<p class="ps-s" style="margin-top:6px">je ne te le rappellerai pas</p>`:''}`}
 function vLettre(o){const s=D.s.find(x=>x.id===o.i);return`<p class="ps-k" style="margin-top:16px">LA LETTRE · ${esc(s.t).toUpperCase()}</p><p class="ps-s">Elle reste ici, elle n'est envoyée à personne.</p><div style="margin-top:8px">${['à moi de '+s.y,...(s.avec?s.avec.split(', ').map(p=>'à '+p):[])].map((x,i)=>`<button class="ps-pl${(S.to||0)===i?' on':''}" data-a="to" data-k="${i}">${esc(x)}</button>`).join('')}</div><div class="ps-lined"><textarea placeholder="${(S.to||0)===0?'Chère moi de '+s.y+',':'Cher·e '+esc((s.avec||'').split(', ')[(S.to||0)-1]||'')+','}"></textarea></div><div class="ps-wbar"><span>Aa</span>${MIC}</div><button class="ps-btn" data-a="lettresave">GARDER LA LETTRE</button>`}
@@ -7023,21 +7059,21 @@ function toast(t){const o=document.createElement('div');o.className='ps-toast ps
 function sheet(html){closeSheet(1);const d=document.createElement('div');d.className='ps-dim';const s=document.createElement('div');s.className='ps-sheet';s.innerHTML=`<div class="in"><div class="ps-grab" data-a="close"></div>${html}</div>`;[d,s].forEach(x=>{lock(x);ph.appendChild(x)});d.onclick=()=>closeSheet();requestAnimationFrame(()=>{d.classList.add('on');s.classList.add('on')})}
 function closeSheet(now){const d=ph.querySelector('.ps-dim'),s=ph.querySelector('.ps-sheet');if(!d&&!s)return;if(now){d&&d.remove();s&&s.remove();ph.style.overflowY='';return}d&&d.classList.remove('on');s&&s.classList.remove('on');setTimeout(()=>{d&&d.remove();s&&s.remove();ph.style.overflowY=''},300)}
 let N={};
-function addSouv(pre){N=Object.assign({ty:'beau',c:(cur().v==='ch'?cur().i:D.ch[0].id)},pre||{});
+function addSouv(pre){N=Object.assign({ty:'beau',c:(cur().v==='ch'?cur().i:(D.ch[0]||(D.ch.push({id:'c'+Date.now(),t:'Mes souvenirs',de:String(new Date().getFullYear()),a:'aujourd\'hui',mot:'',img:'illus/aprem-printemps.jpg'}),D.ch[0])).id)},pre||{});
  sheet(`<div class="ps-k">UN SOUVENIR</div><button class="sv-photo" data-a="photo">${N.img?`<i style="background-image:url(${N.img})"></i>`:'+ une photo'}</button><input class="sv-name" data-n="t" placeholder="son petit nom…" value="${esc(N.t||'')}">
  <div style="margin-top:6px">${Object.keys(SY).map(k=>`<button class="ps-pl${N.ty===k?' on':''}" data-a="nty" data-k="${k}">${sym(k,'sm')}${SY[k][0].toLowerCase()}</button>`).join('')}</div>
  <div class="sv-l fx"><b>CHAPITRE</b><select data-n="c">${D.ch.map(c=>`<option value="${c.id}"${N.c===c.id?' selected':''}>${esc(c.t)}</option>`).join('')}</select></div>
  <div class="sv-l fx"><b>QUAND</b><input data-n="when" placeholder="juillet 2019"></div>
- <div class="sv-l fx"><b>AVEC</b><span>${['Thomas','Léa','Maman','Papa'].map(p=>`<button class="ps-pl sm" data-a="navec" data-k="${p}">${p}</button>`).join('')}<button class="ps-pl sm dash">+</button></span></div>
+ <div class="sv-l fx"><b>AVEC</b><span>${((window.__enPfP?window.__enPfP():[]).map(x=>x&&x.n).filter(Boolean).slice(0,6)).map(p=>`<button class="ps-pl sm" data-a="navec" data-k="${esc(p)}">${esc(p)}</button>`).join('')}<button class="ps-pl sm dash">+</button></span></div>
  <div class="sv-l fx"><b>OÙ</b><input data-n="ou" placeholder="…"></div>
- <div class="sv-l fx"><b>LE RÉCIT</b><textarea data-n="r" rows="2" placeholder="raconte…"></textarea></div>
+ <div class="sv-l fx"><b>LE RÉCIT</b><textarea data-n="r" rows="2" placeholder="raconte…"></textarea></div>${window.__enMBar||''}<div class="en-mlist en-pend"></div>
  <div class="sv-l fx"><b>J'EN GARDE</b><input data-n="g" placeholder="ce que ce souvenir m'apprend…"></div>
  <button class="ps-btn" data-a="nsave">AJOUTER À MES SOUVENIRS</button>`)}
 window.__svAddFrom=pre=>{const p=document.getElementById('souv');if(p)p.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{addSouv(pre);const sh=ph.querySelector('.ps-sheet');if(sh)Object.keys(pre||{}).forEach(k=>{const f=sh.querySelector('[data-n="'+k+'"]');if(f&&pre[k]&&!f.value)f.value=pre[k]})},380)};
 function addCh(){N={};sheet(`<div class="ps-k">UN CHAPITRE</div><button class="sv-photo" data-a="photo">+ une image de couverture</button><input class="sv-name" data-n="t" placeholder="son nom…">
  <div class="sv-l fx"><b>DE</b><input data-n="de" placeholder="2019" inputmode="numeric"></div><div class="sv-l fx"><b>À</b><input data-n="a" placeholder="2023 · ou aujourd'hui"></div><div class="sv-l fx"><b>EN UN MOT</b><input data-n="mot" placeholder="…"></div>
  <button class="ps-btn" data-a="csave">CRÉER LE CHAPITRE</button>`)}
-function editSouv(s){addSouv(Object.assign({},s,{when:s.m+' '+s.y}));const sh=ph.querySelector('.ps-sheet');sh.querySelector('.ps-k').textContent='MODIFIER CE SOUVENIR';const f=n=>sh.querySelector('[data-n="'+n+'"]');['when','ou','r','g'].forEach(k=>{if(f(k))f(k).value=N[k]||''});(s.avec||'').split(', ').forEach(p=>{const b=sh.querySelector('[data-a="navec"][data-k="'+p+'"]');b&&b.classList.add('on')});const b=sh.querySelector('[data-a="nsave"]');b.textContent='ENREGISTRER';b.dataset.a='esave';N.__id=s.id}
+function editSouv(s){addSouv(Object.assign({},s,{when:s.m+' '+s.y}));const sh=ph.querySelector('.ps-sheet');sh.querySelector('.ps-k').textContent='MODIFIER CE SOUVENIR';const f=n=>sh.querySelector('[data-n="'+n+'"]');['when','ou','r','g'].forEach(k=>{if(f(k))f(k).value=N[k]||''});(s.avec||'').split(', ').forEach(p=>{if(!p)return;let b=sh.querySelector('[data-a="navec"][data-k="'+CSS.escape(p)+'"]');if(!b){const d=sh.querySelector('.ps-pl.dash');b=document.createElement('button');b.className='ps-pl sm';b.dataset.a='navec';b.dataset.k=p;b.textContent=p;d&&d.before(b)}b.classList.add('on')});const b=sh.querySelector('[data-a="nsave"]');b.textContent='ENREGISTRER';b.dataset.a='esave';N.__id=s.id;const _pd=sh.querySelector('.en-pend');if(_pd&&window.__enMediaHTML){const _w=document.createElement('div');_w.innerHTML=window.__enMediaHTML(s,1);_pd.replaceWith(_w.firstElementChild)}}
 const IMGS=['illus/aprem-printemps.jpg','illus/soir-ete.jpg','illus/matin-hiver.jpg','illus/aprem-ete.jpg'];
 ph.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.n;if(k)N[k]=e.target.value});
 ph.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.n;if(k)N[k]=e.target.value});
@@ -7049,9 +7085,9 @@ ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.
  case'photo':N.img=IMGS[Math.floor(Math.random()*IMGS.length)];t.innerHTML=`<i style="background-image:url(${N.img})"></i>`;break;
  case'nty':N.ty=d.k;t.parentNode.querySelectorAll('.ps-pl').forEach(b=>b.classList.toggle('on',b===t));break;
  case'navec':t.classList.toggle('on');N.avec=[...t.parentNode.querySelectorAll('.ps-pl.on')].map(b=>b.dataset.k).join(', ');break;
- case'nsave':{if(!(N.t||'').trim()){toast('Donne-lui un petit nom');break}const w=(N.when||'').trim().split(/\s+/);const m=MOI.includes((w[0]||'').toLowerCase())?w[0].toLowerCase():'octobre';const y=parseInt(w.find(x=>/^\d{4}$/.test(x)))||new Date().getFullYear();
-  const s={id:'s'+Date.now(),c:N.c,t:N.t.trim(),ty:N.ty,y,m,avec:N.avec||'',ou:N.ou||'',r:N.r||'',g:N.g||'',img:N.img||'illus/aprem-printemps.jpg'};D.s.push(s);closeSheet();S.stack=[{v:'ch',i:s.c}];render(1);toast('✦ Ajouté à tes souvenirs');emit();break}
- case'esave':{const s=D.s.find(x=>x.id===N.__id);const w=(N.when||'').trim().split(/\s+/);if(MOI.includes((w[0]||'').toLowerCase()))s.m=w[0].toLowerCase();const y=parseInt(w.find(x=>/^\d{4}$/.test(x)));if(y)s.y=y;['t','ty','c','avec','ou','r','g','img'].forEach(k=>{if(N[k]!=null)s[k]=N[k]});closeSheet();render();toast('✦ C’est noté');emit();break}
+ case'nsave':{if(!(N.t||'').trim()){toast('Donne-lui un petit nom');break}const w=(N.when||'').trim().split(/\s+/);const m=MOI.includes((w[0]||'').toLowerCase())?w[0].toLowerCase():MOI[new Date().getMonth()];const y=parseInt(w.find(x=>/^\d{4}$/.test(x)))||new Date().getFullYear();
+  const s={id:'s'+Date.now(),c:N.c,t:N.t.trim(),ty:N.ty,y,m,avec:N.avec||'',ou:N.ou||'',r:N.r||'',g:N.g||'',img:N.img||'illus/aprem-printemps.jpg',media:window.__enMediaOf?window.__enMediaOf(ph.querySelector('.ps-sheet .en-pend')||document.createElement('i')):[]};D.s.push(s);closeSheet();S.stack=[{v:'ch',i:s.c}];render(1);toast('✦ Ajouté à tes souvenirs');emit();break}
+ case'esave':{const s=D.s.find(x=>x.id===N.__id);const w=(N.when||'').trim().split(/\s+/);if(MOI.includes((w[0]||'').toLowerCase()))s.m=w[0].toLowerCase();const y=parseInt(w.find(x=>/^\d{4}$/.test(x)));if(y)s.y=y;['t','ty','c','avec','ou','r','g','img'].forEach(k=>{if(N[k]!=null)s[k]=N[k]});{const _pd=ph.querySelector('.ps-sheet .en-pend');if(_pd&&window.__enMediaOf)s.media=window.__enMediaOf(_pd)}closeSheet();render();toast('✦ C’est noté');emit();break}
  case'csave':{if(!(N.t||'').trim()){toast('Donne-lui un nom');break}const c={id:'c'+Date.now(),t:N.t.trim(),de:N.de||String(new Date().getFullYear()),a:N.a||'aujourd\'hui',mot:N.mot||'',img:N.img||'illus/aprem-printemps.jpg'};D.ch.push(c);closeSheet();S.stack=[{v:'ch',i:c.id}];render(1);toast('✦ Chapitre créé');emit();break}
  case'm-mod':{const s=D.s.find(x=>x.id===cur().i);closeSheet(1);editSouv(s);}break;
  case'm-ab':{const i=cur().i;S.ab[i]=!S.ab[i];closeSheet();render();toast(S.ab[i]?'✦ Ajouté à « à aborder » de ton espace psy':'Retiré de « à aborder »');break}
@@ -7117,7 +7153,7 @@ function vPage(){const p=D.pages.find(x=>x.id===S.i),d=dt(p.d);
  <p class="sx-d">${JOURS[d.getDay()].toUpperCase()} ${d.getDate()} ${MOIS[d.getMonth()].toUpperCase()} · ${MOM[p.m]}</p>
  ${S.edit?`<input class="sx-h in" data-f="t" value="${esc(p.t)}">`:`<p class="sx-h">${esc(p.t)}</p>`}
  <div class="sx-moods">${p.mood.map(m=>`<span>${esc(m)}</span>`).join('')}</div>
- ${S.edit?`<textarea class="sx-x in" data-f="x" rows="7">${esc(p.x)}</textarea>`:`<p class="sx-x">${esc(p.x)}</p>`}
+ ${S.edit?`<textarea class="sx-x in" data-f="x" rows="7">${esc(p.x)}</textarea>${window.__enMBar||''}${window.__enMediaHTML?window.__enMediaHTML(p,1):''}`:`<p class="sx-x">${esc(p.x)}</p>${window.__enMediaHTML?window.__enMediaHTML(p):''}`}
  ${S.edit?`<button type="button" class="sx-btn" data-sx="esave">ENREGISTRER</button>`:''}
  ${S.menu?`<div class="sx-menu"><button type="button" data-sx="m-mod">modifier</button><button type="button" data-sx="m-out">ne plus la garder secrète</button><button type="button" data-sx="m-del">la supprimer</button></div>`:''}
  </div><button type="button" class="sx-back" data-sx="som">‹ SOMMAIRE</button>
@@ -7126,7 +7162,7 @@ function vWay(){return `<div class="sx-wrap"><p class="sx-k">ÉCRIRE UNE PAGE SE
  <div class="sx-ways">${[['raconter','le raconter','j\'écris librement'],['guidee','être guidée','Plume me pose des questions'],['vider','vider mon sac','tout sortir, sans trier']].map(w=>`<button type="button" data-sx="way" data-k="${w[0]}"><b>${w[1]}</b><small>${w[2]}</small></button>`).join('')}</div>
  <button type="button" class="sx-back" data-sx="som">‹ SOMMAIRE</button></div>`}
 function vWrite(){const W={raconter:['LE RACONTER','son titre…','écris ce qui reste entre toi et toi…'],guidee:['ÊTRE GUIDÉE','son titre…','Plume : « Qu\'est-ce que tu n\'as encore dit à personne ? »'],vider:['VIDER MON SAC','son titre…','tout ce qui pèse, en vrac…']}[S.way];const d=new Date();
- return `<div class="sx-wrap"><div class="sx-paper pg"><p class="sx-d">${JOURS[d.getDay()].toUpperCase()} ${__DF('2026-10-29','{d} {mo}','u','2026-10-29')} · ${W[0]}</p><input class="sx-h in" data-f="nt" placeholder="${W[1]}"><textarea class="sx-x in" data-f="nx" rows="8" placeholder="${esc(W[2])}"></textarea></div>
+ return `<div class="sx-wrap"><div class="sx-paper pg"><p class="sx-d">${JOURS[d.getDay()].toUpperCase()} ${__DF('2026-10-29','{d} {mo}','u','2026-10-29')} · ${W[0]}</p><input class="sx-h in" data-f="nt" placeholder="${W[1]}"><textarea class="sx-x in" data-f="nx" rows="8" placeholder="${esc(W[2])}"></textarea>${window.__enMBar||''}<div class="en-mlist en-pend"></div></div>
  <button type="button" class="sx-btn" data-sx="wsave">GARDER DANS MON CARNET</button><button type="button" class="sx-back" data-sx="som">‹ SOMMAIRE</button></div>`}
 function render(anim){if(!px)return;px.innerHTML=`<div class="sx">${{closed:vClosed,open:()=>vOpen(anim),page:vPage,way:vWay,write:vWrite}[S.v]()}</div>`;
  if(anim){const c=px.querySelector('.sx-cv.flip');requestAnimationFrame(()=>requestAnimationFrame(()=>c&&c.classList.add('go')));setTimeout(()=>{c&&c.remove()},950)}}
@@ -7156,15 +7192,15 @@ function onClick(e){const b=e.target.closest('[data-sx]');if(!b||!px||!px.contai
  case'som':S.v='open';S.menu=0;S.edit=0;S.confirm=0;render();break;
  case'more':S.menu=!S.menu;render();break;
  case'm-mod':S.menu=0;S.edit=1;render();break;
- case'esave':{const p=D.pages.find(q=>q.id===S.i);p.t=px.querySelector('[data-f="t"]').value||p.t;p.x=px.querySelector('[data-f="x"]').value;S.edit=0;render();toast('✦ C’est noté');break}
+ case'esave':{const p=D.pages.find(q=>q.id===S.i);p.t=px.querySelector('[data-f="t"]').value||p.t;p.x=px.querySelector('[data-f="x"]').value;if(window.__enMediaOf){const _pd=px.querySelector('.en-pend');if(_pd)p.media=window.__enMediaOf(_pd)}S.edit=0;render();toast('✦ C’est noté');break}
  case'm-out':{const p=D.pages.find(q=>q.id===S.i);D.pages=D.pages.filter(q=>q!==p);S.v='open';S.menu=0;render();toast('Elle retourne dans ton journal, au '+dt(p.d).getDate()+' '+MOIS[dt(p.d).getMonth()]);break}
  case'm-del':S.menu=0;S.confirm=1;render();break;
  case'cf-no':S.confirm=0;render();break;
  case'cf-yes':D.pages=D.pages.filter(q=>q.id!==S.i);S.confirm=0;S.v='open';render();toast('Page supprimée');break;
  case'write':S.v='way';render();break;
  case'way':S.way=b.dataset.k;S.v='write';render();break;
- case'wsave':{const t=(px.querySelector('[data-f="nt"]').value||'').trim(),tx=(px.querySelector('[data-f="nx"]').value||'').trim();if(!t&&!tx){toast('Écris quelques mots d’abord');break}
-  D.vide=false;D.pages.push({id:'p'+Date.now(),d:(__DI('2026-10-29','2026-10-29')),m:'aprem',t:t||'Sans titre',mood:[],x:tx});S.v='open';render();toast('✦ Gardée dans ton carnet');break}
+ case'wsave':{const t=(px.querySelector('[data-f="nt"]').value||'').trim(),tx=(px.querySelector('[data-f="nx"]').value||'').trim();const _md=window.__enMediaOf?window.__enMediaOf(px.querySelector('.en-pend')||document.createElement('i')):[];if(!t&&!tx&&!_md.length){toast('Écris quelques mots d’abord');break}
+  D.vide=false;D.pages.push({id:'p'+Date.now(),d:(__DI('2026-10-29','2026-10-29')),m:'aprem',t:t||'Sans titre',mood:[],x:tx,media:_md});S.v='open';render();toast('✦ Gardée dans ton carnet');break}
  }}
 F.addEventListener('click',onClick,true);
 window.__secOpen=p=>{px=p;S={v:'closed',i:null,menu:0,confirm:0,way:null,edit:0};render()};
@@ -7267,7 +7303,7 @@ function vDay(o){const x=day(o.i),d=dt(x.d);const ps=x.parts.map((p,i)=>({p,i}))
   if(x.recit)h+=`<p class="mj-fk">MA JOURNÉE EN UNE PAGE</p><div class="mj-x" contenteditable="true" spellcheck="true" data-ed="recit" aria-label="Ma journée en une page">${cjHTML(x.recit)}</div>`;
   else h+=`<p class="mj-fk">MA JOURNÉE EN UNE PAGE</p><p class="mj-s" style="margin-top:6px">Tes moments ne sont pas encore rassemblés en un seul récit.</p><button type="button" class="mj-struct" data-a="struct">✦ RASSEMBLER MA JOURNÉE</button>`}
  else{const p=x.parts[+o.sel];if(p){h+=`<p class="mj-fk">${FNL[p.f]}</p>`;
-  h+=p.f==='guider'?p.qa.map((q,i)=>`<p class="mj-bu">${esc(q[0])}</p><div class="mj-x" contenteditable="true" spellcheck="true" data-ed="qa" data-q="${i}" data-pid="${pid(p,x)}" aria-label="Ma réponse">${esc(q[1])}</div>`).join(''):`<div class="mj-x" contenteditable="true" spellcheck="true" data-ed="x" data-pid="${pid(p,x)}" aria-label="Ce que j'ai écrit à ${esc(p.h)}">${cjHTML(p.x)}</div>`}}
+  h+=p.f==='guider'?p.qa.map((q,i)=>`<p class="mj-bu">${esc(q[0])}</p><div class="mj-x" contenteditable="true" spellcheck="true" data-ed="qa" data-q="${i}" data-pid="${pid(p,x)}" aria-label="Ma réponse">${esc(q[1])}</div>`).join(''):`<div class="mj-x" contenteditable="true" spellcheck="true" data-ed="x" data-pid="${pid(p,x)}" aria-label="Ce que j'ai écrit à ${esc(p.h)}">${cjHTML(p.x)}</div>`+(window.__enMediaHTML?window.__enMediaHTML(p):'')}}
  if(x.photo)h+=`<div class="mj-ph" style="background-image:url(${x.photo})"></div>`;
  const ns=x.notes||[];
  h+=`<div class="mj-rel">${ns.map(n=>`<p class="k">EN RELISANT · ${esc(n.d)}</p><p class="n">${esc(n.t)}</p>`).join('')}`;
@@ -7668,19 +7704,20 @@ const now=()=>Date.now();
 const hhmm=t=>{const d=new Date(t);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})};
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 /* quels champs sont sauvegardés */
+const __ce=el=>!!el&&(el.isContentEditable||(el.getAttribute&&el.getAttribute('contenteditable')==='true'));
 const SKIP_TYPES=/^(range|file|password|checkbox|radio|hidden|button|submit|color)$/i;
 function eligible(el){if(!el||!el.closest)return false;const ph=el.closest('.phone');if(!ph)return false;
  if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide'))return false;
  if(el.tagName==='INPUT'){if(SKIP_TYPES.test(el.type))return false;const p=(el.placeholder||'')+' '+(el.id||'');if(/chercher|un mot, une personne|un lieu, une personne|\bq\b|mjq|svq|psq|opw/i.test(p))return false}
- else if(el.tagName!=='TEXTAREA'&&!el.isContentEditable)return false;
- if(el.isContentEditable&&el.closest('[contenteditable="true"]')!==el)return false;
+ else if(el.tagName!=='TEXTAREA'&&!__ce(el))return false;
+ if(__ce(el)&&el.closest('[contenteditable="true"]')!==el)return false;
  return true}
 function keyOf(el){const ph=el.closest('.phone');const d=el.dataset||{};if(d.pid)return ph.id+'/moment:'+d.pid+(d.q!=null?'/q'+d.q:'')+(el.tagName==='TEXTAREA'?'/ed':'');let k=el.id||d.f||d.n||d.pe||d.sx||el.name||el.getAttribute('aria-label')||d.ph||el.placeholder||'';
  const ctx=(ph.querySelector('.mvtt p')||{}).textContent||'';
  if(!el.id){const same=[...ph.querySelectorAll(el.tagName)].filter(x=>(x.id||x.dataset.f||x.dataset.n||x.dataset.pe||x.dataset.sx||x.name||x.getAttribute('aria-label')||x.dataset.ph||x.placeholder||'')===k);k+='#'+same.indexOf(el)+'@'+ctx.trim()}
  return ph.id+'/'+k}
-const read=el=>el.isContentEditable?el.innerHTML.replace(/<img[^>]*src="blob:[^"]*"[^>]*>/g,''):el.value;
-const plain=el=>el.isContentEditable?el.innerText:el.value;
+const read=el=>__ce(el)?el.innerHTML.replace(/<img[^>]*src="blob:[^"]*"[^>]*>/g,''):el.value;
+const plain=el=>__ce(el)?el.innerText:el.value;
 /* A-12 (03.11.2026) : un brouillon remis ne reprend que le texte et sa mise en forme simple (jamais de script, de lien ni d'attribut actif) */
 const OKTAG=/^(B|I|EM|STRONG|U|S|BR|P|DIV|SPAN|UL|OL|LI|IMG|MARK|SMALL)$/;
 function clean(html){const t=document.createElement('template');t.innerHTML=String(html||'');
@@ -7689,8 +7726,8 @@ function clean(html){const t=document.createElement('template');t.innerHTML=Stri
   [...c.attributes].forEach(a=>{const keep=a.name==='class'||(c.tagName==='IMG'&&a.name==='src'&&/^data:image\/(png|jpe?g|webp|gif);/i.test(a.value))||(c.tagName==='IMG'&&a.name==='alt');if(!keep)c.removeAttribute(a.name)});
   if(c.tagName==='IMG'&&!c.getAttribute('src')){c.remove();return}walk(c)})})(t.content);
  return t.innerHTML}
-const write=(el,v)=>{if(el.isContentEditable)el.innerHTML=clean(v);else el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}))};
-const isEmpty=el=>!(el.isContentEditable?el.innerText.trim():el.value.trim());
+const write=(el,v)=>{if(__ce(el))el.innerHTML=clean(v);else el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}))};
+const isEmpty=el=>!(__ce(el)?el.innerText.trim():el.value.trim());
 /* indicateur discret */
 const IND=new WeakMap();
 function ind(ph){let i=IND.get(ph);if(i)return i;i=document.createElement('button');i.type='button';i.className='en-ind';i.setAttribute('aria-live','polite');ph.appendChild(i);IND.set(ph,i);
@@ -7744,7 +7781,7 @@ function conflict(el,k,mine,other){const ph=el.closest('.phone');
  const {s,close}=sheet(ph,`<p class="k">DEUX VERSIONS</p><p class="t">Ce texte a changé ailleurs pendant que tu écrivais.</p><p class="sub">Rien n’est effacé : les deux sont gardées dans l’historique. Choisis ce que tu gardes ici.</p>
   <p class="h">ICI</p><div class="vx">${esc(txt(mine))}</div><p class="h">AILLEURS · ${hhmm(other.at)}</p><div class="vx">${esc(txt(other.v))}</div>
   <button type="button" class="b" data-c="mine">GARDER CELLE D’ICI</button><button type="button" class="b ol" data-c="other">GARDER L’AUTRE</button><button type="button" class="lk" data-c="both">réunir les deux, l’une sous l’autre</button>`);
- s.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const c=b.dataset.c;const v=c==='mine'?mine:c==='other'?other.v:(el.isContentEditable?mine+'<br><br>'+other.v:mine+'\n\n— — —\n\n'+other.v);
+ s.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const c=b.dataset.c;const v=c==='mine'?mine:c==='other'?other.v:(__ce(el)?mine+'<br><br>'+other.v:mine+'\n\n— — —\n\n'+other.v);
   el.__enRestoring=1;write(el,v);el.__enRestoring=0;save(el,true);close()})}
 /* historique d'un texte */
 function versions(ph,k){const L=get(VER+k)||[];const cur=get(NS+k);
@@ -8529,16 +8566,16 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
  let st={d:iso(),r:null,g:null};const sv=window.__enLive&&window.__enLive('pdjd',()=>st);if(sv&&sv.d)st=Object.assign(st,sv);
  let dirty=false;
  function day(){const t=iso();D.today=t;let x=D.days.find(y=>y.d===t);if(!x){x={d:t,th:[],v:50,em:[],parts:[]};D.days.unshift(x)}return x}
- function prune(x){x.parts=x.parts.filter(p=>p.f==='guider'?p.qa.length:String(p.x||'').trim()||p.media);if(!x.parts.length&&!x.moodSet){D.days=D.days.filter(y=>y!==x);D.todayWritten=false}else D.todayWritten=true}
+ function prune(x){x.parts=x.parts.filter(p=>p.f==='guider'?(p.qa.length||(p.media&&p.media.length)):(String(p.x||'').trim()||(p.media&&p.media.length)));if(!x.parts.length&&!x.moodSet){D.days=D.days.filter(y=>y!==x);D.todayWritten=false}else D.todayWritten=true}
  function part(x,key,f){let p=st[key]!=null&&x.parts.find(q=>q.uid===st[key]);if(!p){p={uid:'p'+Date.now()+key,f,h:hm()};if(f==='guider')p.qa=[];else p.x='';x.parts.push(p);st[key]=p.uid}return p}
  const plain=el=>{const c=el.cloneNode(true);c.querySelectorAll('figure,.gvoice,.rx,button').forEach(n=>n.remove());c.querySelectorAll('br').forEach(b=>b.replaceWith('\n'));c.querySelectorAll('div,p,h3,h4,li,blockquote').forEach(b=>b.append('\n'));return c.textContent.replace(/ /g,' ').replace(/\n{3,}/g,'\n\n').trim()};
- function syncR(){if(!rp)return;const x=day();const t=plain(rp);const p=part(x,'r','raconter');p.x=t;const im=rp.querySelector('figure img');if(im&&!x.photo&&/^data:/.test(im.src)&&im.src.length<600000)x.photo=im.src;prune(x);dirty=true}
+ function syncR(){if(!rp)return;const x=day();const t=plain(rp);const p=part(x,'r','raconter');p.x=t;p.media=window.__enMediaOf?window.__enMediaOf(rp):[];const im=rp.querySelector('figure img');if(im&&!x.photo&&/^data:/.test(im.src)&&im.src.length<600000)x.photo=im.src;prune(x);dirty=true}
  function syncG(){if(!gc)return;const qa=[];let q='';[...gc.querySelectorAll('.gb')].forEach(b=>{const t=b.textContent.trim();if(!t)return;if(b.classList.contains('gme')){qa.push([q||'',t]);q=''}else if(b.classList.contains('gai'))q=t});
-  if(!qa.length&&st.g==null)return;const x=day();const p=part(x,'g','guider');p.qa=qa;prune(x);dirty=true}
+  const md=window.__enMediaOf?window.__enMediaOf(gc):[];if(!qa.length&&!md.length&&st.g==null)return;const x=day();const p=part(x,'g','guider');p.qa=qa;p.media=md;prune(x);dirty=true}
  let tr=null;const later=f=>{clearTimeout(tr);tr=setTimeout(f,600)};
  if(rp)rp.addEventListener('input',()=>later(syncR));
  if(gc)new MutationObserver(()=>later(syncG)).observe(gc,{childList:true,subtree:true,characterData:true});
- if(vd)vd.addEventListener('click',()=>{if(vd.classList.contains('off')||!vp)return;const t=plain(vp);if(!t)return;const x=day();x.parts.push({uid:'v'+Date.now(),f:'vider',h:hm(),x:t});prune(x);dirty=true},true);
+ if(vd)vd.addEventListener('click',()=>{if(vd.classList.contains('off')||!vp)return;const t=plain(vp),md=window.__enMediaOf?window.__enMediaOf(vp):[];if(!t&&!md.length)return;const x=day();x.parts.push({uid:'v'+Date.now(),f:'vider',h:hm(),x:t,media:md});prune(x);dirty=true},true);
  document.addEventListener('mood',()=>{const m=window.__mood;if(!m)return;const x=day();x.v=m.v;x.em=m.es||[];x.moodSet=1;prune(x);dirty=true});
  /* un nouveau jour : la page du jour repart blanche (hier reste dans ton journal) */
  function newDay(){if(st.d===iso())return;st={d:iso(),r:null,g:null};
@@ -8549,6 +8586,89 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
  const mj=document.getElementById('mj');if(mj)new MutationObserver(()=>{if(dirty&&mj.classList.contains('en-on')){dirty=false;window.__mjRender&&window.__mjRender()}}).observe(mj,{attributes:true,attributeFilter:['class']});
  D.today=iso();D.todayWritten=!!D.days.find(y=>y.d===D.today);
 })();
+
+/* 13 · vocaux pour de vrai (micro de l'iPhone, chiffrés) et musique par lien collé */
+(function(){const MED=window.__enMedia;const $=id=>document.getElementById(id);
+ const mm=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+ const b64u=t=>btoa(unescape(encodeURIComponent(t))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ const ub64u=t=>{try{return decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/'))))}catch(e){return ''}};
+ const escH=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const bars=()=>Array.from({length:18},()=>'<i class="en-h'+(1+Math.floor(Math.random()*5))+'"></i>').join('');
+ /* une carte = un <div class="gvoice …"> dont la classe garde la référence (le reste est filtré à la sauvegarde) */
+ const vocEl=(id,sec)=>{const v=document.createElement('div');v.className='gvoice en-voc en-m-'+id+' en-s-'+sec;v.contentEditable='false';v.innerHTML='<span class="gvw"><span class="en-pl">▶</span>'+bars()+'<span class="en-tm">'+mm(sec)+'</span></span>';return v};
+ const SVC=[[/spotify\.com/,'Spotify'],[/music\.apple\.com|itunes\.apple/,'Apple Music'],[/deezer\.com|deezer\.page\.link/,'Deezer'],[/youtu\.?be/,'YouTube'],[/soundcloud\.com/,'SoundCloud']];
+ const svc=u=>(SVC.find(x=>x[0].test(u))||[0,'un lien'])[1];
+ const musEl=(u,t)=>{const v=document.createElement('div');v.className='gvoice en-mus en-u-'+b64u(u);v.contentEditable='false';v.innerHTML='<span class="gvw"><span class="en-pl">♪</span><span class="en-mt">'+escH(t||'Un morceau')+'</span><span class="en-sv">'+escH(svc(u))+'</span></span>';return v};
+ const refOf=el=>{const c=[...el.classList];const id=(c.find(x=>x.startsWith('en-m-'))||'').slice(5),s=+((c.find(x=>x.startsWith('en-s-'))||'en-s-0').slice(5)),u=ub64u((c.find(x=>x.startsWith('en-u-'))||'').slice(5));return {id,s,u,t:(el.querySelector('.en-mt')||{}).textContent||''}};
+ window.__enMediaOf=root=>[...root.querySelectorAll('.en-voc,.en-mus')].map(el=>{const r=refOf(el);return el.classList.contains('en-voc')?{k:'voc',id:r.id,s:r.s}:{k:'mus',u:r.u,t:r.t}});
+ window.__enMediaHTML=(p,pend)=>{const L=(p&&p.media)||[];if(!L.length&&!pend)return '';const w=document.createElement('div');w.className='en-mlist'+(pend?' en-pend':'');
+  L.forEach(m=>{const c=m.k==='voc'?vocEl(m.id,m.s):musEl(m.u,m.t);if(pend)c.insertAdjacentHTML('beforeend','<span class="en-rm" aria-label="Retirer">×</span>');w.appendChild(c)});return w.outerHTML};
+ window.__enMBar='<div class="en-mbar"><button type="button" class="en-mb" data-mk="voc"><span>🎙</span> un vocal</button><button type="button" class="en-mb" data-mk="mus"><span>♪</span> une musique</button></div>';
+ /* lecture */
+ let cur=null;
+ document.addEventListener('click',async e=>{if(e.target.closest&&e.target.closest('.en-rm'))return;const el=e.target.closest&&e.target.closest('.en-voc,.en-mus');if(!el)return;e.preventDefault();e.stopPropagation();const r=refOf(el);
+  if(el.classList.contains('en-mus')){if(r.u)window.open(r.u,'_blank','noopener');return}
+  if(cur&&cur.el===el){cur.a.pause();cur.el.classList.remove('on');cur.el.querySelector('.en-pl').textContent='▶';cur=null;return}
+  if(cur){cur.a.pause();cur.el.classList.remove('on');cur.el.querySelector('.en-pl').textContent='▶';cur=null}
+  try{const b=await MED.get(r.id);if(!b){toast('Ce vocal n’est pas encore arrivé sur ce téléphone.');return}const a=new Audio(URL.createObjectURL(b));cur={a,el};el.classList.add('on');el.querySelector('.en-pl').textContent='❚❚';
+   a.onended=()=>{el.classList.remove('on');el.querySelector('.en-pl').textContent='▶';if(cur&&cur.a===a)cur=null};await a.play()}catch(x){toast('Je n’arrive pas à lire ce vocal.')}},true);
+ /* enregistrement */
+ /* micro : un seul enregistrement à la fois */
+ function rec(h){let R=null,T=null,S=0,chunks=[],stream=null,busy=false;
+  const api={on:false,stop(){if(R&&R.state!=='inactive')R.stop()},async start(){if(R||busy)return;busy=true;
+   try{if(!navigator.mediaDevices||!window.MediaRecorder){toast('Ton téléphone ne permet pas d’enregistrer ici.');return}
+    try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(x){toast('Autorise le micro pour Entre nous dans Réglages › Safari › Micro.');return}
+    const mt=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+    R=mt?new MediaRecorder(stream,{mimeType:mt}):new MediaRecorder(stream);chunks=[];S=0;
+    R.ondataavailable=ev=>{if(ev.data&&ev.data.size)chunks.push(ev.data)};
+    R.onstop=async()=>{clearInterval(T);stream.getTracks().forEach(t=>t.stop());const ty=R.mimeType||mt||'audio/mp4';R=null;api.on=false;h.end();
+     const blob=new Blob(chunks,{type:ty});if(!blob.size||S<1){toast('Trop court pour être gardé.');return}
+     try{const id=await MED.put(blob);h.done(vocEl(id,Math.max(1,S)))}catch(x){toast('Le vocal n’a pas pu être gardé.')}};
+    R.start(1000);api.on=true;h.start();h.tick(0);T=setInterval(()=>{S++;h.tick(S);if(S>=300)api.stop()},1000)}finally{busy=false}},
+   toggle(){api.on?api.stop():api.start()}};return api}
+ function recorder(mic,bar,inp,done){const ph=inp?inp.placeholder:'';
+  const r=rec({start(){mic.classList.add('rec');bar&&bar.classList.add('rec')},end(){mic.classList.remove('rec');bar&&bar.classList.remove('rec');if(inp)inp.placeholder=ph},
+   tick(S){if(inp)inp.placeholder='● enregistrement '+mm(S)+' · touche pour arrêter'},done});
+  mic.onclick=e=>{e&&e.stopImmediatePropagation&&e.stopImmediatePropagation();r.toggle()}}
+ const rp=$('rpage'),vp=$('vpage'),gc=$('gchat');
+ const fire=el=>el&&el.dispatchEvent(new Event('input',{bubbles:true}));
+ if($('rmic'))recorder($('rmic'),$('rbar'),$('rin'),v=>{if(window.__rins)window.__rins(v);else rp.appendChild(v);fire(rp)});
+ if($('vmic'))recorder($('vmic'),$('vbar'),$('vin'),v=>{vp.appendChild(v);v.scrollIntoView({block:'nearest'});fire(vp)});
+ if($('gmic'))recorder($('gmic'),$('gmic').closest('.ginput'),$('gin'),v=>{v.classList.add('gme-v');gc.appendChild(v);gc.scrollTop=gc.scrollHeight;fire(gc)});
+ document.querySelectorAll('.mvmic').forEach(b=>b.style.display='none');
+ /* musique : un bouton de plus dans « + » */
+ function musSheet(onOk){const el=document.createElement('div');el.className='en-sh';el.innerHTML='<div class="in"><p class="k">UNE MUSIQUE</p><p class="t">Colle le lien du morceau</p><p class="s">Depuis Apple Music, Spotify, Deezer ou YouTube : « Partager › Copier le lien ».</p><input type="url" inputmode="url" placeholder="https://…" autocomplete="off"><button type="button" class="b">AJOUTER</button><button type="button" class="lk">annuler</button></div>';
+  document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const i=el.querySelector('input');setTimeout(()=>i.focus(),250);
+  const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};el.querySelector('.lk').onclick=close;el.onclick=e=>{if(e.target===el)close()};
+  el.querySelector('.b').onclick=async()=>{const u=(i.value.match(/https?:\/\/\S+/)||[''])[0];if(!u){i.classList.add('en-er');return}close();
+   let t='';try{const r=await Promise.race([fetch('https://noembed.com/embed?url='+encodeURIComponent(u)).then(x=>x.json()),new Promise((_,j)=>setTimeout(j,3500))]);t=r&&r.title?(r.title+(r.author_name&&!/ - /.test(r.title)?' · '+r.author_name:'')):''}catch(e){}
+   onOk(musEl(u,t))}}
+ [['rtools',v=>{if(window.__rins)window.__rins(v);else rp.appendChild(v);fire(rp)}],['vtools',v=>{vp.appendChild(v);fire(vp)}],['gtools',v=>{v.classList.add('gme-v');gc.appendChild(v);gc.scrollTop=gc.scrollHeight;fire(gc)}]].forEach(([id,put])=>{const t=$(id);if(!t)return;
+  const b=document.createElement('button');b.type='button';b.textContent='Musique';b.className='en-musb';t.appendChild(b);
+  b.addEventListener('click',e=>{e.stopImmediatePropagation();t.hidden=true;const pl=t.parentElement.querySelector('.gplus');pl&&pl.setAttribute('aria-expanded','false');musSheet(put)},true)});
+ /* barre « un vocal / une musique » des souvenirs et du carnet secret */
+ let mrec=null;
+ document.addEventListener('click',async e=>{const rm=e.target.closest&&e.target.closest('.en-rm');if(rm){e.preventDefault();e.stopImmediatePropagation();rm.parentElement.remove();return}
+  const b=e.target.closest&&e.target.closest('.en-mb');if(!b)return;e.preventDefault();e.stopImmediatePropagation();
+  const host=b.closest('.en-mbar');let pd=host&&host.nextElementSibling;if(!pd||!pd.classList.contains('en-pend')){pd=document.createElement('div');pd.className='en-mlist en-pend';host.after(pd)}
+  const add=c=>{c.insertAdjacentHTML('beforeend','<span class="en-rm" aria-label="Retirer">×</span>');pd.appendChild(c)};
+  if(b.dataset.mk==='mus'){musSheet(add);return}
+  const lab=b.dataset.lab||(b.dataset.lab=b.innerHTML);
+  if(!b.__r)b.__r=rec({start(){b.classList.add('rec')},end(){b.classList.remove('rec');b.innerHTML=b.dataset.lab},tick(S){b.innerHTML='<span>■</span> '+mm(S)+' · arrêter'},done:c=>{const h2=b.closest('.en-mbar');let p2=h2&&h2.nextElementSibling;if(p2&&p2.classList.contains('en-pend'))add2(p2,c)}});
+  b.__r.toggle()},true);
+ const add2=(pd,c)=>{c.insertAdjacentHTML('beforeend','<span class="en-rm" aria-label="Retirer">×</span>');pd.appendChild(c)};
+ /* AVEC : « + » ajoute un prénom */
+ document.addEventListener('click',e=>{const d=e.target.closest&&e.target.closest('.ps-sheet .ps-pl.dash');if(!d||!d.parentElement.querySelector('[data-a="navec"],.ps-pl'))return;
+  if(d.previousElementSibling&&d.previousElementSibling.tagName==='INPUT')return;const i=document.createElement('input');i.className='en-avin';i.placeholder='prénom…';d.before(i);i.focus();
+  const ok=()=>{const v=i.value.trim();i.remove();if(!v)return;const b=document.createElement('button');b.className='ps-pl sm';b.dataset.a='navec';b.dataset.k=v;b.textContent=v;d.before(b);b.click()};
+  i.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();ok()}});i.addEventListener('blur',ok)},true);
+ /* après une reprise de brouillon, les cartes redeviennent des blocs (pas du texte modifiable) */
+ const lockCards=root=>root&&root.querySelectorAll('.en-voc,.en-mus').forEach(c=>{if(c.contentEditable!=='false')c.contentEditable='false'});
+ [rp,vp].forEach(r=>{if(!r)return;lockCards(r);new MutationObserver(()=>lockCards(r)).observe(r,{childList:true,subtree:true})});
+})();
+
+/* 14 · l'ancien « + » du mini-calendrier ouvre le vrai calendrier */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#calplus');if(!b)return;e.stopImmediatePropagation();e.preventDefault();window.__enShow('calp');setTimeout(()=>window.__calOpen&&window.__calOpen(null,new Date()),250)},true);
 })();</script>
 
 </body>
