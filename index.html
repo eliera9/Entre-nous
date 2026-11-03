@@ -54,6 +54,23 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 #en-lock.nuit .dots i{border-color:#F1DDE0}#en-lock.nuit .dots i.on{background:#F1DDE0}
 #en-lock.nuit .pad button{border-color:#5A4250}
 @media (prefers-reduced-motion:reduce){#en-lock,#en-lock *{transition:none!important;animation:none!important}}
+/* changer mon code */
+#en-cc{position:fixed;inset:0;z-index:90;background:rgba(42,30,38,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .3s}
+#en-cc.on{opacity:1}
+#en-cc .in{width:100%;box-sizing:border-box;background:#F7E6DC;color:#6B3F55;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s}
+#en-cc.on .in{transform:none}
+#en-cc .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566}
+#en-cc .t{margin:10px 0 0;font:italic 500 24px/1.1 'Cormorant Garamond',serif}
+#en-cc .s{margin:4px 0 0;font:italic 500 14px/1.2 'Cormorant Garamond',serif;color:#7A5566}
+#en-cc .dots{display:flex;gap:12px;margin:14px 0 14px}
+#en-cc .dots i{width:10px;height:10px;border-radius:50%;border:1.2px solid #6B3F55}
+#en-cc .dots i.on{background:#6B3F55}
+#en-cc .dots.shake{animation:enshake .5s}
+#en-cc .pad{display:grid;grid-template-columns:repeat(3,48px);gap:8px 20px;justify-items:center}
+#en-cc .pad button{all:unset;box-sizing:border-box;width:48px;height:48px;border-radius:50%;border:1px solid #D9B0B5;display:flex;align-items:center;justify-content:center;font:400 21px/1 'Cormorant Garamond',serif;color:#6B3F55;cursor:pointer}
+#en-cc .pad button.del{border:0;font-size:18px}
+#en-cc .lk{all:unset;margin-top:10px;padding:8px;font:italic 500 14px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
+@media (prefers-reduced-motion:reduce){#en-cc,#en-cc .in{transition:none}}
 
 </style>
 <script>
@@ -101,6 +118,8 @@ addEventListener('pagehide',()=>{if(KEYC)save()});
 let META={};
 /* appelé par l'inscription quand le code est choisi */
 window.__vaultSetCode=async code=>{SALT=crypto.getRandomValues(new Uint8Array(16));KEYC=await deriveKey(code,SALT);dirty=true;await save()};
+/* vérifier le code actuel (changer mon code) */
+window.__vaultCheck=async code=>{try{const v=await dbGet(KEY);if(!v)return false;const k=await deriveKey(code,ub64(v.salt));await open(k,v.box);return true}catch(e){return false}};
 window.__vaultName=n=>{META.nm=String(n||'').trim().split(/\s+/)[0].slice(0,24);dirty=true};
 window.__vaultLock=()=>{save().finally(()=>location.reload())};
 /* sauvegarde : le coffre chiffré tel quel (illisible sans ton code) */
@@ -5739,7 +5758,7 @@ function drawMain(){const fq=mb.querySelector('.rgsrch input'),q=fq?fq.value:'';
  const mc=$('rgmc');
  $('rgmeb').innerHTML='<div class="rgme"><div class="rgph"><span><img alt="" src="'+photoSrc()+'"'+(S.photo?' class="me"':'')+'></span><button type="button" class="rgpen" id="rgpen" aria-label="Modifier mon compte">'+PEN+'</button></div><div class="rgnm">'+esc(S.prenom||me())+'</div><div class="rgml">'+esc(S.mail||'elisa@exemple.fr')+'</div><span class="rgpil">✦ DEPUIS MARS 2025</span></div>';
  mc.innerHTML=SECT.map(s=>'<p class="rgsc">'+s[0]+'</p>'+s[1].map(r=>'<div class="rgl" data-p="'+r[0]+'"><span class="rgll"><img class="rgic" alt="" src="illus/reglages/'+P[r[0]].ic+'.webp">'+r[1]+'</span><i class="rgch">›</i></div>').join('')).join('')
-  +'<div class="rgstar">✦</div><button type="button" class="rgbtn lt" id="rgout">SE DÉCONNECTER</button><button type="button" class="rglk" id="rghelp">aide et contact</button><p class="rgsig"><b>Entre nous</b><br>version 1.0</p>';
+  +'<div class="rgstar">✦</div><button type="button" class="rgbtn lt" id="rgout">VERROUILLER</button><button type="button" class="rglk" id="rghelp">aide et contact</button><p class="rgsig"><b>Entre nous</b><br>version 1.0</p>';
  $('rgpen').onclick=()=>openPage('compte');
  mc.querySelectorAll('.rgl[data-p]').forEach(l=>l.onclick=()=>openPage(l.dataset.p));
  $('rgout').onclick=()=>window.__decoOpen?window.__decoOpen(main,()=>goTo('open')):goTo('open');$('rghelp').onclick=()=>window.__aideOpen&&window.__aideOpen();
@@ -5977,7 +5996,7 @@ function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
  const d=document.createElement('div');d.className='sbdim';d.hidden=true;const r=document.createElement('nav');r.className='sbdr';r.setAttribute('aria-label','Menu');
  r.innerHTML='<button type="button" class="sbpr"><span class="sbav"><span><img alt="" src="'+(photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp')+'"></span><i><img alt="" src="illus/eveil-'+pet+'.webp"></i></span><span><span class="sbn">'+me+'</span><span class="sbsub">voir mon profil ›</span></span></button>'
  +'<p class="sbsc">MES PAGES</p>'+PAGES.filter(p=>!(window.__noPsy&&p[0]==='psy')).map(p=>{const g=GRP(act)===p[0],ph0=photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp';return '<div class="sbgrp'+(g&&p[3].length?' open':'')+'"><button type="button" class="sbit sbg'+(p[0]===act?' on':'')+'" data-go="'+p[0]+'" data-subs="'+p[3].length+'">'+mi(p[2]==='@photo'?'espace':p[2])+p[1]+(p[3].length?'<i class="sbch">›</i>':'')+'</button>'+(p[3].length?'<div class="sbsubs">'+p[3].map(q=>'<button type="button" class="sbsub2'+(q[0]===act?' on':'')+'" data-go="'+(q[0]||'')+'">'+q[1]+'</button>').join('')+'</div>':'')+'</div>'}).join('')
- +'<span class="sbsp"></span><div class="sbsep"><i></i>✦<i></i></div><button type="button" class="sbit'+(/^rg/.test(act)?' on':'')+'" data-go="reglages">'+mi('reglages')+'Réglages</button><button type="button" class="sbout">SE DÉCONNECTER</button><button type="button" class="sbhelp">Aide et contact</button>';
+ +'<span class="sbsp"></span><div class="sbsep"><i></i>✦<i></i></div><button type="button" class="sbit'+(/^rg/.test(act)?' on':'')+'" data-go="reglages">'+mi('reglages')+'Réglages</button><button type="button" class="sbout">VERROUILLER</button><button type="button" class="sbhelp">Aide et contact</button>';
  ph.appendChild(d);ph.appendChild(r);
  const close=()=>{r.classList.remove('on');d.classList.remove('on');setTimeout(()=>{d.hidden=true;ph.style.overflowY=''},380)};
  d.onclick=close;let x0=null;r.addEventListener('pointerdown',e=>x0=e.clientX);r.addEventListener('pointerup',e=>{if(x0!=null&&x0-e.clientX>50)close();x0=null});
@@ -7978,8 +7997,7 @@ const FAQ=[
  ['MES PAGES','Où retrouver mes pages favorites ?','Dans Mon journal, l’onglet « favoris », à côté de « par thème » et « par mois ».'],
  ['PLUME','Comment changer de compagnon ?','Dans ton profil, partie Ma vie : tu peux choisir un autre animal et lui donner un nouveau nom.'],
  ['PLUME','Plume utilise une IA payante ?','Non. Plume répond sans IA payante. Si tu veux aller plus loin, tu peux copier ta page vers ChatGPT ou Claude, et c’est toi qui décides.'],
- ['PSY','Je n’ai pas de psy, l’onglet Psy me sert ?','Tu peux le cacher dans Réglages : il disparaît de la barre du bas et de la barre latérale.'],
- ['WIDGETS','Comment ajouter un widget ?','Appuie longuement sur l’écran d’accueil de ton téléphone, touche +, cherche « Entre nous » et choisis « écrire » ou « trois façons ».']];
+ ['PSY','Je n’ai pas de psy, l’onglet Psy me sert ?','Tu peux le cacher dans Réglages : il disparaît de la barre du bas et de la barre latérale.']];
 const S={v:'home',open:null,q:'',ut:{}};
 const row=(f,i)=>{const o=S.open===i;return `<button class="ad-r${o?' op':''}" data-a="q" data-i="${i}">${esc(f[1]).replace(/ \?$/,'&nbsp;?')}<b>›</b></button>`+(o?`<div class="ad-a"><p>${esc(f[2])}</p><p class="ad-ut">C’ÉTAIT UTILE&nbsp;? · <button data-a="ut" data-v="o" data-i="${i}" class="${S.ut[i]==='o'?'on':''}">OUI</button> · <button data-a="ut" data-v="n" data-i="${i}" class="${S.ut[i]==='n'?'on':''}">NON</button>${S.ut[i]?(S.ut[i]==='o'?' · MERCI ✦':' · <button data-a="w">ÉCRIS-NOUS</button>'):''}</p></div>`:'')};
 function vHome(){let h=`<p class="ad-k">QUESTIONS FRÉQUENTES</p>`+FAQ.map((f,i)=>f[3]?row(f,i):'').join('')+`<button class="ad-r more" data-a="all">toutes les questions<b>›</b></button>`;
@@ -7996,7 +8014,7 @@ function toast(t){const o=document.createElement('div');o.className='ad-toast';o
 const mail=()=>(window.__profil&&window.__profil.mail)||'elisa@exemple.fr';
 const pills=(id,L,on)=>`<div class="pl" data-g="${id}">${L.map(x=>`<button class="${x===on?'on':''}">${x}</button>`).join('')}</div>`;
 function sWrite(){const s=sheet(`<p class="k">ÉCRIRE À L’ÉQUIPE</p><p class="lab">C’est plutôt…</p>${pills('t',['une idée','une question','un petit mot','autre'])}<textarea placeholder="écris-nous ce que tu veux…" aria-label="Mon message"></textarea><p class="lab">On te répond à</p><input class="ml" type="email" value="${esc(mail())}" aria-label="Adresse de réponse"><button class="ok" aria-disabled="true">ENVOYER</button>`);wire(s)}
-function sProb(){const s=sheet(`<p class="k">SIGNALER UN PROBLÈME</p><p class="lab">Où ça s’est passé&nbsp;?</p>${pills('o',['accueil','mon journal','psy','widgets','autre'])}<textarea placeholder="raconte ce qui s’est passé…" aria-label="Ce qui s'est passé"></textarea><button class="att"><i>+</i><span>ajouter une capture d’écran</span></button><input type="file" accept="image/*" hidden><button class="ck on"><b>✓</b><span>joindre le modèle du téléphone et la version de l’app (jamais tes pages)</span></button><button class="ok" aria-disabled="true">ENVOYER</button>`);wire(s)}
+function sProb(){const s=sheet(`<p class="k">SIGNALER UN PROBLÈME</p><p class="lab">Où ça s’est passé&nbsp;?</p>${pills('o',['accueil','mon journal','psy','autre'])}<textarea placeholder="raconte ce qui s’est passé…" aria-label="Ce qui s'est passé"></textarea><button class="att"><i>+</i><span>ajouter une capture d’écran</span></button><input type="file" accept="image/*" hidden><button class="ck on"><b>✓</b><span>joindre le modèle du téléphone et la version de l’app (jamais tes pages)</span></button><button class="ok" aria-disabled="true">ENVOYER</button>`);wire(s)}
 function wire(s){const ta=s.querySelector('textarea'),ok=s.querySelector('.ok'),f=s.querySelector('input[type=file]'),at=s.querySelector('.att');
  ta.oninput=()=>ok.setAttribute('aria-disabled',ta.value.trim()?'false':'true');
  s.querySelectorAll('.pl').forEach(p=>p.onclick=e=>{const b=e.target.closest('button');if(!b)return;p.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
@@ -8030,7 +8048,7 @@ const night=ph=>/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'))||
 window.__decoOpen=(ph,go)=>{if(!ph){go&&go();return}ph.querySelectorAll('.ad-dim,.ad-sh').forEach(x=>x.remove());
  const pet=window.__pet||'chat',img=`illus/dort-${pet}${night(ph)?'-nuit':''}.webp`;
  const d=document.createElement('div');d.className='ad-dim';const s=document.createElement('div');s.className='ad-sh deco';
- s.innerHTML=`<div class="in"><span class="gr"></span><img class="dz" src="${img}" alt=""><p class="dt">À bientôt, ${name()}.</p><p class="ds">Je garde tout bien au chaud en t’attendant.</p><button class="ok">ME DÉCONNECTER</button><button class="lk">finalement, je reste</button></div>`;
+ s.innerHTML=`<div class="in"><span class="gr"></span><img class="dz" src="${img}" alt=""><p class="dt">À bientôt, ${name()}.</p><p class="ds">Je garde tout bien au chaud en t’attendant.</p><button class="ok">VERROUILLER</button><button class="lk">finalement, je reste</button></div>`;
  [d,s].forEach(x=>{x.style.top=ph.scrollTop+'px';x.style.height=ph.clientHeight+'px';ph.appendChild(x)});const ov=ph.style.overflowY;ph.style.overflowY='hidden';
  const close=cb=>{d.classList.remove('on');s.classList.remove('on');setTimeout(()=>{d.remove();s.remove();ph.style.overflowY=ov;cb&&cb()},300)};
  d.onclick=()=>close();s.querySelector('.lk').onclick=()=>close();s.querySelector('.ok').onclick=()=>close(go);
@@ -8151,6 +8169,38 @@ function pass(root){root.querySelectorAll('.c i[style*="color"], .yr span[style*
 let t;const run=()=>{clearTimeout(t);t=setTimeout(()=>['calp','wdgp'].forEach(id=>{const r=document.getElementById(id);r&&pass(r)}),60)};
 ['calp','wdgp'].forEach(id=>{const r=document.getElementById(id);if(r)new MutationObserver(m=>{if(m.some(x=>x.type==='childList'||x.attributeName==='class'))run()}).observe(r,{subtree:true,childList:true,attributes:true,attributeFilter:['class']})});
 run();window.__lisible=run;
+})();
+</script>
+
+<script type="text/x-en">
+(()=>{/* Entre nous · web app : ce qui ne peut pas marcher dans une web app est masqué ; le reste est branché */
+const $=s=>document.querySelector(s);
+/* 1 · masquer : widgets, apps du téléphone, « noter l'app », conversation à la voix, verrouillage différé */
+const HIDE_L=['Widgets','Calendrier','Photos','Musique','Verrouiller après','Façon de parler','Afficher le texte','Garder mes vocaux'];
+const HIDE_SUB=/^(mon téléphone|quand on se parle)$/i;
+function tidy(root){
+ root.querySelectorAll('.rgl[data-l]').forEach(r=>{if(HIDE_L.includes(r.dataset.l))r.style.display='none'});
+ root.querySelectorAll('.rgl[data-p="widgets"]').forEach(r=>r.style.display='none');
+ root.querySelectorAll('.rgsub').forEach(h=>{if(HIDE_SUB.test(h.textContent.trim()))h.style.display='none'});
+ root.querySelectorAll('.rgbtn').forEach(b=>{if(/noter l.app/i.test(b.textContent))b.style.display='none'});
+ root.querySelectorAll('.rgst').forEach(t=>{if(/protégé par Face ID/.test(t.textContent)&&!window.__enFaceId)t.querySelectorAll('span').forEach(s=>{s.textContent=s.textContent.replace('protégé par Face ID','protégé par ton code')})});
+}
+let t;new MutationObserver(()=>{clearTimeout(t);t=setTimeout(()=>tidy(document),30)}).observe(document.getElementById('en-app')||document.body,{subtree:true,childList:true});tidy(document);
+/* 2 · changer mon code */
+function codeSheet(){if($('#en-cc'))return;const el=document.createElement('div');el.id='en-cc';
+ el.innerHTML=`<div class="in"><p class="k">CHANGER MON CODE</p><p class="t" id="en-cct">Ton code actuel</p><p class="s" id="en-ccs">pour être sûre que c’est toi</p><div class="dots" id="en-ccd"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?'<span></span>':`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="lk" id="en-ccx">finalement, je garde mon code</button></div>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+ let st=0,cur='',first='',busy=false;const D=[...el.querySelectorAll('#en-ccd i')],T=el.querySelector('#en-cct'),S=el.querySelector('#en-ccs');
+ const paint=()=>D.forEach((d,i)=>d.classList.toggle('on',i<cur.length));const close=()=>{el.classList.remove('on');setTimeout(()=>el.remove(),300)};
+ const shake=(m,s)=>{const d=el.querySelector('#en-ccd');d.classList.add('shake');setTimeout(()=>{d.classList.remove('shake');cur='';paint();T.textContent=m;S.textContent=s;busy=false},650)};
+ el.querySelector('#en-ccx').onclick=close;
+ el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(b.classList.contains('del')){cur=cur.slice(0,-1);paint();return}if(cur.length>=4)return;cur+=b.textContent;paint();if(cur.length<4)return;busy=true;
+  if(st===0){if(await window.__vaultCheck(cur)){st=1;setTimeout(()=>{cur='';paint();T.textContent='Ton nouveau code';S.textContent='4 chiffres, rien que pour toi';busy=false},250)}else shake('Pas tout à fait…','ton code actuel, doucement');return}
+  if(st===1){first=cur;st=2;setTimeout(()=>{cur='';paint();T.textContent='Encore une fois';S.textContent='pour être sûre';busy=false},250);return}
+  if(cur===first){await window.__vaultSetCode(cur);T.textContent='✦ C’est noté';S.textContent='ton journal s’ouvre maintenant avec ce code';setTimeout(close,1300)}else{st=1;shake('Pas tout à fait…','on recommence : ton nouveau code')}});
+}
+document.addEventListener('click',e=>{const r=e.target.closest&&e.target.closest('.rgl[data-l="Code d’accès"]');if(r){e.stopImmediatePropagation();e.preventDefault();codeSheet()}},true);
+window.__enCodeSheet=codeSheet;
 })();
 </script>
 
