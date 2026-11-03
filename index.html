@@ -99,6 +99,7 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 .en-toast.on{opacity:1;translate:-50% 0}
 @media (prefers-reduced-motion:reduce){.en-sh,.en-sh .in,.en-toast{transition:none}}
 #mvfiche .fphrase:empty::before{content:attr(data-ph);opacity:.55}
+#mvdit .dempty{margin:30px 22px;text-align:center;font:italic 500 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted,#7A5566)}
 
 </style>
 <script>
@@ -276,8 +277,8 @@ async function boot(){
  let v=null;try{v=await dbGet(KEY)}catch(e){}
  /* connectée : si le coffre en ligne est plus récent (autre appareil), on le prend */
  try{if(navigator.onLine&&await CLOUD.session()){const r=await Promise.race([CLOUD.pull(),new Promise(res=>setTimeout(()=>res(null),4000))]);if(r&&r.box&&(!v||(r.at||0)>(v.at||0))){v=r;await dbPut(KEY,r)}}}catch(e){}
- if(!v){/* premier lancement : l'inscription choisit le code */mount(true);runScripts();return}
- const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);runScripts();if(migr)save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
+ if(!v){/* premier lancement : l'inscription choisit le code */mount(true);window.__profil=window.__enKeep('profil',{});runScripts();return}
+ const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
  lockUI(v,async code=>{try{const data=await unlockCode(v,code);go(data,v.v!==2);return true}catch(e){DEK=null;return false}},
   async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}});
 }
@@ -8404,6 +8405,22 @@ psyCard();setInterval(psyCard,60000);document.addEventListener('click',()=>setTi
   const b=F.querySelector('.ffbar i'),n=F.querySelector('.ffn');if(b)b.style.width=pc+'%';if(n)n.textContent=pc+' %'}
  const bk=()=>{const c=F.querySelector('.fbnames');if(!c)return;const D=window.__enGet&&window.__enGet('pfd');const part=(D&&D.v&&D.v.coeur&&D.v.coeur[1])||'';c.innerHTML=(window.__P0()||'Moi')+'<br><i>&amp;</i><br>'+(part||'…')};
  const tick=()=>{nm();fiche();bk()};tick();new MutationObserver(()=>{clearTimeout(tick.t);tick.t=setTimeout(tick,200)}).observe(F,{subtree:true,childList:true,characterData:true});
+})();
+
+/* 8 · « Ce que je t'ai confié » : tes vraies réponses, pas des exemples */
+(function(){const chat=document.getElementById('mvchat'),body=document.getElementById('dbody');if(!body)return;
+ let LOG=[];const sv=window.__enLive&&window.__enLive('mvlog',()=>LOG);if(sv)LOG=sv;
+ const CH={'MOI AUJOURD’HUI':'moi',"MOI AUJOURD'HUI":'moi','MES PROCHES':'proches','MON PASSÉ':'passe','MON INTÉRIEUR':'int'};
+ const MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
+ const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+ function draw(){if(!LOG.length){body.innerHTML='<p class="dempty">Ce que tu me confieras en faisant connaissance apparaîtra ici, rien que pour toi.</p>';return}
+  const by={};LOG.forEach(x=>{(by[x.c]=by[x.c]||[]).push(x)});
+  body.innerHTML=Object.entries(by).map(([c,L])=>{const t=L[0].ct||c;const days={};L.forEach(x=>{const d=new Date(x.at);const k=d.getDate()+' '+MOC[d.getMonth()];(days[k]=days[k]||[]).push(x)});
+   return `<section class="dch" data-c="${c}"><p class="dcht">${esc(t)}</p><div class="dth">${Object.entries(days).map(([k,X])=>`<div class="dblk" data-s="form"><span class="dtag">AVEC PLUME · ${k}</span>${X.map(x=>(x.q?`<p class="dq">${esc(x.q)}</p>`:'')+`<p class="da">${esc(x.a)}</p>`).join('')}</div>`).join('')}</div></section>`}).join('')}
+ draw();
+ if(chat)new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('mvme')||n.classList.contains('sk'))return;
+  let q='',p=n.previousElementSibling;while(p&&!q){if(!p.classList.contains('mvme')&&p.textContent.trim())q=p.textContent.trim();p=p.previousElementSibling}
+  const tt=((document.querySelector('#mv3 .mvtt p')||{}).textContent||'').trim();LOG.push({c:CH[tt]||'moi',ct:tt||'MOI AUJOURD’HUI',q,a:n.textContent.trim(),at:Date.now()});draw()}))).observe(chat,{childList:true});
 })();
 })();</script>
 
