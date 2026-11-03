@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Entre nous</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=302,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre nous">
@@ -19,32 +19,32 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#F5E0D3;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:none!important}
 #en-app{position:fixed;inset:0;overflow:hidden}
-#en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:302px!important;height:var(--enh,619px)!important;max-width:none!important;scale:var(--enz,1);transform-origin:0 0;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
+#en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:302px!important;height:100%!important;max-width:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
 #en-app .phone.en-on{visibility:visible;pointer-events:auto;z-index:1;translate:none}
 #en-app .phone::before,#en-app .phone::after{border-radius:0!important}
 /* écran de code */
 #en-lock{position:fixed;inset:0;z-index:100;background:#F5E0D3;color:#6B3F55;font-family:'Cormorant Garamond',Georgia,serif;display:flex;flex-direction:column;transition:opacity .45s}
 #en-lock.out{opacity:0;pointer-events:none}
-#en-lock .sc{position:absolute;inset:0;width:100%;height:46%;object-fit:cover;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
-#en-lock .ui{position:relative;margin-top:auto;padding:0 24px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center}
-#en-lock .dt{margin:0;font:500 13px/1 'Cormorant SC',Georgia,serif;letter-spacing:.18em;text-transform:uppercase;color:#7A5566}
-#en-lock .hi{margin:10px 0 0;font:500 44px/1.1 'Dancing Script',cursive;color:#6B3F55}
-#en-lock .sb{margin:8px 0 0;font:italic 500 18px/1.3 'Cormorant Garamond',serif;color:#7A5566;min-height:24px}
-#en-lock .dots{display:flex;gap:16px;margin:22px 0 26px}
-#en-lock .dots i{width:13px;height:13px;border-radius:50%;border:1.2px solid #6B3F55;transition:background .15s}
+#en-lock .sc{position:relative;flex:0 0 24%;width:100%;min-height:0;object-fit:cover;-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+#en-lock .ui{position:relative;flex:1;justify-content:center;margin-top:-18px;padding:0 24px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center}
+#en-lock .dt{margin:0;font:500 11px/1 'Cormorant SC',Georgia,serif;letter-spacing:.18em;text-transform:uppercase;color:#7A5566}
+#en-lock .hi{margin:10px 0 0;font:500 36px/1.1 'Dancing Script',cursive;color:#6B3F55}
+#en-lock .sb{margin:6px 0 0;font:italic 500 15px/1.3 'Cormorant Garamond',serif;color:#7A5566;min-height:24px}
+#en-lock .dots{display:flex;gap:13px;margin:min(18px,2.4vh) 0 min(20px,2.6vh)}
+#en-lock .dots i{width:11px;height:11px;border-radius:50%;border:1.2px solid #6B3F55;transition:background .15s}
 #en-lock .dots i.on{background:#6B3F55}
 #en-lock .dots.shake{animation:enshake .5s}
 @keyframes enshake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
-#en-lock .pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px 26px;justify-items:center}
-#en-lock .pad button{all:unset;box-sizing:border-box;width:72px;height:72px;border-radius:50%;border:1px solid #D9B0B5;display:flex;align-items:center;justify-content:center;font:400 30px/1 'Cormorant Garamond',serif;color:#6B3F55;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#en-lock .pad{display:grid;grid-template-columns:repeat(3,min(56px,8.6vh));gap:min(11px,1.4vh) 20px;justify-items:center}
+#en-lock .pad button{all:unset;box-sizing:border-box;width:min(56px,8.6vh);height:min(56px,8.6vh);border-radius:50%;border:1px solid #D9B0B5;display:flex;align-items:center;justify-content:center;font:400 24px/1 'Cormorant Garamond',serif;color:#6B3F55;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #en-lock .pad button:active{background:rgba(107,63,85,.12)}
 #en-lock .pad button.del{border:0;font-size:24px}
 #en-lock .pad button:focus-visible{outline:2px solid #6B3F55;outline-offset:3px}
-#en-lock .fg{all:unset;margin-top:22px;padding:10px;font:italic 500 17px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
+#en-lock .fg{all:unset;margin-top:min(14px,1.6vh);padding:10px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
 #en-lock .sh{position:absolute;inset:0;background:rgba(42,30,38,.35);display:flex;align-items:flex-end}
 #en-lock .sh[hidden]{display:none}
 #en-lock .sh .in{width:100%;box-sizing:border-box;background:#F7E6DC;border-radius:26px 26px 0 0;padding:26px 24px calc(26px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
-#en-lock .sh p{margin:0;font:500 18px/1.4 'Cormorant Garamond',serif;color:#6B3F55}
+#en-lock .sh p{margin:0;font:500 15px/1.4 'Cormorant Garamond',serif;color:#6B3F55}
 #en-lock .sh .k{font:500 13px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566}
 #en-lock .sh .b{all:unset;box-sizing:border-box;text-align:center;padding:15px;border-radius:30px;border:1px solid #6B3F55;font:500 14px/1 'Cormorant SC',serif;letter-spacing:.12em;color:#6B3F55;cursor:pointer;margin-top:6px}
 #en-lock .sh .lk{all:unset;text-align:center;padding:10px;font:italic 500 17px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
