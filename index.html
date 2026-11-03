@@ -100,6 +100,9 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 @media (prefers-reduced-motion:reduce){.en-sh,.en-sh .in,.en-toast{transition:none}}
 #mvfiche .fphrase:empty::before{content:attr(data-ph);opacity:.55}
 #mvdit .dempty{margin:30px 22px;text-align:center;font:italic 500 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted,#7A5566)}
+#onb .o2pills select{all:unset;-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;cursor:pointer;text-align:center;text-align-last:center;padding:8px 4px;border-radius:999px;border:.7px solid var(--sline);font:italic 14px/1 'Cormorant Garamond',Georgia,serif;color:var(--smuted);background:transparent}
+#onb .o2pills select.set{color:var(--sink);border-color:var(--sacc)}
+.pfcode .en-secf{all:unset;cursor:pointer;display:block;margin:14px auto 0;padding:8px;font:italic 14px 'Cormorant Garamond',serif;color:var(--smuted)}
 
 </style>
 <script>
@@ -301,6 +304,23 @@ window.__enPsySeance=(L,ap)=>{const d=new Date();const sel=ap.ressens&&ap.ressen
   q:(ap.retiens&&ap.retiens.a)?'« '+ap.retiens.a+' »':'',emo:sel,star:(ap.ressens&&ap.ressens.star)||sel[0]||'',suj:Object.keys((ap.parler&&ap.parler.ck)||{}),prev:[],notes:[],
   apres:{parler:(ap.parler&&(Object.values(ap.parler.txt||{}).join(' ')||ap.parler.plus))||'',retiens:(ap.retiens&&[ap.retiens.a,ap.retiens.b,ap.retiens.c].filter(Boolean).join(' '))||'',ressens:sel.join(', '),pas:''}})};
 window.__enNextPsy=nextPsy;window.__enHH=hh;})();
+/* petits mots de Plume, tirés de ta vraie vie */
+(function(){const pick=a=>a[Math.floor(Math.random()*a.length)];const nm=()=>window.__P?window.__P():'';const sp=()=>nm()?' '+nm():'';
+ const today=()=>{const d=new Date();return (window.__calE||[]).filter(e=>e&&e.y===d.getFullYear()&&e.m===d.getMonth()&&e.d===d.getDate()&&e.t!=='psy'&&e.h!=null).sort((a,b)=>a.h*60+(a.mi||0)-(b.h*60+(b.mi||0)))};
+ window.__enMsgHome=(mom,quote)=>{const g={matin:'Bonjour'+sp()+'. Une journée toute neuve, rien à prouver.',aprem:'Pense à boire un verre d’eau et à souffler un peu.',soir:'Bonsoir'+sp()+'. Tu as le droit de ralentir, ce soir.',nuit:'Il est tard. Pose ta tête, demain sera là.'}[mom];
+  const L=[g,quote];const now=new Date().getHours()*60+new Date().getMinutes();const r=today().find(e=>e.h*60+(e.mi||0)>=now);
+  if(r)L.push(r.n+' à '+r.h+' h'+(r.mi?String(r.mi).padStart(2,'0'):'')+' : je pense à toi.');
+  const pp=window.__PP&&window.__PP.items||[];const td=pp.filter(p=>!p.done&&/AUJOURD/i.test(p.when||''));if(td.length)L.push('Ton petit pas du jour : « '+td[0].t+' ». Même à moitié, ça compte.');
+  return pick(L)};
+ window.__enMsgFiche=()=>{const pp=(window.__PP&&window.__PP.items||[]).filter(p=>p.done);
+  const L=['Plus tu me confies de choses, plus cette page te ressemble.','Prends ton temps : on remplit ça ensemble, quand tu veux.'];
+  if(pp.length)L.push((pp.length===1?'Un petit pas déjà fait.':pp.length+' petits pas déjà faits.')+' Tu avances'+(nm()?', '+nm():'')+'.');return pick(L)};
+ window.__enMsgPsy=()=>{const n=window.__enNextPsy&&window.__enNextPsy();
+  if(n&&n.i===0)return'Ta séance est aujourd’hui. Tu as le droit d’y arriver sans tout savoir dire.';
+  if(n&&n.i===1)return'Ta séance est demain. Tu as le droit d’y arriver sans tout savoir dire.';
+  if(n)return'Prochaine séance dans '+n.i+' jours. Tu peux noter ici ce que tu veux lui dire.';
+  return pick(['Tu peux noter ici ce que tu veux lui dire, avant que ça s’envole.','Ajoute ta prochaine séance au calendrier, je te la rappellerai.'])};
+})();
 
 </script>
 </head>
@@ -5644,7 +5664,7 @@ function stateConf(){const t=S.fid!==false?'Ton journal est protégé par Face I
 function stateNotif(){const e=$('rgnst');if(!e)return;const t=S.wheelRap||[21,0];e.textContent=S.rap!==false?'Je te ferai signe ce soir à '+t[0]+' h'+(t[1]?' '+MIN[t[1]]:'')+'.':'Je ne te ferai pas signe aujourd’hui.'}
 function codeBox(x,ph,lbl){x.insertAdjacentHTML('beforeend','<p class="rgh">'+lbl+'</p><input class="rgcode" type="password" inputmode="numeric" maxlength="4" aria-label="Code">');
  const i=x.querySelector('.rgcode:last-of-type'),h=i.previousElementSibling;let first=null;
- i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'');if(i.value.length===4){if(first===null){first=i.value;i.value='';h.textContent='Tape-le encore une fois.'}else if(first===i.value){h.textContent='✓ C’est enregistré.';i.value='';first=null}else{h.textContent='Les deux codes sont différents, recommence.';i.value='';first=null}}});setTimeout(()=>i.focus({preventScroll:true}),50)}
+ i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'');if(i.value.length===4){if(first===null){first=i.value;i.value='';h.textContent='Tape-le encore une fois.'}else if(first===i.value){window.__enCodeBox&&window.__enCodeBox(lbl,first);h.textContent='✓ C’est enregistré.';i.value='';first=null}else{h.textContent='Les deux codes sont différents, recommence.';i.value='';first=null}}});setTimeout(()=>i.focus({preventScroll:true}),50)}
 const TIC={cal:'<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M9 4v4M15 4v4"/>',pho:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/>',san:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>',mus:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>'};
 const tic=k=>'<svg class="rglogo" style="fill:none;stroke:var(--sacc);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" aria-hidden="true">'+TIC[k]+'</svg>';
 function tapp(name,k,uses,why){return{t:'x',k,l:name,pill:()=>'<span class="rgpi'+(S[k]?' on':'')+'">'+(S[k]?'✓ reliée':'relier')+'</span>',ic:tic(k),
@@ -5726,7 +5746,7 @@ confidentialite:{t:'confidentialité',ic:'confidentialite',r:()=>[
  {t:'toggle',k:'fid',l:'Face ID',v:true,on:()=>stateConf()},
  {t:'choice',k:'verr',l:'Verrouiller après',d:1,o:['immédiatement','1 minute','5 minutes','15 minutes']},
  {t:'sub',l:'mes écrits'},
- {t:'x',k:'secx',l:'Pages secrètes',v:()=>S.sec===false?'désactivées':'3 pages',fill:(x,ph,paint)=>{render([{t:'toggle',k:'sec',l:'Utiliser des pages secrètes',v:true,on:()=>paint()},{t:'x',k:'csec',l:'Code secret',v:'changer',fill:(y,ph2)=>codeBox(y,ph2,'Tape ton code secret, différent du code d’accès.')},{t:'h',l:'Pour rendre une page secrète : appui long sur la page dans ton journal → « garder secrète ».'}],x,ph)}},
+ {t:'x',k:'secx',l:'Pages secrètes',v:()=>S.sec===false?'désactivées':'activées',fill:(x,ph,paint)=>{render([{t:'toggle',k:'sec',l:'Utiliser des pages secrètes',v:true,on:()=>paint()},{t:'x',k:'csec',l:'Code secret',v:'changer',fill:(y,ph2)=>codeBox(y,ph2,'Tape ton code secret, différent du code d’accès.')},{t:'h',l:'Pour rendre une page secrète : appui long sur la page dans ton journal → « garder secrète ».'}],x,ph)}},
  {t:'toggle',k:'discret',l:'Notifications discrètes',v:true},
  {t:'x',k:'oubli',l:'Code oublié',fill:(x,ph)=>{if(S.secours===undefined)S.secours=0;render([{t:'h',l:'Pour retrouver l’accès, on te contacte par :',cl:'rghl'},{t:'checks',k:'secours',o:['Mail','Téléphone (SMS)']}],x,ph)}}
 ]},
@@ -6185,7 +6205,7 @@ if($('calp'))new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&ca
 new IntersectionObserver(es=>es.forEach(e=>F.__seen=e.isIntersecting),{threshold:.3}).observe(F);
 document.addEventListener('click',e=>{if(e.target.closest('#calw'))window.__pfCalBack()},true);
 /* code des pages secrètes */
-function codeView(){let c='';px.innerHTML='<div class="pfcode"><h4>Pages secrètes</h4><p>Entre ton code</p><div class="pfdots"><i></i><i></i><i></i><i></i></div><div class="pfkey">'+[1,2,3,4,5,6,7,8,9].map(d=>'<button type="button" data-d="'+d+'">'+d+'</button>').join('')+'<button type="button" class="t" data-f="1">FACE ID</button><button type="button" data-d="0">0</button><button type="button" class="t" data-x="1">⌫</button></div></div>';
+function codeView(){if(window.__enSecView){window.__enSecView(px,()=>setTimeout(()=>{if(window.__secOpen)window.__secOpen(px)},250));return}let c='';px.innerHTML='<div class="pfcode"><h4>Pages secrètes</h4><p>Entre ton code</p><div class="pfdots"><i></i><i></i><i></i><i></i></div><div class="pfkey">'+[1,2,3,4,5,6,7,8,9].map(d=>'<button type="button" data-d="'+d+'">'+d+'</button>').join('')+'<button type="button" class="t" data-f="1">FACE ID</button><button type="button" data-d="0">0</button><button type="button" class="t" data-x="1">⌫</button></div></div>';
  const dots=px.querySelectorAll('.pfdots i'),paint=()=>dots.forEach((d,i)=>d.classList.toggle('f',i<c.length));
  const open=()=>{setTimeout(()=>{if(window.__secOpen)window.__secOpen(px);else px.innerHTML='<div class="pfsoon"><b>✦</b><p>Tes pages secrètes s’ouvrent ici.<br>On les dessine ensemble bientôt.</p></div>'},250)};
  px.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(c.length>=4)return;c+=b.dataset.d;paint();if(c.length===4)open()});
@@ -6879,7 +6899,7 @@ const ph=$('mpp'),B=$('mppb');
 function line(p){const y=PP.yay===p.id;let h=`<div class="ps-li"${y?' style="border:0"':''}><button class="ck${y?' on':''}" data-a="ck" data-i="${p.id}" aria-label="C'est fait"></button><button class="tx" data-a="open" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>${p.r?p.r.toUpperCase()+' · ':''}${p.rep.toUpperCase()}</small></button>${tag(p.f,ph)}</div>`;
  if(y){const W=['Bravo, ce n\'était pas rien.','Tu l\'as fait. Je suis fière de toi.','Un petit pas de plus, c\'est beau.'];h+=`<div class="ps-yay ps-fadein"><span class="s">✦</span><img alt="" src="${pet(ph)}"><p>${W[p.id.charCodeAt(1)%3]}</p></div><div class="ps-after ps-fadein" style="border-bottom:.7px solid var(--sline);padding-bottom:10px"><p class="ps-s" style="text-align:left">Comment tu t'es sentie ?</p>${['soulagée','fière','bizarre','pas grand-chose'].map(f=>`<button class="ps-pl" data-a="feel" data-i="${p.id}" data-k="${f}">${f}</button>`).join('')}<button class="ps-pl dash" data-a="feel" data-i="${p.id}" data-k="">passer</button><div class="ps-f"><input id="mppmot" placeholder="un mot de plus…">${MIC}</div></div>`}
  return h}
-function word(){const d=PP.items.filter(p=>p.done&&p.day);if(!d.length)return'Un petit pas aujourd\'hui ? Même tout petit, il compte.';const p=d[0];return p.f==='proches'?`Tu as écrit à ta sœur ${p.day.toLowerCase()}. Comment ça s'est passé ?`:`Tu as fait « ${p.t.toLowerCase()} » ${p.day.toLowerCase()}. Ça t'a fait du bien ?`}
+function word(){const d=PP.items.filter(p=>p.done&&p.day);if(!d.length)return'Un petit pas aujourd\'hui ? Même tout petit, il compte.';const p=d[0];return `Tu as fait « ${p.t.toLowerCase()} » ${p.day.toLowerCase()}. Ça t'a fait du bien ?`}
 function render(){if(!B)return;let h=`<div class="ps-bub"><img alt="" src="${pet(ph)}"><p>${esc(word())}</p></div>`;
  ['AUJOURD\'HUI','CETTE SEMAINE'].forEach(w=>{const g=PP.items.filter(p=>(!p.done||PP.yay===p.id)&&p.when===w);if(g.length)h+=`<div class="ps-h">${w}</div>`+g.map(line).join('')});
  const dn=PP.items.filter(p=>p.done&&PP.yay!==p.id);if(dn.length)h+=`<div class="ps-h">ÇA M'A FAIT DU BIEN</div>`+dn.map(p=>`<div class="ps-li"><span class="ck on"></span><button class="tx" data-a="open" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>FAIT ${p.day||'AUJOURD\'HUI'}${p.feel?' · « '+p.feel.toUpperCase()+' »':''}</small></button>${tag(p.f,ph)}</div>`).join('');
@@ -7525,15 +7545,15 @@ const clickHidden=sel=>()=>{const b=document.querySelector(sel);if(!b)return;b.s
 const moment=()=>{const h=new Date().getHours();return h<12?'matin':h<18?'aprem':h<22?'soir':'nuit'};
 const QUOTES=['« La plus grande chose du monde, c’est de savoir être à soi. » Montaigne','« Le cœur a ses raisons que la raison ne connaît point. » Pascal','« Le seul bien qui me reste au monde est d’avoir quelquefois pleuré. » Musset','« Chaque paysage est un état de l’âme. » Amiel, dans son journal intime','« Il n’y a qu’un bonheur dans la vie, c’est d’aimer et d’être aimé. » George Sand','« Même la nuit la plus sombre prendra fin et le soleil se lèvera. » Victor Hugo','« Ce n’est pas parce que les choses sont difficiles que nous n’osons pas, c’est parce que nous n’osons pas qu’elles sont difficiles. » Sénèque','« Le véritable voyage de découverte ne consiste pas à chercher de nouveaux paysages, mais à avoir de nouveaux yeux. » Proust','Tu n’as pas besoin d’aller mieux pour mériter de la douceur.','Ce que tu ressens a le droit d’exister, même sans explication.','Tu peux être en chantier et précieuse en même temps.','Petit à petit, l’oiseau fait son nid.'];
 const MSG={
- home:()=>pick([{matin:'Bonjour '+window.__P()+'. Une journée toute neuve, rien à prouver.',aprem:'Pense à boire un verre d’eau et à souffler un peu.',soir:'Bonsoir '+window.__P()+'. Tu as le droit de ralentir, ce soir.',nuit:'Il est tard. Pose ta tête, demain sera là.'}[moment()],'Tu te sentais un peu fatiguée ces jours-ci. Doucement avec toi aujourd’hui.','Coiffeur à 17 h : un petit moment rien qu’à toi.',pick(QUOTES)]),
- mj:()=>window.__MJ&&window.__MJ.todayWritten?pick(['Tu as déjà écrit ce matin. On continue un peu ?','Ta page d’aujourd’hui a déjà de jolis mots.']):pick(['Ta page t’attend, '+window.__P()+'. Même trois mots, c’est déjà beaucoup.','Raconte-moi ta journée, comme elle vient.']),
+ home:()=>window.__enMsgHome(moment(),pick(QUOTES)),
+ mj:()=>window.__MJ&&window.__MJ.todayWritten?pick(['Tu as déjà écrit ce matin. On continue un peu ?','Ta page d’aujourd’hui a déjà de jolis mots.']):pick(['Ta page t’attend'+(window.__P()?', '+window.__P():'')+'. Même trois mots, c’est déjà beaucoup.','Raconte-moi ta journée, comme elle vient.']),
  mjday:()=>pick(['Relire, c’est aussi prendre soin de soi.','C’est beau de voir le chemin parcouru.']),
  pdj:()=>'Comment tu te sens, là ?',
- mvfiche:()=>pick(['Tu as changé de ville, de vie, et tu es toujours toi. J’aime bien ça.','Trois petits pas cette semaine. Tu avances, '+window.__P()+'.','Toi qui aimes dessiner : n’oublie pas de garder du temps pour ça.']),
+ mvfiche:()=>window.__enMsgFiche(),
  mvdit:()=>'Tu veux relire quoi ?',
  rg:()=>pick(['Tu veux que je t’écrive moins souvent ?','Tu préfères l’app plus sombre le soir ?','Tu veux me parler autrement ?']),
  calp:()=>'Un rendez-vous à noter ?',
- psy:()=>pick(['Ta séance est demain. Tu as le droit d’y arriver sans tout savoir dire.','Tu t’es sentie soulagée après la dernière séance. Garde ce petit bout de légèreté.','Un petit pas sur trois, déjà fait. C’est une vraie avancée.']),
+ psy:()=>window.__enMsgPsy(),
  mpp:()=>'Un nouveau petit pas en tête ?',
  souv:()=>'Un moment à garder ?'};
 /* d'où vient-on, pour le retour de la page du jour */
@@ -8388,7 +8408,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 function psyCard(){const pv=document.getElementById('psyv');if(!pv)return;const n=nextPsy();const show=n&&n.i<=1;pv.hidden=!show;
  const mot=document.querySelector('#home .mot');if(mot)mot.style.display=show?'none':'';
  if(show){const k=pv.querySelector('.pk');if(k)k.innerHTML=(n.i===0?'Aujourd’hui':'Demain')+', ta séance · '+hh(n.e).replace(' ','&nbsp;')}}
-psyCard();setInterval(psyCard,60000);document.addEventListener('click',()=>setTimeout(psyCard,400));
+window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEventListener('click',()=>setTimeout(psyCard,400));
 
 /* 7 · Profil : ton prénom, ta phrase, ton passé gardés ; la fiche se remplit avec toi */
 (function(){const F=document.getElementById('mvfiche');if(!F)return;
@@ -8421,6 +8441,55 @@ psyCard();setInterval(psyCard,60000);document.addEventListener('click',()=>setTi
  if(chat)new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('mvme')||n.classList.contains('sk'))return;
   let q='',p=n.previousElementSibling;while(p&&!q){if(!p.classList.contains('mvme')&&p.textContent.trim())q=p.textContent.trim();p=p.previousElementSibling}
   const tt=((document.querySelector('#mv3 .mvtt p')||{}).textContent||'').trim();LOG.push({c:CH[tt]||'moi',ct:tt||'MOI AUJOURD’HUI',q,a:n.textContent.trim(),at:Date.now()});draw()}))).observe(chat,{childList:true});
+})();
+
+/* 9 · faire connaissance : ta vraie date de naissance, ton psy, ta photo — gardés dans tes réglages */
+(function(){const RG=window.__enGet&&window.__enGet('rg');if(!RG)return;
+ const MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+ const pills=document.querySelector('#onb .o2pills');
+ if(pills){const n=RG.naissOk&&RG.naiss;const opt=(L,ph,sel)=>`<option value="" disabled ${sel==null?'selected':''}>${ph}</option>`+L.map((x,i)=>`<option value="${i}" ${sel===i?'selected':''}>${x}</option>`).join('');
+  const Y=[...Array(61)].map((_,i)=>1950+i);
+  pills.innerHTML=`<select aria-label="Jour">${opt([...Array(31)].map((_,i)=>i+1),'jour',n?n[0]:null)}</select><select aria-label="Mois">${opt(MO,'mois',n?n[1]:null)}</select><select aria-label="Année">${opt(Y.slice().reverse(),'année',n?60-n[2]:null)}</select>`;
+  const S=[...pills.querySelectorAll('select')];const paint=()=>S.forEach(x=>x.classList.toggle('set',x.value!==''));paint();
+  S.forEach(x=>x.addEventListener('change',()=>{paint();if(S.every(z=>z.value!=='')){RG.naiss=[+S[0].value,+S[1].value,60-(+S[2].value)];RG.naissOk=1}}))}
+ /* psy : oui / pas pour l'instant */
+ const pb=[...document.querySelectorAll('#onb .o2psy button')];
+ pb.forEach((b,i)=>{if(RG.psy&&((RG.psy==='oui')===(i===0)))b.classList.add('on');b.addEventListener('click',()=>{RG.psy=i===0?'oui':'non';setTimeout(()=>window.__enPsyCard&&window.__enPsyCard(),0)})});
+ /* photo : une seule, partout, allégée pour rester légère dans ton coffre */
+ const shrink=(src,cb)=>{const im=new Image();im.onload=()=>{const m=640,r=Math.min(1,m/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.82))};im.onerror=()=>cb(null);im.src=src};
+ const apply=()=>{const u=RG.photo;if(!u)return;['fphoto','rgbigi'].forEach(id=>{const i=document.getElementById(id);if(i){i.src=u;i.classList.add('me')}});
+  const o=document.getElementById('o2ph');if(o){o.classList.add('has');o.style.backgroundImage='url('+u+')';const l=document.getElementById('o2phl');if(l)l.textContent='changer la photo'}};
+ const take=f=>{if(!f)return;const rd=new FileReader();rd.onload=()=>shrink(rd.result,u=>{if(!u)return;RG.photo=u;apply()});rd.readAsDataURL(f)};
+ const o2=document.getElementById('o2ph');
+ if(o2){const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.hidden=true;o2.after(fi);
+  o2.onclick=e=>{e.preventDefault();fi.click()};fi.onchange=()=>{take(fi.files[0]);fi.value=''}}
+ const ff=document.getElementById('fphfile');if(ff)ff.addEventListener('change',e=>{const f=ff.files[0];e.stopImmediatePropagation();take(f);ff.value=''},true);
+ /* les réglages gardent leur propre façon de faire : on allège juste après */
+ document.addEventListener('change',e=>{const t=e.target;if(t&&t.type==='file'&&t.closest&&t.closest('#rg'))setTimeout(()=>{if(RG.photo&&RG.photo.length>250000)shrink(RG.photo,u=>{if(u){RG.photo=u;apply()}});else apply()},400)},true);
+ apply();
+})();
+
+/* 10 · pages secrètes : ton propre code (différent du code d'accès), jamais « n'importe quels 4 chiffres » */
+(function(){const RG=window.__enGet&&window.__enGet('rg');if(!RG)return;
+ const H=async c=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('entre-nous/secret:'+c)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+ window.__enCodeBox=(lbl,code)=>{if(/secret/i.test(lbl))H(code).then(x=>{RG.secH=x;toast('✦ Ton code secret est changé')})};
+ window.__enSecView=(px,open)=>{if(RG.sec===false)return open();
+  let c='',first=null,mode=RG.secH?'ask':'new';
+  const T={ask:['Pages secrètes','Entre ton code secret'],new:['Pages secrètes','Choisis un code secret, différent de ton code d’accès'],acc:['Code secret oublié','Entre ton code d’accès pour en choisir un nouveau']};
+  px.innerHTML='<div class="pfcode"><h4></h4><p></p><div class="pfdots"><i></i><i></i><i></i><i></i></div><div class="pfkey">'+[1,2,3,4,5,6,7,8,9].map(d=>'<button type="button" data-d="'+d+'">'+d+'</button>').join('')+'<span></span><button type="button" data-d="0">0</button><button type="button" class="t" data-x="1" aria-label="Effacer">⌫</button></div><button type="button" class="en-secf">code oublié ?</button></div>';
+  const h4=px.querySelector('h4'),pp=px.querySelector('.pfcode p'),dd=px.querySelector('.pfdots'),dots=dd.querySelectorAll('i'),fg=px.querySelector('.en-secf');
+  const txt=(a,b)=>{h4.textContent=a;pp.textContent=b};const set=m=>{mode=m;first=null;c='';txt(...T[m]);fg.hidden=m!=='ask';paint()};
+  const paint=()=>dots.forEach((d,i)=>d.classList.toggle('f',i<c.length));
+  const no=m=>{dd.classList.add('no');setTimeout(()=>{dd.classList.remove('no');c='';paint();if(m)pp.textContent=m},420)};
+  async function done(){const v=c;
+   if(mode==='ask'){if(await H(v)===RG.secH)open();else no('Ce n’est pas ce code, réessaie.');return}
+   if(mode==='acc'){if(window.__vaultCheck&&await window.__vaultCheck(v)){set('new')}else no('Ce n’est pas ton code d’accès.');return}
+   if(first===null){first=v;c='';paint();pp.textContent='Encore une fois, pour être sûre';return}
+   if(first!==v){first=null;no('Les deux codes sont différents, on recommence.');return}
+   if(window.__vaultCheck&&await window.__vaultCheck(v)){first=null;no('Choisis un code différent de ton code d’accès.');return}
+   RG.secH=await H(v);toast('✦ Ton code secret est gardé');open()}
+  px.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{if(c.length>=4)return;c+=b.dataset.d;paint();if(c.length===4)setTimeout(done,150)});
+  px.querySelector('[data-x]').onclick=()=>{c=c.slice(0,-1);paint()};fg.onclick=()=>set('acc');set(mode)}
 })();
 })();</script>
 
