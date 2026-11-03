@@ -122,6 +122,8 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 .en-pend .gvoice{position:relative;padding-right:26px}
 .en-rm{position:absolute;right:6px;top:50%;translate:0 -50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--smuted,#7A5566);cursor:pointer}
 .en-avin{all:unset;width:84px;padding:4px 8px;border-radius:14px;border:.7px solid var(--sline,#D9B0B5);font:italic 13px 'Cormorant Garamond',serif}
+#en-lock .pad button.fid{border:0}
+#en-lock .pad button.fid svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 
 </style>
 <script>
@@ -188,8 +190,24 @@ addEventListener('pagehide',()=>{if(DEK)save()});
 /* déverrouiller : par le code (v1 → v2 au passage) ou par le code de secours */
 async function unlockCode(v,code){
  if(v.v===1||!v.w){const k=await deriveKey(code,ub64(v.salt));const data=await open(k,v.box);await newDek();W={code:await wrap(code),sec:null};return data}
- await useDek(await unwrap(v.w.code,code));W={code:v.w.code,sec:v.w.sec||null};return open(DEK,v.box)}
-async function unlockSec(v,sec){if(!v.w||!v.w.sec)throw 0;await useDek(await unwrap(v.w.sec,normSec(sec)));W={code:v.w.code,sec:v.w.sec};return open(DEK,v.box)}
+ await useDek(await unwrap(v.w.code,code));W={code:v.w.code,sec:v.w.sec||null,fid:v.w.fid||null};return open(DEK,v.box)}
+async function unlockSec(v,sec){if(!v.w||!v.w.sec)throw 0;await useDek(await unwrap(v.w.sec,normSec(sec)));W={code:v.w.code,sec:v.w.sec,fid:v.w.fid||null};return open(DEK,v.box)}
+/* ---------- Face ID : une clé d'accès (passkey) de l'iPhone ; son extension PRF donne un secret qui enferme la clé du journal ---------- */
+const FID={
+ salt:async()=>new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode('entre-nous/face-id/v1'))),
+ key:async out=>{const base=await crypto.subtle.importKey('raw',out,'HKDF',false,['deriveKey']);return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:new Uint8Array(16),info:enc.encode('entre-nous/dek')},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])},
+ async prf(cid){const a=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rpId:location.hostname,allowCredentials:[{type:'public-key',id:ub64(cid)}],userVerification:'required',timeout:60000,extensions:{prf:{eval:{first:await FID.salt()}}}}});
+  const r=a.getClientExtensionResults();if(!r.prf||!r.prf.results||!r.prf.results.first)throw new Error('noprf');return r.prf.results.first},
+ async ok(){try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}};
+async function unlockFid(v){if(!v.w||!v.w.fid)throw 0;const k=await FID.key(await FID.prf(v.w.fid.cid));await useDek(await open(k,v.w.fid));W={code:v.w.code,sec:v.w.sec||null,fid:v.w.fid};return open(DEK,v.box)}
+window.__fidOn=()=>!!(W&&W.fid);window.__fidOk=()=>FID.ok();
+window.__fidEnroll=async()=>{if(!DEK)throw new Error('ferme');
+ const c=await navigator.credentials.create({publicKey:{rp:{name:'Entre nous',id:location.hostname},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:'Entre nous',displayName:(META.nm||'Mon journal')},challenge:crypto.getRandomValues(new Uint8Array(32)),
+  pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'preferred',userVerification:'required'},timeout:60000,extensions:{prf:{eval:{first:await FID.salt()}}}}});
+ const r=c.getClientExtensionResults()||{};if(!r.prf||r.prf.enabled===false)throw new Error('noprf');const cid=b64(c.rawId);
+ const out=(r.prf.results&&r.prf.results.first)||await FID.prf(cid);const k=await FID.key(out);W.fid={cid,...await seal(k,DEKRAW)};dirty=true;await save(true);return true};
+window.__fidOff=async()=>{if(!W)return;W.fid=null;dirty=true;await save(true)};
+Object.defineProperty(window,'__enFaceId',{get:()=>!!(W&&W.fid),configurable:true});
 /* appelé par l'inscription (et « changer mon code ») */
 window.__vaultSetCode=async code=>{if(!DEK)await newDek();W.code=await wrap(code);dirty=true;await save(true);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),400)};
 window.__vaultCheck=async code=>{try{await unwrap(W.code,code);return true}catch(e){return false}};
@@ -283,17 +301,18 @@ function mount(first){
 }
 
 /* ---------- écran de code ---------- */
-function lockUI(meta,onOk,onSec){
+function lockUI(meta,onOk,onSec,onFid){
  const h=new Date().getHours(),mo=h<12?'matin':h<18?'aprem':h<22?'soir':'nuit',m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
  const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
  const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=nuit?'nuit':'';
- el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?'<span></span>':`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
+ el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
  <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);
  let code='',busy=false,fails=0,until=0;const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
  const paint=()=>dots.forEach((x,i)=>x.classList.toggle('on',i<code.length));
  el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(Date.now()<until){sb.textContent='Patiente un petit moment…';return}
+  if(b.classList.contains('fid')){busy=true;sb.textContent='…';const ok=await onFid();if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{sb.textContent='Face ID n’a pas marché : tape ton code';busy=false}return}
   if(b.classList.contains('del')){code=code.slice(0,-1);paint();return}if(code.length>=4)return;code+=b.textContent;paint();
   if(code.length===4){busy=true;sb.textContent='…';const ok=await onOk(code);if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{fails++;if(fails>=5){until=Date.now()+30000;fails=0}
    const dd=el.querySelector('#en-ld');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');code='';paint();sb.textContent='Pas tout à fait… on recommence doucement';busy=false},700)}}});
@@ -319,7 +338,8 @@ async function boot(){
  if(!v){/* premier lancement : l'inscription choisit le code */mount(true);window.__profil=window.__enKeep('profil',{});runScripts();return}
  const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);setTimeout(()=>MED.flush(),5000);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
  lockUI(v,async code=>{try{const data=await unlockCode(v,code);go(data,v.v!==2);return true}catch(e){DEK=null;return false}},
-  async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}});
+  async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}},
+  async()=>{try{const data=await unlockFid(v);go(data,false);return true}catch(e){DEK=null;return false}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
@@ -5696,7 +5716,7 @@ const sun=()=>'Aujourd’hui à Paris : soir à 17 h 32, nuit à 19 h 10.';
 function moment(k){const b=document.querySelector('#c-moment [data-k="'+k+'"]');b&&b.click()}
 function autoK(){const h=new Date().getHours();return h<6?'nuit':h<12?'matin':h<18?'aprem':h<22?'soir':'nuit'}
 const FONTS=["'Cormorant Garamond'","'EB Garamond'","'Lora'","'Caveat'"],FSZ=[16,15,14,19];
-function stateConf(){const t=S.fid!==false?'Ton journal est protégé par Face ID.':S.code!==false?'Ton journal est protégé par un code.':'Ton journal n’est pas verrouillé.';const e=$('rgcst');if(e)e.textContent=t}
+function stateConf(){const t=(window.__fidOn&&window.__fidOn())?'Ton journal est protégé par ton code et Face ID.':S.code!==false?'Ton journal est protégé par un code.':'Ton journal n’est pas verrouillé.';const e=$('rgcst');if(e)e.textContent=t}
 function stateNotif(){const e=$('rgnst');if(!e)return;const t=S.wheelRap||[21,0];e.textContent=S.rap!==false?'Je te ferai signe ce soir à '+t[0]+' h'+(t[1]?' '+MIN[t[1]]:'')+'.':'Je ne te ferai pas signe aujourd’hui.'}
 function codeBox(x,ph,lbl){x.insertAdjacentHTML('beforeend','<p class="rgh">'+lbl+'</p><input class="rgcode" type="password" inputmode="numeric" maxlength="4" aria-label="Code">');
  const i=x.querySelector('.rgcode:last-of-type'),h=i.previousElementSibling;let first=null;
@@ -5779,7 +5799,7 @@ confidentialite:{t:'confidentialité',ic:'confidentialite',r:()=>[
  {t:'html',h:'<div class="rgst"><span>'+LOCK+'</span><span id="rgcst"></span></div>',init:()=>stateConf()},
  {t:'sub',l:'ouvrir l’app'},
  {t:'x',k:'codex',l:'Code d’accès',kw:'verrouillage',v:()=>S.code===false?'désactivé':'activé',fill:(x,ph,paint)=>{render([{t:'toggle',k:'code',l:'Utiliser un code',v:true,on:()=>{paint();stateConf()}},{t:'x',k:'chg',l:'Changer le code',fill:(y,ph2)=>codeBox(y,ph2,'Le clavier du téléphone s’ouvre : tape ton nouveau code.')}],x,ph)}},
- {t:'toggle',k:'fid',l:'Face ID',v:true,on:()=>stateConf()},
+ {t:'toggle',k:'fid',l:'Face ID',v:false,on:()=>stateConf()},
  {t:'choice',k:'verr',l:'Verrouiller après',d:1,o:['immédiatement','1 minute','5 minutes','15 minutes']},
  {t:'sub',l:'mes écrits'},
  {t:'x',k:'secx',l:'Pages secrètes',v:()=>S.sec===false?'désactivées':'activées',fill:(x,ph,paint)=>{render([{t:'toggle',k:'sec',l:'Utiliser des pages secrètes',v:true,on:()=>paint()},{t:'x',k:'csec',l:'Code secret',v:'changer',fill:(y,ph2)=>codeBox(y,ph2,'Tape ton code secret, différent du code d’accès.')},{t:'h',l:'Pour rendre une page secrète : appui long sur la page dans ton journal → « garder secrète ».'}],x,ph)}},
@@ -8344,7 +8364,7 @@ run();window.__lisible=run;
 (()=>{/* Entre nous · web app : ce qui ne peut pas marcher dans une web app est masqué ; le reste est branché */
 const $=s=>document.querySelector(s);
 /* 1 · masquer : widgets, apps du téléphone, « noter l'app », conversation à la voix, verrouillage différé */
-const HIDE_L=['Widgets','Calendrier','Photos','Musique','Verrouiller après','Façon de parler','Afficher le texte','Garder mes vocaux'];
+const HIDE_L=['Utiliser un code','Widgets','Calendrier','Photos','Musique','Verrouiller après','Façon de parler','Afficher le texte','Garder mes vocaux'];
 const HIDE_SUB=/^(mon téléphone|quand on se parle)$/i;
 function tidy(root){
  root.querySelectorAll('.rgl[data-l]').forEach(r=>{if(HIDE_L.includes(r.dataset.l))r.style.display='none'});
@@ -8669,6 +8689,27 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
 
 /* 14 · l'ancien « + » du mini-calendrier ouvre le vrai calendrier */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#calplus');if(!b)return;e.stopImmediatePropagation();e.preventDefault();window.__enShow('calp');setTimeout(()=>window.__calOpen&&window.__calOpen(null,new Date()),250)},true);
+
+/* 15 · Face ID : vrai interrupteur dans Confidentialité */
+(function(){const paint=()=>document.querySelectorAll('.rgl[data-l="Face ID"] .rgsw').forEach(w=>w.classList.toggle('on',!!(window.__fidOn&&window.__fidOn())));
+ const RG=window.__enGet&&window.__enGet('rg');
+ new MutationObserver(()=>{if(document.querySelector('.rgl[data-l="Face ID"]'))paint()}).observe(document.getElementById('rg')||document.body,{subtree:true,childList:true});
+ let busy=false;
+ document.addEventListener('click',async e=>{const r=e.target.closest&&e.target.closest('.rgl[data-l="Face ID"]');if(!r)return;e.stopImmediatePropagation();e.preventDefault();if(busy)return;busy=true;
+  try{if(window.__fidOn()){await window.__fidOff();toast('Face ID est désactivé : ton code suffit.')}
+   else{if(!(await window.__fidOk())){toast('Face ID n’est pas disponible sur cet appareil.');return}
+    try{await window.__fidEnroll();toast('✦ Face ID est activé : touche l’icône sur l’écran de code.')}
+    catch(x){toast(x&&x.message==='noprf'?'Il faut iOS 18.4 ou plus récent (et le trousseau iCloud) pour ouvrir avec Face ID.':(x&&x.name==='NotAllowedError'?'C’est annulé.':'Face ID n’a pas pu être activé.'))}}}
+  finally{busy=false;if(RG)RG.fid=window.__fidOn();paint();const st=document.getElementById('rgcst');if(st)st.textContent=window.__fidOn()?'Ton journal est protégé par ton code et Face ID.':'Ton journal est protégé par un code.'}},true);
+})();
+
+/* 16 · à l'inscription : proposer Face ID si l'iPhone sait le faire */
+(function(){const on=document.getElementById('o3on');if(!on)return;const b=on.closest('.o3b');
+ window.__fidOk&&window.__fidOk().then(ok=>{if(!ok||!b)return;b.querySelectorAll('.o3fid,.o3t,.o3s,.o3on,.o3later').forEach(x=>x.style.display='')});
+ on.addEventListener('click',async e=>{e.stopImmediatePropagation();e.preventDefault();if(on.dataset.busy)return;on.dataset.busy=1;
+  try{await window.__fidEnroll();on.textContent='✓ Face ID activé';on.classList.add('done')}catch(x){toast(x&&x.message==='noprf'?'Il faut iOS 18.4 ou plus récent pour Face ID. Ton code suffit.':'Pas de Face ID pour l’instant : tu pourras l’activer dans Réglages.')}
+  setTimeout(()=>{const l=document.getElementById('o3later');l&&l.click();delete on.dataset.busy},700)},true);
+})();
 })();</script>
 
 </body>
