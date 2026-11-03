@@ -124,6 +124,9 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 .en-avin{all:unset;width:84px;padding:4px 8px;border-radius:14px;border:.7px solid var(--sline,#D9B0B5);font:italic 13px 'Cormorant Garamond',serif}
 #en-lock .pad button.fid{border:0}
 #en-lock .pad button.fid svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+#onb .en-ind,#en-lock .en-ind{display:none!important}
+#souv .en-sv0{margin:18px 6px;text-align:center}
+#souv .en-sv0 p{font:italic 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted);margin:0 0 14px}
 
 </style>
 <script>
@@ -229,8 +232,8 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   if(/Invalid login/i.test(m))return 'E-mail ou mot de passe incorrect.';if(/not confirmed/i.test(m))return 'Ton adresse n’est pas encore confirmée : ouvre le mail reçu.';
   if(/already registered|already been registered/i.test(m))return 'Un carnet existe déjà avec cet e-mail : choisis « J’ai déjà un carnet ».';if(/Password should|at least/i.test(m))return 'Le mot de passe doit faire au moins 8 caractères.';
   if(/rate limit|too many/i.test(m))return 'Trop d’essais, réessaie dans un moment.';if(/valid email|invalid format/i.test(m))return 'Cette adresse e-mail ne semble pas valide.';return m||'Ça n’a pas marché, réessaie.'};
- const APPURL='https://eliera9.github.io/entre-nous/';
- const auth=async(path,body)=>{if(/^(signup|recover)/.test(path))path+=(path.includes('?')?'&':'?')+'redirect_to='+encodeURIComponent(APPURL);const r=await fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await err(r));return r.json()};
+ const APPURL=/^https:/.test(location.protocol)?location.origin+location.pathname.replace(/[^/]*$/,''):'https://eliera9.github.io/Entre-nous/';
+ const auth=async(path,body)=>{if(/^(signup|recover|resend)/.test(path))path+=(path.includes('?')?'&':'?')+'redirect_to='+encodeURIComponent(APPURL);const r=await fetch(SB+'/auth/v1/'+path,{method:'POST',headers:{apikey:SBK,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(await err(r));return r.json()};
  async function token(){await load();if(!S)return null;if(S.expires_at-60>Date.now()/1000)return S.access_token;
   try{const j=await auth('token?grant_type=refresh_token',{refresh_token:S.refresh_token});await keep(j);return S.access_token}catch(e){return null}}
  async function rest(method,path,body,extra){const t=await token();if(!t)throw new Error('pas connectée');const r=await fetch(SB+'/rest/v1/'+path,{method,headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json',...(extra||{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(await err(r));return r.status===204?null:r.json()}
@@ -240,6 +243,7 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   async signUp(email,password){const j=await auth('signup',{email,password});if(j.access_token){await keep(j);return {ok:true}}return {ok:true,confirm:true}},
   async signIn(email,password){const j=await auth('token?grant_type=password',{email,password});await keep(j);return {ok:true}},
   async recover(email){await auth('recover',{email});return true},
+  async resend(email){await auth('resend',{type:'signup',email});return true},
   async signOut(){try{const t=await token();if(t)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t}})}catch(e){}await keep(null)},
   async pull(){await load();if(!S)return null;const r=await rest('GET','coffres?select=coffre,maj&user_id=eq.'+S.user.id);return r&&r[0]?r[0].coffre:null},
   push(rec){clearTimeout(pt);pt=setTimeout(async()=>{try{await load();if(!S||!navigator.onLine)return;await rest('POST','coffres?on_conflict=user_id',{user_id:S.user.id,coffre:rec,maj:new Date(rec.at).toISOString()},{Prefer:'resolution=merge-duplicates,return=minimal'});window.__enCloudOk=Date.now()}catch(e){window.__enCloudErr=e.message}},2500)},
@@ -326,7 +330,7 @@ function lockUI(meta,onOk,onSec,onFid){
 async function recoveryPage(){/* liens des mails (confirmation, mot de passe oublié) ouverts dans Safari */
  const h=new URLSearchParams(location.hash.slice(1));const ty=h.get('type');
  if(h.get('error_description')||(ty&&ty!=='recovery'&&h.get('access_token'))){const ok=!h.get('error_description');const el=document.createElement('div');el.id='en-lock';
-  el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Retourne dans l’app Entre nous et touche « Continuer ».':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
+  el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Tu peux fermer cette page et retourner dans l’app Entre nous : elle se connecte toute seule.':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
  if(ty!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
  const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
  document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
@@ -4530,7 +4534,7 @@ o2in.oninput=()=>show();document.querySelectorAll('#onb .o2psy button').forEach(
 let c1='',cur='',st=0,o3done=false;const o3d=[...document.querySelectorAll('#o3d i')],o3t=document.getElementById('o3t'),o3s=document.getElementById('o3s');
 function o3dots(){o3d.forEach((d,i)=>d.classList.toggle('on',i<cur.length))}
 document.getElementById('o3p').onclick=e=>{const b=e.target.closest('b');if(!b)return;if(b.classList.contains('o3del')){cur=cur.slice(0,-1);o3dots();return}if(b.classList.contains('e')||cur.length>=4)return;cur+=b.textContent;o3dots();
- if(cur.length===4)setTimeout(()=>{if(st===0){c1=cur;cur='';st=1;o3t.textContent='Encore une fois';o3s.textContent='pour être sûre';o3dots()}else if(cur===c1){document.getElementById('o3a').hidden=true;document.getElementById('o3b').hidden=false;o3done=true;window.__vaultSetCode&&window.__vaultSetCode(c1);show()}else{const dd=document.getElementById('o3d');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');cur='';c1='';st=0;o3t.textContent='Pas tout à fait…';o3s.textContent='on recommence doucement';o3dots()},900)}},250)};
+ if(cur.length===4)setTimeout(()=>{if(st===0){c1=cur;cur='';st=1;o3t.textContent='Encore une fois';o3s.textContent='pour être sûre';o3dots()}else if(cur===c1){document.getElementById('o3a').hidden=true;document.getElementById('o3b').hidden=false;o3done=true;window.__vaultSetCode&&window.__vaultSetCode(c1);o3t.textContent='Ton code est choisi ✦';o3s.textContent='tu le taperas à chaque ouverture';show()}else{const dd=document.getElementById('o3d');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');cur='';c1='';st=0;o3t.textContent='Pas tout à fait…';o3s.textContent='on recommence doucement';o3dots()},900)}},250)};
 document.getElementById('o3a').hidden=false;
 document.getElementById('o3on').onclick=e=>{e.target.textContent='✓ Face ID activé';e.target.classList.add('done');k=3;setTimeout(show,700)};document.getElementById('o3later').onclick=()=>{k=3;show()};let sx=null;o.addEventListener('pointerdown',e=>{const r=o.getBoundingClientRect();sx=(e.clientX-r.left<28)?e.clientX:null});
 o.addEventListener('pointerup',e=>{if(sx!==null&&e.clientX-sx>50&&k>0){k--;show()}sx=null});show();})();
@@ -5285,7 +5289,7 @@ window.__showRetenu=function(P){const x=document.getElementById('o2in');const me
   box.appendChild(f)})};
 ph.querySelector('.mvbk').onclick=()=>document.getElementById('mvai').scrollIntoView({behavior:'smooth',block:'center'});
 const go=document.getElementById('mvpgo');go.addEventListener('click',()=>{setTimeout(()=>{if(window.__portrait){window.__showRetenu(window.__portrait);document.getElementById('mvnote4').textContent='';ph.scrollIntoView({behavior:'smooth',block:'center'})}},450)});
-new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting&&!box.children.length){if(!window.__portrait){document.getElementById('aisample').click();document.getElementById('mvpgo').click()}else window.__showRetenu(window.__portrait);ob.disconnect()}},{threshold:.4}).observe(ph);
+new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting&&!box.children.length){window.__showRetenu(window.__portrait||{});ob.disconnect()}},{threshold:.4}).observe(ph);
 })();
 </script>
 <script type="text/x-en">
@@ -7057,7 +7061,7 @@ const chCard=c=>`<button class="sv-ch" data-a="ch" data-i="${c.id}"><span class=
 function vHome(){let h=`<label class="ps-srch" style="margin-top:14px"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg><input id="svq" placeholder="un lieu, une personne, une date…" value="${esc(S.q)}"></label>`;
  if(S.q){const q=S.q.toLowerCase();const L=ord(D.s.filter(s=>[s.t,s.avec,s.ou,s.m,String(s.y),s.r].join(' ').toLowerCase().includes(q)));return h+H(L.length+' SOUVENIR'+(L.length>1?'S':''))+(L.map(row).join('')||`<p class="ps-s" style="margin-top:10px">Aucun souvenir ne correspond.</p>`)}
  const j=D.s.find(s=>s.jour&&!S.nr[s.id]);if(j)h+=`<button class="sv-day" data-a="open" data-i="${j.id}"><span class="svpol"><i style="background-image:url(${j.img})"></i></span><span class="tx"><small>IL Y A UN AN, JOUR POUR JOUR</small><b>${esc(j.t)}</b></span><span class="svgo">›</span></button>`;
- return h+H('MES CHAPITRES')+D.ch.map(chCard).join('')}
+ return h+H('MES CHAPITRES')+D.ch.map(chCard).join('')+(D.s.length?'':'<div class="en-sv0"><p>Garde ici les moments qui comptent : une photo, un récit, un vocal, une chanson.</p><button class="ps-btn" data-a="pm-s">AJOUTER MON PREMIER SOUVENIR</button></div>')}
 function vCh(o){const c=D.ch.find(x=>x.id===o.i);const L=ord(D.s.filter(s=>s.c===c.id));let h=`<div class="sv-cov" style="background-image:url(${c.img})"></div><p class="ps-t" style="margin-top:12px">${esc(c.t)}</p><div class="ps-k">${c.de} – ${c.a==='aujourd\'hui'?'AUJOURD\'HUI':c.a} · ${L.length} SOUVENIR${L.length>1?'S':''}</div>`;let y='';
  L.forEach(s=>{if(s.y!==y){y=s.y;h+=H(String(y))}h+=row(s)});return h+(L.length?'':`<p class="ps-s" style="margin-top:16px">Pas encore de souvenir dans ce chapitre.</p>`)}
 function vFiche(o){const s=D.s.find(x=>x.id===o.i);const c=D.ch.find(x=>x.id===s.c);
@@ -8189,7 +8193,7 @@ const FAQ=[
 const S={v:'home',open:null,q:'',ut:{}};
 const row=(f,i)=>{const o=S.open===i;return `<button class="ad-r${o?' op':''}" data-a="q" data-i="${i}">${esc(f[1]).replace(/ \?$/,'&nbsp;?')}<b>›</b></button>`+(o?`<div class="ad-a"><p>${esc(f[2])}</p><p class="ad-ut">C’ÉTAIT UTILE&nbsp;? · <button data-a="ut" data-v="o" data-i="${i}" class="${S.ut[i]==='o'?'on':''}">OUI</button> · <button data-a="ut" data-v="n" data-i="${i}" class="${S.ut[i]==='n'?'on':''}">NON</button>${S.ut[i]?(S.ut[i]==='o'?' · MERCI ✦':' · <button data-a="w">ÉCRIS-NOUS</button>'):''}</p></div>`:'')};
 function vHome(){let h=`<p class="ad-k">QUESTIONS FRÉQUENTES</p>`+FAQ.map((f,i)=>f[3]?row(f,i):'').join('')+`<button class="ad-r more" data-a="all">toutes les questions<b>›</b></button>`;
- h+=`<p class="ad-k">NOUS ÉCRIRE</p><button class="ad-r" data-a="w">Écrire à l’équipe<b>›</b></button><button class="ad-r" data-a="pb">Signaler un problème<b>›</b></button>`;
+ 
  h+=`<p class="ad-k">BESOIN DE PARLER</p><button class="ad-card" data-a="talk"><span class="h">♡</span><span><span class="t">Besoin de parler à quelqu’un&nbsp;?</span><span class="s">des personnes t’écoutent, jour et nuit</span></span><b>›</b></button>`;return h}
 function vAll(){const q=S.q.trim().toLowerCase();const L=FAQ.map((f,i)=>[f,i]).filter(([f])=>!q||(f[1]+' '+f[2]).toLowerCase().includes(q));const GO=['MON CODE ET MON COMPTE','MES PAGES','PLUME','PSY','WIDGETS'];L.sort((a,b)=>GO.indexOf(a[0][0])-GO.indexOf(b[0][0])||a[1]-b[1]);let h=`<label class="ad-srch">⌕<input id="adq" placeholder="chercher une question…" value="${esc(S.q)}"></label>`;
  if(!L.length)return h+`<p class="ad-none">Pas de réponse à ça pour l’instant.<br><button data-a="w" style="text-decoration:underline;text-decoration-color:var(--sline)">Écris-nous, on te répond.</button></p>`;
@@ -8408,16 +8412,38 @@ const C=window.__enCloud;
 const fmtD=iso=>{try{return new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}catch(e){return''}};
 /* inscription : seulement l'e-mail pour l'instant (Apple demande un compte payant, Google arrive bientôt) */
 const acc=document.querySelector('#onb .oacc');if(acc)[...acc.querySelectorAll('button')].forEach(b=>{if(!/e-mail/i.test(b.textContent))b.style.display='none'});
+/* compte en attente de confirmation : le lien du mail s'ouvre dans Safari, pas dans l'app ;
+   l'app réessaie donc toute seule de se connecter dès que tu reviens, puis garde ton journal en ligne */
+const PEND=(window.__enKeep&&window.__enKeep('acpend',{}))||{};
+let pendBusy=false;
+async function afterLogin(fresh){/* un carnet existe déjà en ligne pour ce compte ? on ne l'écrase jamais sans te demander */
+ const rec=await C.pull();if(rec&&rec.box&&!fresh){twoBooks(rec);return}await window.__vaultPushNow()}
+async function tryPend(){if(!PEND.m||pendBusy)return;pendBusy=true;
+ try{await C.signIn(PEND.m,PEND.p);delete PEND.m;delete PEND.p;delete PEND.at;window.__enMail=(await C.session()).user.email;await afterLogin(false);toast('✦ Ton adresse est confirmée : ton journal est gardé en ligne.');refreshCompte()}
+ catch(x){if(/incorrect/.test(x.message)){delete PEND.m;delete PEND.p}}finally{pendBusy=false}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(tryPend,600)});addEventListener('focus',()=>setTimeout(tryPend,600));setInterval(tryPend,20000);setTimeout(tryPend,2500);
+window.__enPend=PEND;
+function twoBooks(rec){const el=document.createElement('div');el.className='en-sh';
+ el.innerHTML=`<div class="in"><p class="k">DEUX JOURNAUX</p><p class="t">Un journal existe déjà en ligne pour ce compte.</p><p class="s">Lequel veux-tu garder ? L’autre sera remplacé.</p><button type="button" class="b" id="en-kr">REPRENDRE CELUI EN LIGNE (${new Date(rec.at).toLocaleDateString('fr-FR')})</button><button type="button" class="b ol" id="en-kl">GARDER CELUI DE CE TÉLÉPHONE</button></div>`;
+ document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));
+ el.querySelector('#en-kl').onclick=async()=>{await window.__vaultPushNow();el.remove();toast('✦ Ton journal est gardé en ligne.');refreshCompte()};
+ el.querySelector('#en-kr').onclick=()=>window.__vaultAdopt(rec)}
+window.__enTwoBooks=twoBooks;
 const g2=document.getElementById('ogo2');
 if(g2){const orig=g2.onclick;const hint=document.getElementById('ohint'),em=document.querySelector('#oform input[type=email]'),pw=document.getElementById('opw');
  const mode=()=>{const b=document.querySelector('#onb .otabs button.on');return b?b.dataset.m:'new'};
  const say=(m,er)=>{hint.hidden=false;hint.textContent=m;hint.classList.toggle('en-er',!!er)};
  let busy=false;
- g2.onclick=async e=>{if(busy)return;const mail=(em.value||'').trim(),pass=pw.value||'';if(!mail||!pass){say('Entre ton e-mail et ton mot de passe.',1);return}busy=true;g2.textContent='…';
-  try{if(mode()==='new'){let r={ok:true};try{r=await C.signUp(mail,pass)}catch(x){if(/déjà un carnet/.test(x.message))throw x;r=await C.signIn(mail,pass)}
-    if(r.confirm){try{await C.signIn(mail,pass);r={ok:true}}catch(x){say('Je t’ai envoyé un mail : touche le lien pour confirmer ton adresse, puis reviens ici et touche « Continuer ».');return}}
-    orig&&orig.call(g2,e)}
-   else{await C.signIn(mail,pass);const rec=await C.pull();if(rec){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
+ g2.onclick=async e=>{if(busy)return;const mail=(em.value||'').trim(),pass=pw.value||'';if(!mail||!pass){say('Entre ton e-mail et ton mot de passe.',1);return}
+  if(pass.length<8){say('Le mot de passe doit faire au moins 8 caractères.',1);return}busy=true;g2.textContent='…';
+  try{if(mode()==='new'){
+    let r;try{r=await C.signUp(mail,pass)}catch(x){if(!/déjà un carnet/.test(x.message))throw x;r={exists:true}}
+    let logged=false;try{await C.signIn(mail,pass);logged=true}catch(x){if(r.exists)throw new Error('Un carnet existe déjà avec cet e-mail. Choisis « J’ai déjà un carnet », ou « mot de passe oublié ».');if(!/confirmée/.test(x.message)&&!r.confirm)throw x}
+    if(logged){const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500);return}}
+    else{PEND.m=mail;PEND.p=pass;PEND.at=Date.now();window.__enPendShow=1}
+    orig&&orig.call(g2,e);
+    if(!logged)setTimeout(()=>toast('Je t’ai envoyé un mail : touche le lien quand tu veux. Ton compte s’activera tout seul.'),900)}
+   else{await C.signIn(mail,pass);const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
   catch(x){say(x.message,1)}finally{busy=false;g2.textContent='Continuer'}};
  const fg=document.getElementById('oforgot');if(fg)fg.onclick=async()=>{const mail=(em.value||'').trim();if(!mail){say('Entre d’abord ton e-mail.',1);return}try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
 }
@@ -8428,10 +8454,16 @@ async function compte(root){const b=root.querySelector('.rgl[data-l="Adresse mai
  const cr=root.querySelector('.rgl[data-l="Compte créé le"] .rglr');if(cr){if(S&&S.user.created_at)cr.textContent=fmtD(S.user.created_at);else cr.closest('.rgl').style.display='none'}
  const mp=root.querySelector('.rgl[data-l="Mot de passe"]');if(mp){if(!S)mp.style.display='none';else mp.addEventListener('click',async ev=>{ev.stopImmediatePropagation();try{await C.recover(S.user.email);toast('Je t’ai envoyé un mail pour changer ton mot de passe.')}catch(x){toast(x.message)}},true)}
  const box=document.createElement('div');box.className='en-acc';
- box.innerHTML=S?`<p class="st">✦ ton journal est gardé en ligne, chiffré</p><button type="button" class="b ol" id="en-out">ME DÉCONNECTER DE MON COMPTE</button>`:`<p class="st">Avec un compte, ton journal chiffré est gardé en ligne et te suit sur un autre téléphone.</p><button type="button" class="b" id="en-in">CRÉER MON COMPTE OU ME CONNECTER</button>`;
+ const esc2=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ if(!S&&PEND.m&&v)v.textContent=PEND.m;
+ box.innerHTML=S?`<p class="st">✦ ton journal est gardé en ligne, chiffré</p><button type="button" class="b ol" id="en-out">ME DÉCONNECTER DE MON COMPTE</button>`:PEND.m?`<p class="st">Ton compte ${esc2(PEND.m)} attend ta confirmation : touche le lien du mail que je t’ai envoyé (regarde aussi les indésirables). Ensuite je me connecte toute seule.</p><button type="button" class="b" id="en-rs">RENVOYER LE MAIL</button><button type="button" class="b ol" id="en-ck">J’AI TOUCHÉ LE LIEN</button><button type="button" class="b ol" id="en-ch">CHANGER D’ADRESSE</button>`:`<p class="st">Avec un compte, ton journal chiffré est gardé en ligne et te suit sur un autre téléphone.</p><button type="button" class="b" id="en-in">CRÉER MON COMPTE OU ME CONNECTER</button>`;
  (mp||b).after(box);
  const o=box.querySelector('#en-out');if(o)o.onclick=async()=>{if(!o.dataset.c){o.dataset.c=1;o.textContent='TOUCHE ENCORE : ton journal reste sur ce téléphone';return}await C.signOut();toast('Déconnectée. Ton journal reste sur ce téléphone.');root.querySelectorAll('[data-en]').forEach(x=>delete x.dataset.en);box.remove();compte(root)};
- const i=box.querySelector('#en-in');if(i)i.onclick=()=>accSheet(()=>{box.remove();delete b.dataset.en;compte(root)})}
+ const i=box.querySelector('#en-in');if(i)i.onclick=()=>accSheet(()=>{box.remove();delete b.dataset.en;compte(root)});
+ const rs=box.querySelector('#en-rs');if(rs)rs.onclick=async()=>{try{await C.resend(PEND.m);toast('C’est renvoyé. Regarde aussi dans les indésirables.')}catch(x){toast(x.message)}};
+ const ck=box.querySelector('#en-ck');if(ck)ck.onclick=async()=>{ck.textContent='…';await tryPend();if(PEND.m){ck.textContent='J’AI TOUCHÉ LE LIEN';toast('Pas encore confirmé de mon côté. Réessaie dans un instant.')}};
+ const ch=box.querySelector('#en-ch');if(ch)ch.onclick=()=>{delete PEND.m;delete PEND.p;accSheet(()=>refreshCompte());refreshCompte()}}
+function refreshCompte(){const r=document.getElementById('rgp');if(!r)return;r.querySelectorAll('.en-acc').forEach(x=>x.remove());r.querySelectorAll('[data-en]').forEach(x=>delete x.dataset.en);if(r.querySelector('.rgl[data-l="Adresse mail"]'))compte(r)}
 function toast(m){const t=document.createElement('div');t.className='en-toast';t.textContent=m;document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('on'));setTimeout(()=>{t.classList.remove('on');setTimeout(()=>t.remove(),300)},3200)}
 function accSheet(done){const el=document.createElement('div');el.className='en-sh';el.id='en-accs';
  el.innerHTML=`<div class="in"><p class="k">MON COMPTE</p><div class="tb"><button type="button" class="on" data-m="new">Créer mon compte</button><button type="button" data-m="back">J’ai déjà un compte</button></div><input type="email" id="en-am" placeholder="ton@email.fr" autocomplete="email"><input type="password" id="en-ap" placeholder="mot de passe · 8 caractères minimum" autocomplete="new-password"><p class="s" id="en-amsg"></p><button type="button" class="b" id="en-ago">CONTINUER</button><button type="button" class="lk" id="en-afg" hidden>mot de passe oublié ?</button><button type="button" class="lk" id="en-ax">plus tard</button></div>`;
@@ -8441,8 +8473,12 @@ function accSheet(done){const el=document.createElement('div');el.className='en-
  el.querySelector('#en-ax').onclick=close;
  el.querySelector('#en-afg').onclick=async()=>{const mail=el.querySelector('#en-am').value.trim();if(!mail)return say('Entre d’abord ton e-mail.',1);try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
  el.querySelector('#en-ago').onclick=async e=>{const bt=e.currentTarget,mail=el.querySelector('#en-am').value.trim(),pass=el.querySelector('#en-ap').value;if(!mail||!pass)return say('Entre ton e-mail et ton mot de passe.',1);bt.textContent='…';
-  try{if(m==='new'){let r=await C.signUp(mail,pass);if(r.confirm){try{await C.signIn(mail,pass)}catch(x){say('Je t’ai envoyé un mail : touche le lien pour confirmer ton adresse, puis reviens ici et touche « Continuer ».');return}}}
+  if(pass.length<8){bt.textContent='CONTINUER';return say('Le mot de passe doit faire au moins 8 caractères.',1)}
+  try{if(m==='new'){let r;try{r=await C.signUp(mail,pass)}catch(x){if(!/déjà un carnet/.test(x.message))throw x;r={exists:true}}
+    try{await C.signIn(mail,pass)}catch(x){if(r.exists)throw new Error('Un compte existe déjà avec cet e-mail : choisis « J’ai déjà un compte ».');if(!/confirmée/.test(x.message)&&!r.confirm)throw x;
+     PEND.m=mail;PEND.p=pass;PEND.at=Date.now();close();toast('Je t’ai envoyé un mail : touche le lien, ton compte s’activera tout seul.');done&&done();return}}
    else await C.signIn(mail,pass);
+   window.__enMail=mail;
    const rec=await C.pull();
    if(rec&&rec.box){el.querySelector('.in').innerHTML=`<p class="k">DEUX JOURNAUX</p><p class="t">Un journal existe déjà en ligne pour ce compte.</p><p class="s">Lequel veux-tu garder ? L’autre sera remplacé.</p><button type="button" class="b" id="en-kl">GARDER CELUI DE CE TÉLÉPHONE</button><button type="button" class="b ol" id="en-kr">REPRENDRE CELUI EN LIGNE (${new Date(rec.at).toLocaleDateString('fr-FR')})</button>`;
     el.querySelector('#en-kl').onclick=async()=>{await window.__vaultPushNow();close();toast('✦ Ton journal est gardé en ligne.');done&&done()};
@@ -8455,7 +8491,8 @@ new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySe
 /* 5 · ton prénom : gardé dans tes réglages, repris partout */
 (function(){const RG=window.__enGet&&window.__enGet('rg');const x=document.getElementById('o2in');if(!RG||!x)return;
  if(RG.prenom&&!x.value)x.value=RG.prenom;
- const hi=()=>['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(e){const w=e.textContent.trim().split(/\s+/)[0];e.textContent=w+(window.__P0()?' '+window.__P0():'')}});
+ let shown=window.__P0();
+ const hi=()=>{const nw=window.__P0();['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(!e)return;let t=e.textContent.trim();if(shown&&t.endsWith(' '+shown))t=t.slice(0,-shown.length-1);e.textContent=t+(nw?' '+nw:'')});shown=nw};
  x.addEventListener('input',()=>{RG.prenom=x.value.trim();hi()});hi();
  const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P0()?', '+window.__P0():'')+'.';})();
 
@@ -8586,9 +8623,15 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
  let st={d:iso(),r:null,g:null};const sv=window.__enLive&&window.__enLive('pdjd',()=>st);if(sv&&sv.d)st=Object.assign(st,sv);
  let dirty=false;
  function day(){const t=iso();D.today=t;let x=D.days.find(y=>y.d===t);if(!x){x={d:t,th:[],v:50,em:[],parts:[]};D.days.unshift(x)}return x}
- function prune(x){x.parts=x.parts.filter(p=>p.f==='guider'?(p.qa.length||(p.media&&p.media.length)):(String(p.x||'').trim()||(p.media&&p.media.length)));if(!x.parts.length&&!x.moodSet){D.days=D.days.filter(y=>y!==x);D.todayWritten=false}else D.todayWritten=true}
+ function prune(x){x.parts=x.parts.filter(p=>p.f==='guider'?(p.qa.length||(p.media&&p.media.length)):(String(p.x||'').trim()||(p.media&&p.media.length)));if(!x.parts.length&&!x.moodSet){D.days=D.days.filter(y=>y!==x);D.todayWritten=false}else{D.todayWritten=true;themes(x)}}
  function part(x,key,f){let p=st[key]!=null&&x.parts.find(q=>q.uid===st[key]);if(!p){p={uid:'p'+Date.now()+key,f,h:hm()};if(f==='guider')p.qa=[];else p.x='';x.parts.push(p);st[key]=p.uid}return p}
  const plain=el=>{const c=el.cloneNode(true);c.querySelectorAll('figure,.gvoice,.rx,button').forEach(n=>n.remove());c.querySelectorAll('br').forEach(b=>b.replaceWith('\n'));c.querySelectorAll('div,p,h3,h4,li,blockquote').forEach(b=>b.append('\n'));return c.textContent.replace(/ /g,' ').replace(/\n{3,}/g,'\n\n').trim()};
+ const THK={famille:/\b(maman|papa|m[eè]re|p[eè]re|fr[eè]re|s[oœ]eur|famille|mamie|papi|grand-m[eè]re|grand-p[eè]re|parents?|cousine?|tante|oncle)\b/i,
+  couple:/\b(copain|copine|ch[ée]ri|mon amour|couple|mari|femme|fianc[ée]e?|relation|rendez-vous amoureux)\b/i,
+  amis:/\b(amie?s?|copines?|copains|pote|soir[ée]e)\b/i,travail:/\b(travail|boulot|bureau|coll[eè]gues?|r[ée]union|patron|cheffe?|manager|stage|cours|fac|examen|[ée]tudes)\b/i,
+  projets:/\b(projet|r[eê]ve|envie de|objectif|plan|d[ée]m[ée]nag)/i,sommeil:/\b(dormi|dormir|sommeil|nuit blanche|insomnie|fatigu[ée]e?|r[eê]ve)\b/i,
+  emotions:/\b(triste|pleur|col[eè]re|angoiss|stress|peur|anxi|heureuse|joie|seule|vide|lourd)\w*/i,moi:/\b(moi-m[eê]me|pour moi|prendre soin|me sentir|j'ai besoin)\b/i};
+ function themes(x){const T=x.parts.map(p=>p.f==='guider'?p.qa.map(q=>q[1]).join(' '):p.x||'').join(' ');x.th=x.th||[];Object.entries(THK).forEach(([k,r])=>{if(r.test(T)&&!x.th.includes(k))x.th.push(k)})}
  function syncR(){if(!rp)return;const x=day();const t=plain(rp);const p=part(x,'r','raconter');p.x=t;p.media=window.__enMediaOf?window.__enMediaOf(rp):[];const im=rp.querySelector('figure img');if(im&&!x.photo&&/^data:/.test(im.src)&&im.src.length<600000)x.photo=im.src;prune(x);dirty=true}
  function syncG(){if(!gc)return;const qa=[];let q='';[...gc.querySelectorAll('.gb')].forEach(b=>{const t=b.textContent.trim();if(!t)return;if(b.classList.contains('gme')){qa.push([q||'',t]);q=''}else if(b.classList.contains('gai'))q=t});
   const md=window.__enMediaOf?window.__enMediaOf(gc):[];if(!qa.length&&!md.length&&st.g==null)return;const x=day();const p=part(x,'g','guider');p.qa=qa;p.media=md;prune(x);dirty=true}
@@ -8710,6 +8753,9 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   try{await window.__fidEnroll();on.textContent='✓ Face ID activé';on.classList.add('done')}catch(x){toast(x&&x.message==='noprf'?'Il faut iOS 18.4 ou plus récent pour Face ID. Ton code suffit.':'Pas de Face ID pour l’instant : tu pourras l’activer dans Réglages.')}
   setTimeout(()=>{const l=document.getElementById('o3later');l&&l.click();delete on.dataset.busy},700)},true);
 })();
+
+/* 17 · le portrait collé depuis ChatGPT / Claude est gardé */
+(function(){let P=window.__portrait||null;const sv=window.__enLive&&window.__enLive('portrait',()=>window.__portrait||null);if(sv&&!window.__portrait)window.__portrait=sv})();
 })();</script>
 
 </body>
