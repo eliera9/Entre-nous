@@ -149,7 +149,8 @@ window.__enKeepArr=(k,a)=>{const sv=M.st[k];a.splice(0,a.length,...((sv&&REEL()&
 window.__enGet=k=>LIVE[k]&&LIVE[k].o;
 window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').trim()};
 window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).trim()};
-window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}};
+window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis']){M.ls['en-depuis']=String(Date.now());touch()}};
+window.__enDepuis=()=>{const t=+M.ls['en-depuis']||Date.now();const d=new Date(t);return ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'][d.getMonth()]+' '+d.getFullYear()};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
 function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
 let last='';
@@ -201,6 +202,7 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   async setPassword(t,password){const r=await fetch(SB+'/auth/v1/user',{method:'PUT',headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({password})});if(!r.ok)throw new Error(await err(r));return true}
  }})();
 window.__enCloud=CLOUD;
+window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.email}).catch(()=>{});
 /* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
 window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;await dbPut(KEY,rec);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
@@ -4226,8 +4228,8 @@ function render(){
   document.getElementById("hscene").src=`illus/bureau-${state.m}-${state.s}.jpg`;
   document.getElementById("date").textContent=SEASONS[state.s][1];
   document.getElementById("hdate").firstChild.nodeValue=SEASONS[state.s][1];
-  document.getElementById("hello").textContent=M.hello+" Elisa";
-  document.getElementById("hhello").textContent=M.hello+" Elisa";
+  document.getElementById("hello").textContent=M.hello+(window.__P()?" "+window.__P0():"");
+  document.getElementById("hhello").textContent=M.hello+(window.__P()?" "+window.__P0():"");
   document.getElementById("doux").textContent=state.bas?"Tu fais de ton mieux, et c'est déjà beaucoup.":M.doux;
   document.querySelectorAll("#c-moment .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.m)));
   document.querySelectorAll("#c-season .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.s)));
@@ -5600,13 +5602,13 @@ function render(rows,box,ph){
    v.addEventListener('blur',()=>{v.contentEditable='false';v.classList.remove('ed');if(hp)setTimeout(()=>hp.hidden=true,260);S[r.k]=v.textContent.trim()||r.v;v.textContent=S[r.k];r.on&&r.on(S[r.k],ph)});return}
   /* dépliables */
   const x=document.createElement('div');x.className='rgx';x.hidden=true;
-  const rv=()=>r.t==='choice'?r.o[S[r.k]]:r.t==='wheel'?r.fmt(S[r.k]):(typeof r.v==='function'?r.v():r.v||'');
+  const rv=()=>r.t==='choice'?r.o[S[r.k]]:r.t==='wheel'?((r.k==='naiss'&&!S.naissOk)?'à choisir':r.fmt(S[r.k])):(typeof r.v==='function'?r.v():r.v||'');
   if(r.t==='choice'&&S[r.k]===undefined)S[r.k]=r.d||0;if(r.t==='wheel'&&S[r.k]===undefined)S[r.k]=r.d.slice();
   const paint=()=>{l.innerHTML=left+'<span class="rglr">'+(r.pill?r.pill():(rv()?esc(rv())+' ':'')+'<i class="rgch">'+(x.hidden?'⌄':'⌃')+'</i>')+'</span>'};
   l.__paint=paint;paint();box.appendChild(l);box.appendChild(x);
   const fill=()=>{x.innerHTML='';
    if(r.t==='choice'){render([{t:'checks',k:r.k,o:r.o,st:r.st,on:(i,p)=>{paint();r.on&&r.on(i,p)}}],x,ph);if(r.help)render([{t:'h',l:r.help}],x,ph)}
-   else if(r.t==='wheel'){const cols=r.cols().map((c,i)=>[c,S[r.k][i]]);const w=wheel(cols,v=>{S[r.k]=v;paint();r.on&&r.on(v,ph)});x.appendChild(w);if(r.help)render([{t:'h',l:r.help}],x,ph);requestAnimationFrame(()=>w.__init.forEach(f=>f()))}
+   else if(r.t==='wheel'){const cols=r.cols().map((c,i)=>[c,S[r.k][i]]);const w=wheel(cols,v=>{S[r.k]=v;if(r.k==='naiss')S.naissOk=1;paint();r.on&&r.on(v,ph)});x.appendChild(w);if(r.help)render([{t:'h',l:r.help}],x,ph);requestAnimationFrame(()=>w.__init.forEach(f=>f()))}
    else r.fill(x,ph,paint)};
   l.onclick=e=>{if(e.target.closest('.rgpi[data-act]'))return;const open=x.hidden;closeOthers(box,x);if(open){fill();x.hidden=false}else x.hidden=true;paint()};
   if(r.open)S.__open=l;
@@ -5658,7 +5660,7 @@ compte:{t:'mon compte',r:()=>[
  {t:'text',k:'prenom',l:'Prénom',v:me(),on:()=>drawMain()},
  {t:'text',k:'nom',l:'Nom',v:''},
  {t:'text',k:'petit',l:'Petit nom',v:'',help:'C’est ainsi que Plume t’appellera.'},
- {t:'wheel',k:'naiss',l:'Date de naissance',d:[13,4,46],cols:()=>[[...Array(31)].map((_,i)=>i+1),MOIS,[...Array(61)].map((_,i)=>1950+i)],fmt:v=>(v[0]+1)+' '+MOIS[v[1]]+' '+(1950+v[2]),help:'Plume te laissera un petit mot ce jour-là.'},
+ {t:'wheel',k:'naiss',l:'Date de naissance',d:[0,0,40],cols:()=>[[...Array(31)].map((_,i)=>i+1),MOIS,[...Array(61)].map((_,i)=>1950+i)],fmt:v=>(v[0]+1)+' '+MOIS[v[1]]+' '+(1950+v[2]),help:'Plume te laissera un petit mot ce jour-là.'},
  {t:'choice',k:'accord',l:'On m’écrit au',o:['féminin','masculin','neutre'],help:'Tous les petits mots de Plume s’accordent.'},
  {t:'choice',k:'langue',l:'Langue',o:['français','english']},
  {t:'sc',l:'MON COMPAGNON'},
@@ -5669,7 +5671,7 @@ compte:{t:'mon compte',r:()=>[
     c.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{window.__pet=b.dataset.p;draw();paint();const ic=x.previousElementSibling.querySelector('.rgic');if(ic)ic.src=petImg();drawMain()})};
    let x0=null;c.addEventListener('pointerdown',e=>x0=e.clientX);c.addEventListener('pointerup',e=>{if(x0!==null&&Math.abs(e.clientX-x0)>30){const i=PETS.indexOf(pet());window.__pet=PETS[(i+(e.clientX<x0?1:-1)+PETS.length)%PETS.length];draw();paint();drawMain()}x0=null});draw()}},
  {t:'sc',l:'MA CONNEXION'},
- {t:'text',k:'mail',l:'Adresse mail',v:'elisa@exemple.fr',on:()=>drawMain()},
+ {t:'text',k:'mail',l:'Adresse mail',v:(window.__enMail||''),on:()=>drawMain()},
  {t:'text',k:'tel',l:'Téléphone',v:'06 12 34 56 78'},
  {t:'x',k:'mdp',l:'Mot de passe',v:'modifier',fill:(x,ph)=>{x.insertAdjacentHTML('beforeend','<label class="rgpw"><span>actuel</span><input type="password" value="motdepasse"></label><label class="rgpw"><span>nouveau</span><input type="password" id="rgnew"></label><div class="rgjg" id="rgjg"><i></i><i></i><i></i><i></i></div><span class="rgjw" id="rgjw">&nbsp;</span><label class="rgpw"><span>confirmer</span><input type="password"></label><button type="button" class="rgbtn">changer</button><button type="button" class="rglk">mot de passe oublié ?</button>');
   const n=$('rgnew');n.oninput=()=>{const v=n.value;let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v)&&/[a-z]/.test(v))s++;if(/\d/.test(v))s++;if(/[^\w]/.test(v)||v.length>=12)s++;if(!v)s=0;$('rgjg').querySelectorAll('i').forEach((i,j)=>i.classList.toggle('on',j<s));$('rgjw').textContent=v?['FRAGILE','FRAGILE','MOYEN','SOLIDE','TRÈS SOLIDE'][s]:' '};
@@ -5845,7 +5847,7 @@ function index(){const I=[];Object.keys(P).forEach(k=>{const walk=rows=>rows.for
 function drawMain(){const fq=mb.querySelector('.rgsrch input'),q=fq?fq.value:'';
  mb.innerHTML='<div id="rgmeb"></div><label class="rgsrch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></svg><input type="text" placeholder="chercher un réglage…" aria-label="Chercher un réglage"><button type="button" hidden>annuler</button></label><div class="rgres" id="rgres" hidden></div><div id="rgmc"></div>';
  const mc=$('rgmc');
- $('rgmeb').innerHTML='<div class="rgme"><div class="rgph"><span><img alt="" src="'+photoSrc()+'"'+(S.photo?' class="me"':'')+'></span><button type="button" class="rgpen" id="rgpen" aria-label="Modifier mon compte">'+PEN+'</button></div><div class="rgnm">'+esc(S.prenom||me())+'</div><div class="rgml">'+esc(S.mail||'elisa@exemple.fr')+'</div><span class="rgpil">✦ DEPUIS MARS 2025</span></div>';
+ $('rgmeb').innerHTML='<div class="rgme"><div class="rgph"><span><img alt="" src="'+photoSrc()+'"'+(S.photo?' class="me"':'')+'></span><button type="button" class="rgpen" id="rgpen" aria-label="Modifier mon compte">'+PEN+'</button></div><div class="rgnm">'+esc(S.prenom||me())+'</div><div class="rgml">'+esc(S.mail||window.__enMail||'')+'</div><span class="rgpil">✦ DEPUIS '+window.__enDepuis()+'</span></div>';
  mc.innerHTML=SECT.map(s=>'<p class="rgsc">'+s[0]+'</p>'+s[1].map(r=>'<div class="rgl" data-p="'+r[0]+'"><span class="rgll"><img class="rgic" alt="" src="illus/reglages/'+P[r[0]].ic+'.webp">'+r[1]+'</span><i class="rgch">›</i></div>').join('')).join('')
   +'<div class="rgstar">✦</div><button type="button" class="rgbtn lt" id="rgout">VERROUILLER</button><button type="button" class="rglk" id="rghelp">aide et contact</button><p class="rgsig"><b>Entre nous</b><br>version 1.0</p>';
  $('rgpen').onclick=()=>openPage('compte');
@@ -8100,7 +8102,7 @@ function render(top){B.innerHTML=S.v==='all'?vAll():vHome();TT.textContent=S.v==
 function closeSh(){const d=ph.querySelector('.ad-dim'),s=ph.querySelector('.ad-sh');if(!s)return;d.classList.remove('on');s.classList.remove('on');setTimeout(()=>{d.remove();s.remove();ph.style.overflowY=''},300)}
 function sheet(html){closeSh();ph.querySelectorAll('.ad-dim,.ad-sh').forEach(x=>x.remove());const d=document.createElement('div');d.className='ad-dim';const s=document.createElement('div');s.className='ad-sh';s.innerHTML=`<div class="in"><span class="gr"></span>${html}</div>`;[d,s].forEach(x=>{x.style.top=ph.scrollTop+'px';x.style.height=ph.clientHeight+'px';ph.appendChild(x)});ph.style.overflowY='hidden';d.onclick=closeSh;requestAnimationFrame(()=>{d.classList.add('on');s.classList.add('on')});return s}
 function toast(t){const o=document.createElement('div');o.className='ad-toast';o.textContent=t;o.style.top=(ph.scrollTop+ph.clientHeight-130)+'px';ph.appendChild(o);setTimeout(()=>o.remove(),2400)}
-const mail=()=>(window.__profil&&window.__profil.mail)||'elisa@exemple.fr';
+const mail=()=>(window.__profil&&window.__profil.mail)||window.__enMail||'';
 const pills=(id,L,on)=>`<div class="pl" data-g="${id}">${L.map(x=>`<button class="${x===on?'on':''}">${x}</button>`).join('')}</div>`;
 function sWrite(){const s=sheet(`<p class="k">ÉCRIRE À L’ÉQUIPE</p><p class="lab">C’est plutôt…</p>${pills('t',['une idée','une question','un petit mot','autre'])}<textarea placeholder="écris-nous ce que tu veux…" aria-label="Mon message"></textarea><p class="lab">On te répond à</p><input class="ml" type="email" value="${esc(mail())}" aria-label="Adresse de réponse"><button class="ok" aria-disabled="true">ENVOYER</button>`);wire(s)}
 function sProb(){const s=sheet(`<p class="k">SIGNALER UN PROBLÈME</p><p class="lab">Où ça s’est passé&nbsp;?</p>${pills('o',['accueil','mon journal','psy','autre'])}<textarea placeholder="raconte ce qui s’est passé…" aria-label="Ce qui s'est passé"></textarea><button class="att"><i>+</i><span>ajouter une capture d’écran</span></button><input type="file" accept="image/*" hidden><button class="ck on"><b>✓</b><span>joindre le modèle du téléphone et la version de l’app (jamais tes pages)</span></button><button class="ok" aria-disabled="true">ENVOYER</button>`);wire(s)}
@@ -8173,7 +8175,7 @@ window.__adSheet=sheet;
 /* code oublié, sur l’écran d’ouverture */
 const op=document.getElementById('open');const fg=op&&op.querySelector('.forgot');
 if(fg){fg.setAttribute('role','button');fg.tabIndex=0;fg.style.cursor='pointer';
- const go=()=>{const mail=(window.__profil&&window.__profil.mail)||'elisa@exemple.fr';const m=mail.replace(/^(.).*(@.*)$/,'$1•••$2');
+ const go=()=>{const mail=(window.__profil&&window.__profil.mail)||window.__enMail||'';const m=mail.replace(/^(.).*(@.*)$/,'$1•••$2');
   const x=sheet(op,`<p class="k">CODE OUBLIÉ</p><p class="fg-t">Pas de panique.</p><p class="fg-s">On t’envoie un lien sur <b>${m}</b> pour choisir un nouveau code. Tes pages restent intactes.</p><button class="ok">ENVOYER LE LIEN</button><p class="fg-n">Sans compte, le code ne peut pas être retrouvé.</p><button class="lk" data-close="1">annuler</button>`,'fgot');
   x.s.querySelector('.ok').onclick=()=>{x.s.querySelector('.in').innerHTML='<span class="gr"></span><p class="k">CODE OUBLIÉ</p><p class="fg-t">C’est parti ✦</p><p class="fg-s">Regarde ta boîte mail (et tes indésirables). Le lien est valable une heure.</p><button class="ok" data-close="1">J’AI COMPRIS</button>';x.s.querySelector('[data-close]').onclick=x.close}};
  fg.addEventListener('click',go);fg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})}
@@ -8356,7 +8358,8 @@ new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySe
 /* 5 · ton prénom : gardé dans tes réglages, repris partout */
 (function(){const RG=window.__enGet&&window.__enGet('rg');const x=document.getElementById('o2in');if(!RG||!x)return;
  if(RG.prenom&&!x.value)x.value=RG.prenom;
- x.addEventListener('input',()=>{RG.prenom=x.value.trim()});
+ const hi=()=>['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(e){const w=e.textContent.trim().split(/\s+/)[0];e.textContent=w+(window.__P0()?' '+window.__P0():'')}});
+ x.addEventListener('input',()=>{RG.prenom=x.value.trim();hi()});hi();
  const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P0()?', '+window.__P0():'')+'.';})();
 })();</script>
 
