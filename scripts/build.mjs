@@ -13,4 +13,6 @@ const html = await readFile(resolve(root, 'index.html'), 'utf8');
 const version = createHash('sha256').update(html).update(await readFile(resolve(root, 'ma-vie-parcours.js'))).digest('hex').slice(0, 12);
 const sw = await readFile(resolve(root, 'sw.js'), 'utf8');
 await writeFile(resolve(dist, 'sw.js'), sw.replace(/const V='[^']+'/, `const V='entre-nous-${version}'`));
+// GitHub Pages sert la racine du dépôt : son sw.js porte aussi la version, pour que chaque mise à jour remplace l'ancien cache
+await writeFile(resolve(root, 'sw.js'), sw.replace(/const V='[^']+'/, `const V='entre-nous-${version}'`));
 console.log('Entre nous : application prête dans dist/.');

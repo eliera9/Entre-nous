@@ -271,6 +271,12 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
  async function rest(method,path,body,extra){const t=await token();if(!t)throw new Error('pas connectée');const r=await fetch(SB+'/rest/v1/'+path,{method,headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json',...(extra||{})},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(await err(r));return r.status===204?null:r.json()}
  return {
   async session(){return load()},
+  async adopt(j){/* retour de Google : on garde la session */const r=await fetch(SB+'/auth/v1/user',{headers:{apikey:SBK,Authorization:'Bearer '+j.access_token}});if(!r.ok)throw new Error('connexion refusée');const u=await r.json();await keep({access_token:j.access_token,refresh_token:j.refresh_token,expires_in:+j.expires_in||3600,user:u});return u},
+  google(){location.href=SB+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(APPURL)},
+  async providers(){try{const r=await fetch(SB+'/auth/v1/settings',{headers:{apikey:SBK}});const j=await r.json();return j.external||{}}catch(e){return {}}},
+  async vapid(){const t=await token();const r=await fetch(SB+'/functions/v1/rappels?cle=1',{headers:{apikey:SBK,...(t?{Authorization:'Bearer '+t}:{})}});if(!r.ok)throw new Error('Les rappels ne sont pas encore installés côté serveur.');return (await r.json()).cle},
+  async subSave(sub,rappels){await load();if(!S)throw new Error('pas connectée');await rest('POST','abonnements?on_conflict=endpoint',{user_id:S.user.id,endpoint:sub.endpoint,cles:sub,rappels},{Prefer:'resolution=merge-duplicates,return=minimal'})},
+  async subDel(endpoint){try{await rest('DELETE','abonnements?endpoint=eq.'+encodeURIComponent(endpoint))}catch(e){}},
   tok:()=>token(),
   async signUp(email,password){const j=await auth('signup',{email,password});if(j.access_token){await keep(j);return {ok:true}}return {ok:true,confirm:true}},
   async signIn(email,password){const j=await auth('token?grant_type=password',{email,password});await keep(j);return {ok:true}},
@@ -377,6 +383,7 @@ async function recoveryPage(){/* liens des mails (confirmation, mot de passe oub
  const h=new URLSearchParams(location.hash.slice(1));const ty=h.get('type');
  if(h.get('error_description')||(ty&&ty!=='recovery'&&h.get('access_token'))){const ok=!h.get('error_description');const el=document.createElement('div');el.id='en-lock';
   el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Tu peux fermer cette page et retourner dans l’app Entre nous : elle se connecte toute seule.':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
+ if(!ty&&h.get('access_token')&&h.get('refresh_token')){try{await CLOUD.adopt({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_in:h.get('expires_in')})}catch(e){}history.replaceState(null,'',location.pathname);return false}
  if(ty!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
  const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
  document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
@@ -8967,6 +8974,68 @@ function run(){
  if(chK&&window.__pfKRend)window.__pfKRend();if(chP&&window.__pfPRend)window.__pfPRend()}
 window.__enFiche=run;run();
 const F=document.getElementById('mvfiche');if(F)new MutationObserver(()=>{if(F.classList.contains('en-on'))run()}).observe(F,{attributes:true,attributeFilter:['class']});
+})();</script>
+<script type="text/x-en">(()=>{/* Rappels pour de vrai (notifications de l'iPhone, iOS 16.4+, app ouverte depuis l'écran d'accueil) et connexion avec Google */
+const C=window.__enCloud;const RG=(window.__enGet&&window.__enGet('rg'))||{};const toast=m=>window.__enToast?window.__enToast(m):0;
+const STATE=(window.__enKeep&&window.__enKeep('rappels',{on:false,endpoint:''}))||{on:false};
+const p2=n=>String(n).padStart(2,'0');const MIN=[0,15,30,45];
+const at=(d,h,m)=>{const x=new Date(d);x.setHours(h,m||0,0,0);return x.getTime()};
+const occ=(e,days)=>{/* jours où tombe un événement du calendrier dans les prochains jours */const out=[];const t0=new Date();t0.setHours(0,0,0,0);
+ for(let i=0;i<=days;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);let on=false;
+  if(e.t==='anniv'||e.t==='moi')on=dt.getMonth()===e.m&&dt.getDate()===e.d;
+  else{const s=new Date(e.y,e.m,e.d);if(e.t==='psy'&&e.rep){if(dt>=s){const k=Math.round((dt-s)/864e5);on=e.rep===1?k%7===0:e.rep===2?k%14===0:e.rep===3?dt.getDate()===e.d:false}}else on=+s===+dt}
+  if(on)out.push(dt)}return out};
+function plan(){const L=[];const now=Date.now(),D=14;const add=(t,titre,b,k)=>{if(t>now+60000)L.push({at:t,t:titre,b,k,u:'./'})};
+ const t0=new Date();t0.setHours(0,0,0,0);
+ /* écrire, à l'heure choisie, les jours choisis */
+ if(RG.rap!==false){const w=RG.wheelRap||[21,0];const J=RG.jours||[1,1,1,1,1,0,1];const MJ=window.__MJ;
+  for(let i=0;i<D;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);const wi=(d.getDay()+6)%7;if(!J[wi])continue;
+   if(i===0&&MJ&&MJ.todayWritten)continue;add(at(d,w[0],MIN[w[1]]||0),'Entre nous',['Ta page t’attend. Même trois mots, c’est déjà beaucoup.','Comment s’est passée ta journée ? Je t’écoute.','Un petit moment pour toi, ce soir ?'][i%3],'ecrire')}}
+ /* rendez-vous : la veille ou le matin même, sans jamais écrire leur nom */
+ (window.__calE||[]).forEach(e=>{if(!e)return;
+  if(e.t==='rdv'&&e.rap){occ(e,D).forEach(d=>{const h=(e.h??9)+' h'+(e.mi?' '+p2(e.mi):'');if(e.rap===1){const v=new Date(d);v.setDate(d.getDate()-1);add(at(v,19,30),'Demain','Un rendez-vous à '+h+'. Je suis là si tu veux en parler.','rdv')}else add(at(d,8,0),'Aujourd’hui','Un rendez-vous à '+h+'. Prends soin de toi.','rdv')})}
+  if(e.t==='psy'){occ(e,D).forEach(d=>{const v=new Date(d);v.setDate(d.getDate()-1);add(at(v,19,0),'Demain, ta séance',e.prep!==0?'Tu veux la préparer un peu ce soir ?':'Je pense à toi pour demain.','psy')})}
+  if(e.t==='anniv'&&e.veille!==0){const pr=RG.prev??1;occ(e,D+7).forEach(d=>{const v=new Date(d);v.setDate(d.getDate()-(pr===1?1:pr===2?7:0));add(at(v,pr===0?9:19,0),pr===0?'Aujourd’hui':pr===1?'Demain':'Dans une semaine','Un anniversaire à souhaiter ✦','anniv')})}});
+ /* ton anniversaire */
+ if(RG.mien!==false&&RG.naissOk&&RG.naiss){for(let i=0;i<D;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);if(d.getDate()===RG.naiss[0]+1&&d.getMonth()===RG.naiss[1])add(at(d,9,0),'Joyeux anniversaire ✦','Regarde tout le chemin déjà fait.','moi')}}
+ /* petits pas avec une heure */
+ ((window.__PP&&window.__PP.items)||[]).forEach(x=>{if(!x||x.done&&x.rep!=='chaque jour')return;const m=String(x.r||'').match(/(\d{1,2})\s*h\s*(\d{2})?/);if(!m)return;
+  const n=x.rep==='chaque jour'?D:1;for(let i=0;i<n;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);add(at(d,+m[1],+(m[2]||0)),'Ton petit pas','C’est le moment, si tu en as envie ✦','pas')}});
+ /* petits mots de Plume */
+ const fq=RG.freq??1;if(fq>0){const M=[];if(RG.m0!==false)M.push('Je pensais à toi. Ça va ?');if(RG.m1!==false)M.push('Tu as souri aujourd’hui ?');if(RG.m2)M.push('Je suis fière de toi, tu sais.');
+  if(M.length)for(let i=1;i<D;i++){if(fq===1&&i%4)continue;const d=new Date(t0);d.setDate(t0.getDate()+i);add(at(d,11+(i*3)%7,(i*17)%60),(RG.petnom||'Plume'),M[i%M.length],'mot')}}
+ /* bilan de la semaine, le dimanche */
+ if(RG.bilan){for(let i=0;i<D;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);if(d.getDay()===0)add(at(d,18,0),'Ta semaine','Tu veux faire le point sur ta semaine ?','bilan')}}
+ /* ne pas déranger : rien entre les deux heures choisies (on repousse à la fin) */
+ if(RG.npd!==false){const a=RG.wDe||[22,0],b=RG.wA||[8,0];const A=a[0]*60+(MIN[a[1]]||0),B=b[0]*60+(MIN[b[1]]||0);
+  L.forEach(x=>{const d=new Date(x.at);const m=d.getHours()*60+d.getMinutes();const inn=A>B?(m>=A||m<B):(m>=A&&m<B);if(!inn)return;if(x.k==='mot'){x.drop=1;return}const e=new Date(d);if(A>B&&m>=A)e.setDate(e.getDate()+1);e.setHours(Math.floor(B/60),B%60,0,0);x.at=e.getTime()})}
+ return L.filter(x=>!x.drop).sort((a,b)=>a.at-b.at).slice(0,120)}
+window.__enRappelsPlan=plan;
+const sup=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const b64=s=>{const p='='.repeat((4-s.length%4)%4);const r=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
+async function sync(){if(!STATE.on||!sup())return;try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(!sub){STATE.on=false;return}await C.subSave(sub.toJSON(),{plan:plan(),tz:Intl.DateTimeFormat().resolvedOptions().timeZone,maj:Date.now()})}catch(e){}}
+async function activer(){if(!sup()){toast('Ouvre Entre nous depuis son icône sur l’écran d’accueil (iOS 16.4 ou plus) pour recevoir les rappels.');return false}
+ if(!(await C.session())){toast('Les rappels passent par ton compte : crée-le ou connecte-toi d’abord.');window.__enAccSheet&&window.__enAccSheet(()=>draw());return false}
+ const perm=await Notification.requestPermission();if(perm!=='granted'){toast('Autorise les notifications pour Entre nous dans Réglages › Notifications de l’iPhone.');return false}
+ try{const key=await C.vapid();const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(key)});
+  STATE.on=true;STATE.endpoint=sub.endpoint;await sync();toast('✦ C’est activé : je te ferai signe au bon moment.');return true}catch(e){toast(e.message||'Les rappels n’ont pas pu être activés.');return false}}
+async function couper(){try{const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(sub){await C.subDel(sub.endpoint);await sub.unsubscribe()}}catch(e){}STATE.on=false;toast('Les rappels sont coupés sur ce téléphone.')}
+/* encart en haut de Réglages › Notifications */
+function draw(){const r=document.getElementById('rgp');if(!r)return;const st=r.querySelector('#rgnst');if(!st)return;let box=r.querySelector('.en-notif');if(!box){box=document.createElement('div');box.className='en-acc en-notif';st.closest('.rgst').after(box)}
+ box.innerHTML=STATE.on?'<p class="st">✦ Les rappels arrivent sur ce téléphone.</p><button type="button" class="b ol" data-n="off">COUPER LES RAPPELS ICI</button>':'<p class="st">Pour que je te fasse signe, même app fermée, active les notifications de ce téléphone.</p><button type="button" class="b" data-n="on">ACTIVER LES NOTIFICATIONS</button>';
+ box.onclick=async e=>{const b=e.target.closest('[data-n]');if(!b)return;b.textContent='…';if(b.dataset.n==='on')await activer();else await couper();draw()}}
+new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySelector('#rgnst')&&!r.querySelector('.en-notif'))draw()}).observe(document.getElementById('rgp')||document.body,{subtree:true,childList:true});
+/* le programme des rappels suit tes changements */
+let tm=null;const later=()=>{clearTimeout(tm);tm=setTimeout(sync,3000)};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sync()});document.addEventListener('click',later,true);setInterval(sync,15*60000);setTimeout(sync,6000);
+/* connexion avec Google : visible dès que Google est activé dans Supabase */
+C.providers().then(pr=>{if(!pr.google)return;
+ const g=[...document.querySelectorAll('#onb .oacc button')].find(b=>/google/i.test(b.textContent));if(g){g.style.display='';g.addEventListener('click',e=>{e.stopImmediatePropagation();C.google()},true)}
+ window.__enGoogle=true});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-en-google]');if(b){e.preventDefault();C.google()}},true);
+new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getElementById('en-accs');if(a&&!a.querySelector('[data-en-google]')){const x=a.querySelector('#en-ago');if(x)x.insertAdjacentHTML('afterend','<button type="button" class="b ol" data-en-google>CONTINUER AVEC GOOGLE</button>')}}).observe(document.body,{childList:true});
+/* revenue de Google à la première ouverture : on passe directement à « Comment t'appelles-tu ? » */
+C.session().then(S=>{const on=document.querySelector('.phone.en-on');if(S&&on&&on.id==='onb'){const g=document.getElementById('o1guest');if(g)setTimeout(()=>{g.click();toast('✦ Connectée avec Google')},500)}});
 })();</script>
 </body>
 </html>
