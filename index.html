@@ -8,12 +8,15 @@
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>/* téléphone : l’app garde les proportions exactes de la planche (dessinée sur 302 px de large) ; tablette et ordinateur gardent leur affichage */(function(){if(Math.min(screen.width,screen.height)<=500){var m=document.querySelector('meta[name=viewport]');m.setAttribute('content','width=302,viewport-fit=cover,user-scalable=no')}})()</script>
+<script>/* Le nouvel accueil utilise le vrai viewport ; les autres écrans gardent leurs proportions existantes. */
+window.__enSetAuthLayout=function(active){document.documentElement.classList.toggle('en-auth-screen',!!active);const m=document.querySelector('meta[name=viewport]');const legacy=!active&&Math.min(screen.width,screen.height)<=500;const v=legacy?'width=302,viewport-fit=cover,user-scalable=no':'width=device-width,initial-scale=1,viewport-fit=cover';if(m&&m.content!==v)m.content=v};
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre nous">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#F5E0D3">
+<script>if(document.documentElement.classList.contains('en-nuit')){document.documentElement.style.backgroundColor='#2A1E26';document.querySelector('meta[name=theme-color]').content='#2A1E26'}</script>
 <meta name="description" content="Ton journal, rien qu’à toi.">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
@@ -281,7 +284,8 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
  return {
   async session(){return load()},
   async adopt(j){/* retour de Google : on garde la session */const r=await fetch(SB+'/auth/v1/user',{headers:{apikey:SBK,Authorization:'Bearer '+j.access_token}});if(!r.ok)throw new Error('connexion refusée');const u=await r.json();await keep({access_token:j.access_token,refresh_token:j.refresh_token,expires_in:+j.expires_in||3600,user:u});return u},
-  google(){location.href=SB+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(APPURL)},
+  google(){location.href=SB+'/auth/v1/authorize?provider=google&prompt=select_account&redirect_to='+encodeURIComponent(APPURL)},
+  async settings(){const r=await fetch(SB+'/auth/v1/settings',{headers:{apikey:SBK}});if(!r.ok)throw new Error('Le service de connexion est indisponible. Réessaie dans un instant.');return r.json()},
   async providers(){try{const r=await fetch(SB+'/auth/v1/settings',{headers:{apikey:SBK}});const j=await r.json();return j.external||{}}catch(e){return {}}},
   async vapid(){const t=await token();const h={headers:{apikey:SBK,Authorization:'Bearer '+(t||SBK)}};let r=await fetch(SB+'/functions/v1/Rappels?cle=1',h);if(r.status===404)r=await fetch(SB+'/functions/v1/rappels?cle=1',h);if(!r.ok)throw new Error('Les rappels ne sont pas encore installés côté serveur.');return (await r.json()).cle},
   async subSave(sub,rappels){await load();if(!S)throw new Error('pas connectée');await rest('POST','abonnements?on_conflict=endpoint',{user_id:S.user.id,endpoint:sub.endpoint,cles:sub,rappels},{Prefer:'resolution=merge-duplicates,return=minimal'})},
@@ -333,9 +337,9 @@ function fit(){const z=innerWidth/BASE;document.documentElement.style.setPropert
 addEventListener('resize',fit);fit();
 function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock();return}if(ph.classList.contains('en-off'))return;
  document.querySelectorAll('#en-app .phone').forEach(p=>{const on=p===ph;p.classList.toggle('en-on',on);p.toggleAttribute('inert',!on);p.setAttribute('aria-hidden',on?'false':'true')});
- cur=ph;try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
+ cur=ph;window.__enSetAuthLayout(ph.id==='onb'&&(ph.dataset.enStep||'0')==='0');try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
  /* le fond derrière l'écran prend sa couleur : jamais de bande d'une autre couleur en haut ou en bas */
- try{const bg=getComputedStyle(ph).backgroundColor;if(bg&&bg!=='rgba(0, 0, 0, 0)'){document.documentElement.style.background=bg;document.body.style.background=bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=bg}}catch(e){}
+ try{const bg=ph.id==='onb'&&!ph.classList.contains('en-auth-ready')?(document.documentElement.classList.contains('en-nuit')?'#2A1E26':'#F5E0D3'):getComputedStyle(ph).backgroundColor;if(bg&&bg!=='rgba(0, 0, 0, 0)'){document.documentElement.style.background=bg;document.body.style.background=bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=bg}}catch(e){}
  if(ph.id==='home'&&window.__enTourLater){const f=window.__enTourLater;window.__enTourLater=null;setTimeout(f,450)}}
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
 /* un volet est ouvert quand l'écran est figé (overflow hidden) ou qu'un voile est visible : l'écran derrière reste en place, la barre du bas s'efface */
@@ -352,7 +356,7 @@ Element.prototype.scrollIntoView=function(o){if(o&&typeof o==='object'&&o.inline
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
  L.forEach(s=>{const n=document.createElement('script');n.textContent=s.textContent;s.replaceWith(n)});
- document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel()}
+ document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel();if(window.__enInitConnexion)window.__enInitConnexion()}
 function mount(first){
  const app=document.createElement('div');app.id='en-app';document.body.appendChild(app);
  const HIDE=new Set(['wdgp','wdge','open']);
@@ -372,6 +376,7 @@ function mount(first){
 
 /* ---------- écran de code ---------- */
 function lockUI(meta,onOk,onSec,onFid){
+ window.__enSetAuthLayout(false);
  const h=new Date().getHours(),mo=h<12?'matin':h<18?'aprem':h<22?'soir':'nuit',m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
  const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -396,9 +401,10 @@ function lockUI(meta,onOk,onSec,onFid){
 /* ---------- départ ---------- */
 async function recoveryPage(){/* liens des mails (confirmation, mot de passe oublié) ouverts dans Safari */
  const h=new URLSearchParams(location.hash.slice(1));const ty=h.get('type');
+ if(!ty&&h.get('error_description')){window.__enOAuthError='La connexion Google a été annulée ou refusée. Tu peux réessayer.';history.replaceState(null,'',location.pathname);return false}
  if(h.get('error_description')||(ty&&ty!=='recovery'&&h.get('access_token'))){const ok=!h.get('error_description');const el=document.createElement('div');el.id='en-lock';
   el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Tu peux fermer cette page et retourner dans l’app Entre nous : elle se connecte toute seule.':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
- if(!ty&&h.get('access_token')&&h.get('refresh_token')){try{await CLOUD.adopt({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_in:h.get('expires_in')})}catch(e){}history.replaceState(null,'',location.pathname);return false}
+ if(!ty&&h.get('access_token')&&h.get('refresh_token')){try{await CLOUD.adopt({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_in:h.get('expires_in')});window.__enOAuthReturn=true}catch(e){window.__enOAuthError='La connexion Google n’a pas pu être confirmée. Réessaie.'}history.replaceState(null,'',location.pathname);return false}
  if(ty!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
  const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
  document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
@@ -452,7 +458,7 @@ window.__enNextPsy=nextPsy;window.__enHH=hh;})();
   return pick(['Tu peux noter ici ce que tu veux lui dire, avant que ça s’envole.','Ajoute ta prochaine séance au calendrier, je te la rappellerai.'])};
 })();
 /* sécurité : un nom, un titre, un lieu (champs d'une ligne) ne peuvent pas contenir de balises */
-document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT'||!/^(text|search|)$/.test(t.type==='text'||!t.getAttribute('type')?'':t.type))return;if(/[<>]/.test(t.value)){const p=t.selectionStart;t.value=t.value.replace(/[<>]/g,'');try{t.setSelectionRange(p-1,p-1)}catch(x){}}},true);
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closest('#en-mail-overlay'))return;if(!t||t.tagName!=='INPUT'||!/^(text|search|)$/.test(t.type==='text'||!t.getAttribute('type')?'':t.type))return;if(/[<>]/.test(t.value)){const p=t.selectionStart;t.value=t.value.replace(/[<>]/g,'');try{t.setSelectionRange(p-1,p-1)}catch(x){}}},true);
 /* données réelles pour Psy, réglages et Plume */
 (function(){const MOL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
  const esc=t=>String(t||'').replace(/[<>&"]/g,'');const p2=n=>String(n).padStart(2,'0');const iso=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
@@ -498,6 +504,8 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT
 #en-app .phone :focus-visible{outline:2px solid var(--sacc);outline-offset:3px}
 @media(min-width:700px){#en-app{border-inline:1px solid rgba(155,108,128,.16)}}
 </style>
+<link rel="stylesheet" href="auth-connexion.css">
+<script src="auth-connexion.js" defer></script>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -4080,18 +4088,54 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
     <div class="screens"><div class="screen">
       <div class="phone onb" id="onb">
         <div class="otrack" id="otrack">
-          <div class="ost o1"><p class="o1t">Bienvenue dans ton espace intime</p><p class="o1s">Ton journal, rien qu’à toi.</p><div class="o1o" aria-hidden="true"><i></i>✦<i></i></div><div class="oacc"><button type="button">Continuer avec Apple</button><button type="button">Continuer avec Google</button><button type="button">Continuer avec mon e-mail</button></div><button type="button" class="o1guest" id="o1guest">Continuer en invité</button><button type="button" class="o1go" id="o1go" disabled>Commencer</button></div><div class="ost o2"><button type="button" class="o2ph" id="o2ph" aria-label="Ajouter une photo"><span>+</span></button><span class="o2phl" id="o2phl">ajouter une photo</span><p class="o2t">Comment t'appelles-tu&nbsp;?</p><input class="o2in" id="o2in" placeholder="Ton prénom" autocomplete="given-name"><p class="o2lb">Anniversaire <em>facultatif</em></p><div class="o2pills"><button type="button" data-v="26">jour</button><button type="button" data-v="mars">mois</button><button type="button" data-v="1994">année</button></div><p class="o2lb">Tu es accompagnée par un·e psy&nbsp;?</p><div class="o2psy"><button type="button">Oui</button><button type="button">Pas pour l'instant</button></div><p class="o2note">tu pourras changer ça à tout moment</p></div>
+          <div class="ost o1"><h1 class="o1t">Bienvenue dans<br class="en-auth-mobile-break"> ton espace intime</h1><p class="o1s">Ton journal, rien qu’à toi.</p><div class="o1o" aria-hidden="true"><i></i><span class="en-carnet-plume"></span><i></i></div><div class="oacc"><button type="button" id="en-auth-google">Continuer avec Google</button><button type="button" id="en-auth-email">Continuer avec mon e-mail</button></div><div class="en-guest-line"><button type="button" class="o1guest" id="o1guest">Continuer en invité</button><button type="button" class="en-guest-info" id="en-guest-info" aria-label="Informations sur le mode invité" aria-expanded="false" aria-controls="en-guest-note">ⓘ</button></div><p class="en-guest-note" id="en-guest-note" hidden>Sans compte · carnet enregistré dans ce navigateur.</p><p class="en-auth-status" id="en-auth-status" role="alert" hidden></p></div><div class="ost o2"><button type="button" class="o2ph" id="o2ph" aria-label="Ajouter une photo"><span>+</span></button><span class="o2phl" id="o2phl">ajouter une photo</span><p class="o2t">Comment t'appelles-tu&nbsp;?</p><input class="o2in" id="o2in" placeholder="Ton prénom" autocomplete="given-name"><p class="o2lb">Anniversaire <em>facultatif</em></p><div class="o2pills"><button type="button" data-v="26">jour</button><button type="button" data-v="mars">mois</button><button type="button" data-v="1994">année</button></div><p class="o2lb">Tu es accompagnée par un·e psy&nbsp;?</p><div class="o2psy"><button type="button">Oui</button><button type="button">Pas pour l'instant</button></div><p class="o2note">tu pourras changer ça à tout moment</p></div>
           <div class="ost o3"><div class="o3a" id="o3a"><p class="o3t" id="o3t">Choisis ton code</p><p class="o3s" id="o3s">4 chiffres, rien que pour toi</p><div class="dots" id="o3d"><i></i><i></i><i></i><i></i></div><div class="pad" id="o3p"><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b><b class="e"></b><b>0</b><b class="e o3del">⌫</b></div></div>
 <div class="o3b" id="o3b" hidden><p class="o3ok">✦ C'est noté</p><svg class="o3fid" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 14V9a5 5 0 0 1 5-5h5M34 4h5a5 5 0 0 1 5 5v5M44 34v5a5 5 0 0 1-5 5h-5M14 44H9a5 5 0 0 1-5-5v-5M17 17v4M31 17v4M24 17v10h-2M18 32c3.5 3 8.5 3 12 0"/></svg><p class="o3t">Ouvrir avec Face&nbsp;ID&nbsp;?</p><p class="o3s">ton code reste toujours possible</p><button type="button" class="o3on" id="o3on">Activer</button><button type="button" class="o3later" id="o3later">plus tard</button></div></div>
           <div class="ost o4"><div class="o4vp"><div class="o4tr" id="o4tr"><div class="o4p o4tour"><div class="o4img o4pl"><img src="illus/eveil-chat.webp" alt=""></div><p class="o4w">On fait le tour&nbsp;?</p><p class="o4s">Je te montre où tout se trouve, directement sur ton accueil.</p></div></div></div><button type="button" class="o4skip" id="o4skip">plus tard</button></div>
         </div>
-        <div class="odim" id="odim" hidden></div><div class="osheet" id="osheet" hidden role="dialog" aria-label="Connexion par e-mail"><div class="sgrab"></div>
-<div class="otabs"><button type="button" class="on" data-m="new">Nouveau carnet</button><button type="button" data-m="back">J'ai déjà un carnet</button></div>
-<div class="ostep" id="oform"><label class="ol">E-mail</label><input class="oin" type="email" placeholder="ton@email.fr" autocomplete="email">
-<label class="ol">Mot de passe</label><div class="opw"><input class="oin" id="opw" type="password" placeholder="••••••••" autocomplete="new-password"><button type="button" id="oeye" aria-label="Afficher le mot de passe">voir</button></div>
-<p class="ohint" id="ohint">8 caractères minimum</p><button type="button" class="oforgot" id="oforgot" hidden>Mot de passe oublié&nbsp;?</button>
-<button type="button" class="ogo2" id="ogo2">Continuer</button></div>
-<div class="ostep owb" id="owb" hidden><span>✦</span><p>Content de te revoir, Elisa.</p></div></div><div class="obar"><button type="button" class="obk off" id="obk" aria-label="Revenir" tabindex="-1">‹</button><div class="odots" id="odots" aria-hidden="true"><i></i><i></i><i></i><i></i></div><button type="button" class="ogo" id="ogo">Continuer</button></div>
+           <div class="en-mail-overlay" id="en-mail-overlay" hidden>
+    <section class="en-mail-sheet" id="en-mail-sheet" role="dialog" aria-modal="true" aria-labelledby="en-mail-title">
+     <div class="en-mail-top">
+      <h2 id="en-mail-title">Connexion par e-mail</h2>
+      <button type="button" class="en-mail-close cursor-interaction" id="en-mail-close" aria-label="Fermer le volet e-mail">×</button>
+     </div>
+     <div class="en-mail-tabs" id="en-mail-tabs" role="tablist" aria-label="Parcours par e-mail">
+      <button type="button" class="cursor-interaction" id="en-tab-new" data-mail-mode="new" role="tab" aria-selected="true" aria-controls="en-mail-panel">Nouveau carnet</button>
+      <button type="button" class="cursor-interaction" id="en-tab-back" data-mail-mode="back" role="tab" aria-selected="false" aria-controls="en-mail-panel">J’ai déjà un carnet</button>
+     </div>
+     <div id="en-mail-panel" role="tabpanel" aria-labelledby="en-tab-new">
+      <button type="button" class="en-mail-return cursor-interaction" id="en-mail-return" hidden>‹ Revenir à la connexion</button>
+      <form id="en-mail-form" novalidate autocomplete="on">
+       <div class="en-mail-field">
+        <label for="en-mail-address">E-mail</label>
+        <input id="en-mail-address" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="exemple@email.fr" aria-describedby="en-error-email" aria-invalid="false">
+        <p class="en-mail-error" id="en-error-email" role="alert" hidden></p>
+       </div>
+       <div class="en-mail-field" id="en-field-password">
+        <label for="en-mail-password">Mot de passe</label>
+        <div class="en-mail-pw"><input id="en-mail-password" type="password" autocomplete="new-password" placeholder="Ton mot de passe" aria-describedby="en-password-hint en-error-password" aria-invalid="false"><button type="button" class="en-mail-eye cursor-interaction" data-eye="en-mail-password" aria-pressed="false" aria-label="Afficher le mot de passe">Voir</button></div>
+        <p class="en-mail-hint" id="en-password-hint">8 caractères minimum</p>
+        <p class="en-mail-error" id="en-error-password" role="alert" hidden></p>
+       </div>
+       <div class="en-mail-field" id="en-field-confirm">
+        <label for="en-mail-confirm">Confirmer le mot de passe</label>
+        <div class="en-mail-pw"><input id="en-mail-confirm" type="password" autocomplete="new-password" placeholder="Une seconde fois" aria-describedby="en-error-confirm" aria-invalid="false"><button type="button" class="en-mail-eye cursor-interaction" data-eye="en-mail-confirm" aria-pressed="false" aria-label="Afficher la confirmation du mot de passe">Voir</button></div>
+        <p class="en-mail-error" id="en-error-confirm" role="alert" hidden></p>
+       </div>
+       <button type="button" class="en-mail-forgot cursor-interaction" id="en-mail-forgot" hidden>Mot de passe oublié ?</button>
+       <p class="en-mail-error" id="en-mail-server-error" role="alert" hidden></p>
+       <button type="submit" class="en-mail-submit cursor-interaction" id="en-mail-submit">Continuer</button>
+      </form>
+     </div>
+     <div class="en-mail-outcome" id="en-mail-outcome" hidden>
+      
+      <h3 id="en-mail-outcome-title">C’est prêt</h3>
+      <p id="en-mail-outcome-text"></p>
+      <button type="button" class="en-mail-submit cursor-interaction" id="en-mail-outcome-next">Continuer</button><button type="button" class="en-mail-return" id="en-mail-outcome-back">Revenir à la connexion</button>
+     </div>
+    </section>
+   </div>
+<div class="obar"><button type="button" class="obk off" id="obk" aria-label="Revenir" tabindex="-1">‹</button><div class="odots" id="odots" aria-hidden="true"><i></i><i></i><i></i><i></i></div><button type="button" class="ogo" id="ogo">Continuer</button></div>
       </div>
       <p>Première connexion · glisse depuis le bord gauche pour revenir</p>
     </div></div>
@@ -4632,17 +4676,10 @@ new MutationObserver(sw).observe(h,{subtree:true,childList:true,attributes:true,
 (function(){const o=document.getElementById('onb'),src=document.getElementById('open'),tr=document.getElementById('otrack'),bk=document.getElementById('obk'),go=document.getElementById('ogo'),dots=[...document.querySelectorAll('#odots i')];let k=0;
 function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)})}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
-o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.classList.toggle('dim',(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&!o3done))}
+o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.dataset.enStep=String(k);if(o.classList.contains('en-on'))window.__enSetAuthLayout(k===0);o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.classList.toggle('dim',(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&!o3done))}
 let v=0;const o4tr=document.getElementById('o4tr'),o4skip=document.getElementById('o4skip');function v4(){o4tr.style.transform=`translateX(${-v*100}%)`;o4skip.classList.toggle('off',false)}
 go.onclick=()=>{if(k===3){k=0;v=0;v4();show();window.__tourStart&&window.__tourStart();return}k++;show()};o4skip.onclick=()=>{k=0;v=0;v4();show()};bk.onclick=()=>{if(k===3&&v>0){v--;v4();show();return}if(k>0){k--;show()}};
-const o1go=document.getElementById('o1go');document.querySelectorAll('#onb .oacc button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#onb .oacc button').forEach(x=>x.classList.toggle('on',x===b));o1go.disabled=false});const osh=document.getElementById('osheet'),odim=document.getElementById('odim'),of=document.getElementById('oform'),owb=document.getElementById('owb');let om='new';
-function oOpen(){of.hidden=false;owb.hidden=true;osh.hidden=false;odim.hidden=false;osh.classList.add('pre');odim.classList.add('pre');void osh.offsetWidth;osh.classList.remove('pre');odim.classList.remove('pre')}
-function oClose(){osh.classList.add('pre');odim.classList.add('pre');setTimeout(()=>{osh.hidden=true;odim.hidden=true},450)}
-odim.onclick=oClose;
-document.querySelectorAll('#onb .otabs button').forEach(b=>b.onclick=()=>{om=b.dataset.m;document.querySelectorAll('#onb .otabs button').forEach(x=>x.classList.toggle('on',x===b));document.getElementById('ohint').hidden=om!=='new';document.getElementById('oforgot').hidden=om==='new';document.getElementById('opw').autocomplete=om==='new'?'new-password':'current-password'});
-document.getElementById('oeye').onclick=e=>{const pw=document.getElementById('opw');const v=pw.type==='password';pw.type=v?'text':'password';e.target.textContent=v?'cacher':'voir'};
-document.getElementById('ogo2').onclick=()=>{if(om==='new'){oClose();k=1;show()}else{of.hidden=true;owb.hidden=false;setTimeout(()=>{oClose();k=2;show()},1400)}};
-o1go.onclick=()=>{const sel=document.querySelector('#onb .oacc button.on');if(sel&&/e-mail/.test(sel.textContent)){oOpen();return}k=1;show()};document.getElementById('o1guest').onclick=()=>{k=1;show()};const o2in=document.getElementById('o2in'),o2ph=document.getElementById('o2ph');
+window.__enOnboardingAdvance=()=>{k=1;show()};document.getElementById('o1guest').onclick=()=>{k=1;show()};const o2in=document.getElementById('o2in'),o2ph=document.getElementById('o2ph');
 o2ph.onclick=()=>{const on=!o2ph.classList.contains('has');o2ph.classList.toggle('has',on);o2ph.style.backgroundImage=on?'url(illus/matin-ete.jpg)':'';document.getElementById('o2phl').textContent=on?'changer la photo':'ajouter une photo'};
 document.querySelectorAll('#onb .o2pills button').forEach(b=>b.onclick=()=>{const on=!b.classList.contains('set');b.classList.toggle('set',on);b.textContent=on?b.dataset.v:({26:'jour',mars:'mois',1994:'année'})[b.dataset.v]});
 o2in.oninput=()=>show();document.querySelectorAll('#onb .o2psy button').forEach(b=>b.onclick=()=>document.querySelectorAll('#onb .o2psy button').forEach(x=>x.classList.toggle('on',x===b)));
@@ -7935,7 +7972,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 const __ce=el=>!!el&&(el.isContentEditable||(el.getAttribute&&el.getAttribute('contenteditable')==='true'));
 const SKIP_TYPES=/^(range|file|password|checkbox|radio|hidden|button|submit|color)$/i;
 function eligible(el){if(!el||!el.closest)return false;const ph=el.closest('.phone');if(!ph)return false;
- if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide'))return false;
+ if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide,#en-mail-overlay'))return false;
  if(el.tagName==='INPUT'){if(SKIP_TYPES.test(el.type))return false;const p=(el.placeholder||'')+' '+(el.id||'');if(/chercher|un mot, une personne|un lieu, une personne|\bq\b|mjq|svq|psq|opw/i.test(p))return false}
  else if(el.tagName!=='TEXTAREA'&&!__ce(el))return false;
  if(__ce(el)&&el.closest('[contenteditable="true"]')!==el)return false;
@@ -8633,24 +8670,7 @@ function twoBooks(rec){const el=document.createElement('div');el.className='en-s
  el.querySelector('#en-kl').onclick=async()=>{await window.__vaultPushNow();el.remove();toast('✦ Ton journal est gardé en ligne.');refreshCompte()};
  el.querySelector('#en-kr').onclick=()=>window.__vaultAdopt(rec)}
 window.__enTwoBooks=twoBooks;
-const g2=document.getElementById('ogo2');
-if(g2){const orig=g2.onclick;const hint=document.getElementById('ohint'),em=document.querySelector('#oform input[type=email]'),pw=document.getElementById('opw');
- const mode=()=>{const b=document.querySelector('#onb .otabs button.on');return b?b.dataset.m:'new'};
- const say=(m,er)=>{hint.hidden=false;hint.textContent=m;hint.classList.toggle('en-er',!!er)};
- let busy=false;
- g2.onclick=async e=>{if(busy)return;const mail=(em.value||'').trim(),pass=pw.value||'';if(!mail||!pass){say('Entre ton e-mail et ton mot de passe.',1);return}
-  if(pass.length<8){say('Le mot de passe doit faire au moins 8 caractères.',1);return}busy=true;g2.textContent='…';
-  try{if(mode()==='new'){
-    let r;try{r=await C.signUp(mail,pass)}catch(x){if(!/déjà un carnet/.test(x.message))throw x;r={exists:true}}
-    let logged=false;try{await C.signIn(mail,pass);logged=true}catch(x){if(r.exists)throw new Error('Un carnet existe déjà avec cet e-mail. Choisis « J’ai déjà un carnet », ou « mot de passe oublié ».');if(!/confirmée/.test(x.message)&&!r.confirm)throw x}
-    if(logged){const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500);return}}
-    else{PEND.m=mail;PEND.p=pass;PEND.at=Date.now();window.__enPendShow=1}
-    orig&&orig.call(g2,e);
-    if(!logged)setTimeout(()=>toast('Je t’ai envoyé un mail : touche le lien quand tu veux. Ton compte s’activera tout seul.'),900)}
-   else{try{await C.signIn(mail,pass)}catch(x){if(/confirmée/.test(x.message)){PEND.m=mail;PEND.p=pass;PEND.at=Date.now();try{await C.resend(mail)}catch(y){}throw new Error('Ton adresse n’est pas encore confirmée : je viens de te renvoyer le mail. Touche le lien, puis reviens ici, je me connecte toute seule.')}if(/incorrect/.test(x.message))throw new Error('E-mail ou mot de passe incorrect. Touche « mot de passe oublié ? » pour en choisir un nouveau.');throw x}const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
-  catch(x){say(x.message,1)}finally{busy=false;g2.textContent='Continuer'}};
- const fg=document.getElementById('oforgot');if(fg)fg.onclick=async()=>{const mail=(em.value||'').trim();if(!mail){say('Entre d’abord ton e-mail.',1);return}try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
-}
+/* Le volet de première connexion est géré dans auth-connexion.js. */
 /* Mon compte : la vraie connexion */
 async function compte(root){const b=root.querySelector('.rgl[data-l="Adresse mail"]');if(!b||b.dataset.en)return;b.dataset.en=1;const S=await C.session();
  ['Téléphone','Apple','Google'].forEach(l=>{const r=root.querySelector(`.rgl[data-l="${l}"]`);if(r)r.style.display='none'});
@@ -9147,7 +9167,7 @@ C.providers().then(pr=>{if(!pr.google)return;
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-en-google]');if(b){e.preventDefault();C.google()}},true);
 new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getElementById('en-accs');if(a&&!a.querySelector('[data-en-google]')){const x=a.querySelector('#en-ago');if(x)x.insertAdjacentHTML('afterend','<button type="button" class="b ol" data-en-google>CONTINUER AVEC GOOGLE</button>')}}).observe(document.body,{childList:true});
 /* revenue de Google à la première ouverture : on passe directement à « Comment t'appelles-tu ? » */
-C.session().then(S=>{const on=document.querySelector('.phone.en-on');if(S&&on&&on.id==='onb'){const g=document.getElementById('o1guest');if(g)setTimeout(()=>{g.click();toast('✦ Connectée avec Google')},500)}});
+/* Le retour OAuth est vérifié par auth-connexion.js avant de poursuivre. */
 })();</script>
 </body>
 </html>

@@ -16,6 +16,14 @@ Les espaces existants sont conservés : écriture libre, guidée ou rapide, jour
 
 Le dépôt contient le code, les polices et les illustrations. Les pages créées dans l’application ne sont pas écrites dans GitHub.
 
+### Accueil et connexion — 4 novembre 2026
+
+L’accueil et le volet e-mail reprennent la maquette validée : carnet et plume dans le séparateur, couleurs de jour et de nuit, fond continu, dimensions adaptées au téléphone et à la tablette. Les trois accès ouvrent directement leur parcours. Le mode invité dispose d’une information à la demande et Google demande de choisir le compte.
+
+Le volet s’ouvre sur « Nouveau carnet », avec e-mail, mot de passe et confirmation du mot de passe. « J’ai déjà un carnet » conserve la connexion et la récupération du mot de passe. L’inscription n’avance que si le serveur a réellement ouvert une session ; elle reste bloquée si le service exige encore une confirmation e-mail. La configuration publique du service indiquait la confirmation désactivée lors de la vérification. Aucun réglage administrateur n’a été changé.
+
+Le formulaire affiche les erreurs près des champs, protège des doubles envois et conserve les saisies lors d’une erreur du service. Ses mots de passe, y compris lorsqu’ils sont affichés, sont exclus des brouillons. Un carnet existant est repris après connexion ; un compte sans carnet demande un choix explicite. Les contrôles automatisés comprennent désormais 37 tests. Le rendu a été examiné en navigateur à plusieurs largeurs et hauteurs, en jour et en nuit ; la barre d’état native et le clavier iOS restent à vérifier sur un iPhone réel.
+
 Le coffre local est chiffré dans IndexedDB avec AES-GCM ; une clé de données aléatoire est enveloppée avec une clé dérivée du code par PBKDF2. Les sauvegardes locales sont exécutées dans l’ordre et un échec conserve les modifications à réessayer. Dans Réglages → Mon journal → Sauvegarde, **Mon carnet complet** exporte le coffre et les vocaux chiffrés. La restauration les écrit ensemble dans une transaction et conserve le carnet précédent ; l’écran « Code oublié ? » propose d’annuler la dernière restauration. Le code du fichier reste nécessaire.
 
 Les archives lisibles proposées séparément dans les réglages sont en clair. Leur import récupère les brouillons seulement ; elles ne remplacent pas la sauvegarde complète.

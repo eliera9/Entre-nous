@@ -6,11 +6,13 @@ import { resolve } from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = resolve(root, 'dist');
 await mkdir(dist, { recursive: true });
-for (const path of ['index.html', 'manifest.webmanifest', 'sw.js', 'ma-vie-parcours.js', 'fonts', 'icons', 'illus']) {
+for (const path of ['index.html', 'auth-connexion.css', 'auth-connexion.js', 'manifest.webmanifest', 'sw.js', 'ma-vie-parcours.js', 'fonts', 'icons', 'illus']) {
   await cp(resolve(root, path), resolve(dist, path), { recursive: true });
 }
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
-const version = createHash('sha256').update(html).update(await readFile(resolve(root, 'ma-vie-parcours.js'))).digest('hex').slice(0, 12);
+const digest = createHash('sha256').update(html);
+for (const path of ['ma-vie-parcours.js', 'auth-connexion.js', 'auth-connexion.css', 'illus/carnet-plume-connexion.png']) digest.update(await readFile(resolve(root, path)));
+const version = digest.digest('hex').slice(0, 12);
 const sw = await readFile(resolve(root, 'sw.js'), 'utf8');
 await writeFile(resolve(dist, 'sw.js'), sw.replace(/const V='[^']+'/, `const V='entre-nous-${version}'`));
 // GitHub Pages sert la racine du dépôt : son sw.js porte aussi la version, pour que chaque mise à jour remplace l'ancien cache
