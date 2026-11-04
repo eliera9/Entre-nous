@@ -15,7 +15,8 @@
 #onb .o3 #o3p button:disabled{cursor:default}
 #onb .o3 #o3p button:focus-visible{outline:2px solid var(--code-accent);outline-offset:4px}
 #onb #o3feedback{font:italic 500 17px/1.35 'Cormorant Garamond',Georgia,serif;color:var(--sink);max-width:31ch;margin:18px 0 0;min-height:24px}
-#onb .o3success{padding-top:26px;color:var(--code-accent)}
+#en-app #onb .o3:has(> .o3success:not([hidden])){justify-content:center;padding-block:24px}
+#onb .o3success{padding-top:0;color:var(--code-accent)}
 #onb .o3symbol{width:112px;height:112px;position:relative;flex:none}
 #onb .o3ring{position:absolute;inset:8px;border:1px solid currentColor;border-radius:50%;opacity:.65}
 #onb .o3check{position:absolute;inset:0;display:grid;place-items:center;font:400 49px/1 Georgia,serif}
