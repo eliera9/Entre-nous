@@ -1,0 +1,9 @@
+/* Placement validé : 50 % pour les deux saisies et le sceau, navigation fixe. */
+#en-app #onb[data-en-step="2"] .o3:has(> .o3a:not([hidden]),> .o3success:not([hidden])){
+ padding-block:24px;
+ justify-content:flex-start;
+}
+#en-app #onb[data-en-step="2"] .o3a,
+#en-app #onb[data-en-step="2"] .o3success{
+ margin-block:auto;
+}

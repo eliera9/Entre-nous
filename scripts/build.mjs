@@ -6,12 +6,12 @@ import { resolve } from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = resolve(root, 'dist');
 await mkdir(dist, { recursive: true });
-for (const path of ['index.html', 'auth-connexion.css', 'auth-connexion.js', 'profil-identite.js', 'profil-identite.css', 'onboarding-code.js', 'onboarding-code.css', 'manifest.webmanifest', 'sw.js', 'ma-vie-parcours.js', 'fonts', 'icons', 'illus']) {
+for (const path of ['index.html', 'auth-connexion.css', 'auth-connexion.js', 'profil-identite.js', 'profil-identite.css', 'onboarding-code.js', 'onboarding-code.css', 'code-placement.css', 'manifest.webmanifest', 'sw.js', 'ma-vie-parcours.js', 'fonts', 'icons', 'illus']) {
   await cp(resolve(root, path), resolve(dist, path), { recursive: true });
 }
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
 const digest = createHash('sha256').update(html);
-for (const path of ['ma-vie-parcours.js', 'auth-connexion.js', 'auth-connexion.css', 'profil-identite.js', 'profil-identite.css', 'onboarding-code.js', 'onboarding-code.css', 'illus/carnet-plume-connexion.png']) digest.update(await readFile(resolve(root, path)));
+for (const path of ['ma-vie-parcours.js', 'auth-connexion.js', 'auth-connexion.css', 'profil-identite.js', 'profil-identite.css', 'onboarding-code.js', 'onboarding-code.css', 'code-placement.css', 'illus/carnet-plume-connexion.png']) digest.update(await readFile(resolve(root, path)));
 const version = digest.digest('hex').slice(0, 12);
 const sw = await readFile(resolve(root, 'sw.js'), 'utf8');
 await writeFile(resolve(dist, 'sw.js'), sw.replace(/const V='[^']+'/, `const V='entre-nous-${version}'`));
