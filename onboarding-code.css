@@ -1,0 +1,32 @@
+/* Même fond et mêmes couleurs que le parcours, clavier ample et sceau discret. */
+#en-app #onb .o3{--code-accent:#7C536A;padding:clamp(28px,8vh,70px) 22px 24px;justify-content:flex-start;overflow-y:auto}
+#en-app #onb.nuit .o3{--code-accent:#C6A0B1}
+#onb .o3a,#onb .o3success{width:100%;max-width:460px;flex:none;display:flex;flex-direction:column;align-items:center}
+#onb .o3 [hidden]{display:none!important}
+#onb .o3a .o3t{margin:0;font:italic 500 28px/1.25 'Cormorant Garamond',Georgia,serif;text-wrap:balance}
+#onb .o3a .o3s{margin:13px 0 0;font:italic 500 18px/1.35 'Cormorant Garamond',Georgia,serif;max-width:28ch}
+#onb .o3 .dots{display:flex;gap:13px;margin:26px 0 30px}
+#onb .o3 .dots i{box-sizing:border-box;width:11px;height:11px;border:1px solid var(--code-accent);border-radius:50%;background:transparent}
+#onb .o3 .dots i.on{background:var(--code-accent)}
+#onb .o3 #o3p{display:grid;grid-template-columns:repeat(3,60px);gap:16px 22px}
+#onb .o3 #o3p button{all:unset;box-sizing:border-box;display:grid;place-items:center;width:60px;height:60px;border:.7px solid var(--sline);border-radius:50%;font:500 25px/1 'Cormorant Garamond',Georgia,serif;color:var(--sink);background:transparent;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#onb .o3 #o3p .o3del{border:0;font-size:22px;color:var(--smuted)}
+#onb .o3 #o3p button:active{border-color:var(--code-accent);transform:scale(.96)}
+#onb .o3 #o3p button:disabled{cursor:default}
+#onb .o3 #o3p button:focus-visible{outline:2px solid var(--code-accent);outline-offset:4px}
+#onb #o3feedback{font:italic 500 17px/1.35 'Cormorant Garamond',Georgia,serif;color:var(--sink);max-width:31ch;margin:18px 0 0;min-height:24px}
+#onb .o3success{padding-top:26px;color:var(--code-accent)}
+#onb .o3symbol{width:112px;height:112px;position:relative;flex:none}
+#onb .o3ring{position:absolute;inset:8px;border:1px solid currentColor;border-radius:50%;opacity:.65}
+#onb .o3check{position:absolute;inset:0;display:grid;place-items:center;font:400 49px/1 Georgia,serif}
+#onb .o3success h2{text-transform:none;letter-spacing:normal;margin:24px 0 0;font:italic 500 30px/1.25 'Cormorant Garamond',Georgia,serif;color:var(--sink)}
+#onb .o3success p{margin:13px 0 0;font:italic 500 19px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted);max-width:27ch}
+#onb .playing .o3ring{animation:en-code-ring .9s ease-out both}
+#onb .playing .o3check{animation:en-code-check .9s ease-out both}
+#onb .playing h2,#onb .playing p{animation:en-code-text 1s ease-out both}
+#onb .ogo:disabled{opacity:.35;pointer-events:none}
+@keyframes en-code-ring{0%{opacity:0;transform:scale(.75)}60%{opacity:.8;transform:scale(1.04)}100%{opacity:.65;transform:scale(1)}}
+@keyframes en-code-check{0%,22%{clip-path:inset(0 100% 0 0);transform:scale(.9)}75%,100%{clip-path:inset(0);transform:scale(1)}}
+@keyframes en-code-text{0%,25%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#onb .playing *{animation:none!important}#onb .o3 #o3p button:active{transform:none}}
+@media(max-height:650px){#en-app #onb .o3{padding-top:22px}#onb .o3 .dots{margin:18px 0 22px}}
