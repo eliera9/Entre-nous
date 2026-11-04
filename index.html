@@ -6,7 +6,7 @@
 <meta name="referrer" content="no-referrer">
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
-<meta name="viewport" content="width=302,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre nous">
@@ -20,9 +20,9 @@
 <style>
 /* Entre nous · app : un écran à la fois, à la taille de l'iPhone */
 html,body{margin:0;height:100%;overflow:hidden;background:#F5E0D3;-webkit-text-size-adjust:100%;overscroll-behavior:none}
-html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:none!important}
-#en-app{position:fixed;inset:0;overflow:hidden}
-#en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:302px!important;height:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
+html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-toast):not(script):not(style){display:none!important}
+#en-app{position:fixed;inset:0;width:min(100%,520px);margin-inline:auto;overflow:hidden;box-shadow:0 0 80px rgba(70,37,52,.12)}
+#en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:100%!important;height:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
 #en-app .phone.en-on{visibility:visible;pointer-events:auto;z-index:1;translate:none}
 #en-app .phone::before,#en-app .phone::after{border-radius:0!important}
 /* écran de code */
@@ -150,7 +150,7 @@ html.en-ready,html.en-ready body{height:100%;min-height:100lvh}
 'use strict';
 const DB='entre-nous',STORE='coffre',KEY='v1',ITER=310000;
 const enc=new TextEncoder(),dec=new TextDecoder();
-const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+const b64=u=>{const bytes=new Uint8Array(u);let out='';for(let i=0;i<bytes.length;i+=0x8000)out+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(out)};
 const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 
 /* ---------- IndexedDB ---------- */
@@ -197,8 +197,14 @@ window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)f
 function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
 let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
-async function save(force){if(!DEK||!W.code)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;dirty=false;last=s;M.st=st;
- const rec={v:2,w:W,box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:META.nm||''};saving=dbPut(KEY,rec);await saving;CLOUD.push(rec)}
+function save(force){
+ const perform=async()=>{if(!DEK||!W.code)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;
+  const rec={v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:META.nm||''};
+  await dbPut(KEY,rec);last=s;M.st=st;dirty=JSON.stringify({ls:M.ls,st:snapshot()})!==s;CLOUD.push(rec)};
+ saving=(saving||Promise.resolve()).catch(()=>{}).then(perform);
+ saving.catch(()=>{dirty=true;const t=document.createElement('div');t.className='en-toast on';t.setAttribute('role','alert');t.textContent='La sauvegarde a échoué. Garde cette page ouverte et réessaie.';document.body.appendChild(t);setTimeout(()=>t.remove(),6000)});
+ return saving;
+}
 setInterval(()=>{if(DEK)save()},4000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&DEK)save()});
 addEventListener('pagehide',()=>{if(DEK)save()});
@@ -296,7 +302,7 @@ function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock(
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
 const SIV=Element.prototype.scrollIntoView;
 /* on ne change d'écran que si c'est toi qui l'as demandé (un toucher il y a peu), jamais tout seul */
-let lastIn=0;['pointerdown','keydown','touchstart'].forEach(t=>addEventListener(t,()=>{lastIn=Date.now()},true));
+let lastIn=0;['pointerdown','keydown','touchstart','click'].forEach(t=>addEventListener(t,()=>{lastIn=Date.now()},true));
 Element.prototype.scrollIntoView=function(o){const ph=this.closest&&this.closest('#en-app .phone');if(ph){if(ph!==cur){if(Date.now()-lastIn>4000)return;show(ph)}if(this===ph)return}return SIV.call(this,o&&typeof o==='object'?{...o,behavior:'auto'}:o)};
 
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
@@ -427,6 +433,19 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT
 })();
 
 </script>
+<style>
+/* Application web · téléphone, tablette et ordinateur */
+#en-lock{width:min(100%,520px);margin-inline:auto;box-shadow:0 0 80px rgba(70,37,52,.12)}
+#en-cc .in,.en-sh .in{max-width:520px;margin-inline:auto}
+#en-app .phone{box-sizing:border-box}
+#en-app .onb .ost{overflow-y:auto;overscroll-behavior:contain}
+#en-app .onb .o1{padding-top:clamp(70px,18vh,165px)}
+#en-app .onb .o2{padding-top:clamp(28px,8vh,75px)}
+#en-app .onb .o3{padding-top:clamp(28px,10vh,90px)}
+#en-app .onb input,#en-app .onb select{font-size:16px}
+#en-app .phone :focus-visible{outline:2px solid var(--sacc);outline-offset:3px}
+@media(min-width:700px){#en-app{border-inline:1px solid rgba(155,108,128,.16)}}
+</style>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -4561,7 +4580,7 @@ new MutationObserver(sw).observe(h,{subtree:true,childList:true,attributes:true,
 (function(){const o=document.getElementById('onb'),src=document.getElementById('open'),tr=document.getElementById('otrack'),bk=document.getElementById('obk'),go=document.getElementById('ogo'),dots=[...document.querySelectorAll('#odots i')];let k=0;
 function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)})}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
-o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.classList.toggle('dim',(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&!o3done))}
+o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.classList.toggle('dim',(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&!o3done))}
 let v=0;const o4tr=document.getElementById('o4tr'),o4skip=document.getElementById('o4skip');function v4(){o4tr.style.transform=`translateX(${-v*100}%)`;o4skip.classList.toggle('off',false)}
 go.onclick=()=>{if(k===3){k=0;v=0;v4();show();window.__tourStart&&window.__tourStart();return}k++;show()};o4skip.onclick=()=>{k=0;v=0;v4();show()};bk.onclick=()=>{if(k===3&&v>0){v--;v4();show();return}if(k>0){k--;show()}};
 const o1go=document.getElementById('o1go');document.querySelectorAll('#onb .oacc button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#onb .oacc button').forEach(x=>x.classList.toggle('on',x===b));o1go.disabled=false});const osh=document.getElementById('osheet'),odim=document.getElementById('odim'),of=document.getElementById('oform'),owb=document.getElementById('owb');let om='new';
@@ -6506,7 +6525,7 @@ function reset(mode){S={mode,stack:[],tab:mode==='soir'?'apres':'avant',notes:mo
  sv:{tab:'suivi',mo:'',an:'',ry:'',why:'',dj:'',dm:'',ab:'',abPills:null,sv:'',out:'',aid:[],aidNew:null,sus:'',susL:null,ia:{},hint:{}},
  first:{p:{},done:{}},seSel:null,seTab:'apres',evSel:null,ph:0,filt:'toutes',q:'',iaPick:'claude'};
  if(mode==='first')S.stack=[{v:'intro'}];
- 
+
 }
 reset('avant');{const sv=window.__enLive&&window.__enLive('psy',()=>({notes:S.notes,pas:S.pas,mode:S.mode,first:S.first}));if(sv){reset(sv.mode==='first'?'first':'vide');S.notes=sv.notes||[];S.pas=sv.pas||[];if(sv.first)S.first=sv.first}else reset('first')}
 const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
@@ -6584,7 +6603,7 @@ function vCopy(o){const sv=S.sv;return`<div class="ps-k" style="margin-top:18px"
 const ck2=(k,t,def)=>{if(S.cp==null)S.cp={};if(S.cp[k]==null)S.cp[k]=def?1:0;return`<button class="ps-li" data-a="cp" data-k="${k}"><span class="ck${S.cp[k]?' on':''}"></span><span class="tx" style="text-align:left">${t}</span></button>`};
 function vBack(o){const k=o.k;const lab={prep:'PLUME LIT',suivi:'REMPLIR MON SUIVI',apres:'REMPLIR MES CARTES'}[k];
  return`<div class="ps-k" style="margin-top:18px">J'EN REVIENS</div><p class="ps-t">Colle ici le récapitulatif</p><div class="ps-paste"><textarea data-f="paste" placeholder="✦ MES SUJETS…">${esc(S.paste||'')}</textarea></div>
- 
+
  <p class="ps-s" style="margin-top:12px">Tu peux aussi coller toute la conversation, pour la relire plus tard.</p><button class="ps-lk" style="margin-top:4px" data-a="conv"><u>${S.conv?'conversation gardée ✓':'coller la conversation (facultatif)'}</u></button>
  <button class="ps-btn" data-a="iaread" data-k="${k}">${lab}</button>`}
 function vRead(){const r=S.rd;let h=`<div class="ps-k" style="margin-top:16px">CE QUE PLUME A LU</div>`;
@@ -6990,7 +7009,7 @@ render(1);
 (()=>{const $=id=>document.getElementById(id);
 /* Profil */
 const F=$('mvfiche');if(F){const band=F.querySelector('.fband'),hd=F.querySelector('.pfhd'),tb=F.querySelector('.pftabs'),tr=F.querySelector('.pftr');
- 
+
  if(tb&&tr){const d=document.createElement('div');d.className='pftdots';tb.appendChild(d);const up=()=>{const bs=[...tr.querySelectorAll('button')];d.innerHTML=bs.map(b=>'<i class="'+(b.classList.contains('on')?'on':'')+'"></i>').join('')};up();new MutationObserver(up).observe(tr,{subtree:true,attributes:true,attributeFilter:['class']})}
  const t=[...F.querySelectorAll('.fcht')].find(p=>/MOI AUJOURD/i.test(p.textContent));
  if(t){const b=document.createElement('button');b.type='button';b.className='pfdit2';b.setAttribute('aria-label','Ce que je t’ai confié');b.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 11.5C4 7.4 7.6 5 12 5s8 2.4 8 6.5S16.4 18 12 18c-1 0-2-.1-2.9-.4L5 19.5l1.3-3.4C4.9 14.9 4 13.3 4 11.5z"/><path d="M8.5 10h7M8.5 13h4.5"/></svg><span class="pfdtip">Ce que je t’ai confié</span>';b.onclick=e=>{e.stopPropagation();const o=$('fditb');o&&o.click()};const fc=t.parentElement;fc.classList.add('hasdit');fc.appendChild(b);const pos=()=>fc.style.setProperty('--dt',(t.offsetTop+t.offsetHeight/2-15)+'px');pos();setTimeout(pos,500);
@@ -7622,7 +7641,7 @@ const H=$('home'),src=H&&H.querySelector('.nav.nav2');if(!src)return;
 const TABS={home:0,mj:1,mvfiche:2,psy:3};
 const navGo=k=>{if(k==='mj'){window.__mjHome?window.__mjHome():go('mj')}else go(k)};
 function wire(nav,ph){const items=[...nav.children].filter(c=>c.tagName==='SPAN'),keys=['home','mj','mvfiche','psy'];
- items.forEach((s,i)=>{s.dataset.nav=keys[i];s.style.cursor='pointer';s.onclick=e=>{e.stopPropagation();if(keys[i]!==ph.id||ph.id==='mj')navGo(keys[i])}});
+ items.forEach((s,i)=>{s.dataset.nav=keys[i];s.style.cursor='pointer';s.setAttribute('role','button');s.tabIndex=0;s.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click()}});s.onclick=e=>{e.stopPropagation();if(keys[i]!==ph.id||ph.id==='mj')navGo(keys[i])}});
  const w=nav.querySelector('.navw');w.onclick=e=>{e.stopPropagation();window.__waysIn(ph)}}
 /* accueil : le + ouvre le volet sur place */
 const hw=src.querySelector('.navw');const hw2=hw.cloneNode(true);hw.replaceWith(hw2);wire(src,H);
@@ -8847,6 +8866,16 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 /* 21 · fin de l'inscription → « Faire connaissance » d'abord, puis la visite de l'accueil si tu l'as demandée */
 (function(){const ts=window.__tourStart;if(!ts)return;window.__tourStart=(...a)=>{const on=document.querySelector('.phone.en-on');if(on&&on.id==='onb'&&document.getElementById('mvintro')){window.__enTourLater=()=>ts(...a);window.__enShow('mvintro');return}window.__enShow('home');setTimeout(()=>ts(...a),350)}})();
 })();</script>
+
+<script type="text/x-en">
+/* Les trois chemins de l’accueil ouvrent leur véritable espace d’écriture.
+   Le mode reste attaché à l’illustration lorsque l’humeur réordonne les cartes. */
+document.querySelectorAll('#home .wc').forEach(card=>{
+ const src=card.querySelector('img')?.getAttribute('src')||'';
+ const mode=(src.match(/ecrire-(raconter|guider|vider)/)||[])[1];
+ if(mode)card.addEventListener('click',()=>window.__pdjGo&&window.__pdjGo(mode));
+});
+</script>
 
 </body>
 </html>
