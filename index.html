@@ -539,7 +539,9 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="profil-identite.js" defer></script>
 <link rel="stylesheet" href="onboarding-code.css">
 <link rel="stylesheet" href="code-placement.css">
-<script src="onboarding-code.js" defer></script>
+<link rel="stylesheet" href="recovery-sheet.css">
+<script src="recovery-sheet.js" defer></script>
+<script src="onboarding-code-recovery.js" defer></script>
 <script src="auth-connexion.js" defer></script>
 </head>
 <body>
@@ -4715,7 +4717,7 @@ function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEa
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
 o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.dataset.enStep=String(k);if(o.classList.contains('en-on'))window.__enSetAuthLayout(k===0);o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.disabled=(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&(!codePage||!codePage.ready||codePage.busy));go.classList.toggle('dim',go.disabled);bk.disabled=k===2&&!!codePage?.busy}
 let v=0;const o4tr=document.getElementById('o4tr'),o4skip=document.getElementById('o4skip');function v4(){o4tr.style.transform=`translateX(${-v*100}%)`;o4skip.classList.toggle('off',false)}
-go.onclick=()=>{if(go.disabled)return;if(k===2){codePage.continue();return}if(k===3){k=0;v=0;v4();show();window.__tourStart&&window.__tourStart();return}k++;show()};o4skip.onclick=()=>{k=0;v=0;v4();show()};bk.onclick=()=>{if(k===2){if(codePage.busy)return;codePage.leave()}if(k===3&&v>0){v--;v4();show();return}if(k>0){k--;show()}};
+go.onclick=()=>{if(go.disabled)return;if(k===2){codePage.continue();return}if(k===3){k=0;v=0;v4();show();window.__tourStart&&window.__tourStart();return}k++;show();if(k===2)codePage.enter()};o4skip.onclick=()=>{k=0;v=0;v4();show()};bk.onclick=()=>{if(k===2){if(codePage.busy)return;codePage.leave()}if(k===3&&v>0){v--;v4();show();return}if(k>0){k--;show()}};
 window.__enOnboardingAdvance=()=>{k=1;show()};document.getElementById('o1guest').onclick=()=>{k=1;show()};const o2in=document.getElementById('o2in'),o2ph=document.getElementById('o2ph');
 o2ph.onclick=()=>{const on=!o2ph.classList.contains('has');o2ph.classList.toggle('has',on);o2ph.style.backgroundImage=on?'url(illus/matin-ete.jpg)':'';document.getElementById('o2phl').textContent=on?'changer la photo':'ajouter une photo'};
 document.querySelectorAll('#onb .o2pills button').forEach(b=>b.onclick=()=>{const on=!b.classList.contains('set');b.classList.toggle('set',on);b.textContent=on?b.dataset.v:({26:'jour',mars:'mois',1994:'année'})[b.dataset.v]});
@@ -8671,11 +8673,7 @@ document.addEventListener('click',e=>{const r=e.target.closest&&e.target.closest
 window.__enCodeSheet=codeSheet;
 
 /* 3 · code de secours */
-function secSheet(onClose){if($('#en-sec'))return;const el=document.createElement('div');el.id='en-sec';el.className='en-sh';
- el.innerHTML=`<div class="in"><p class="k">TON CODE DE SECOURS</p><p class="t">Si un jour tu oublies ton code, celui-ci rouvre ton journal.</p><p class="s">Je ne le garde nulle part en clair : note-le sur papier ou dans tes notes, rien que pour toi.</p><div class="cd" id="en-secv">…</div><button type="button" class="b ol" id="en-seccp">COPIER</button><button type="button" class="b" id="en-secok">JE L’AI NOTÉ</button><button type="button" class="lk" id="en-seclt">plus tard</button></div>`;
- document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const close=()=>{el.classList.remove('on');setTimeout(()=>{el.remove();if(typeof onClose==='function')onClose()},300)};
- window.__vaultMakeSecours().then(c=>{el.querySelector('#en-secv').textContent=c;el.querySelector('#en-seccp').onclick=async e=>{try{await navigator.clipboard.writeText(c);e.target.textContent='✓ COPIÉ'}catch(x){e.target.textContent='SÉLECTIONNE-LE POUR LE COPIER'}}});
- el.querySelector('#en-secok').onclick=close;el.querySelector('#en-seclt').onclick=close}
+function secSheet(onClose){return window.__enOpenRecovery({onClose})}
 window.__enSecours=secSheet;
 document.addEventListener('click',e=>{const r=e.target.closest&&e.target.closest('.rgl[data-l="Code oublié"]');if(r){e.stopImmediatePropagation();e.preventDefault();secInfo()}},true);
 function secInfo(){const has=window.__vaultHasSecours();const el=document.createElement('div');el.id='en-seci';el.className='en-sh';
