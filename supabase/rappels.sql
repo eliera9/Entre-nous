@@ -1,4 +1,4 @@
--- Entre nous · rappels : à coller une fois dans SQL Editor › New query › Run (après avoir créé la fonction « rappels »)
+-- Entre nous · rappels : à coller une fois dans SQL Editor › New query › Run (après avoir créé la fonction « Rappels »)
 create table if not exists public.rappels_secrets (
   id int primary key,
   vapid_pub text not null,
@@ -23,8 +23,8 @@ create extension if not exists pg_net;
 select cron.unschedule('rappels-entre-nous') where exists (select 1 from cron.job where jobname = 'rappels-entre-nous');
 select cron.schedule('rappels-entre-nous', '*/5 * * * *', $$
   select net.http_post(
-    url := 'https://aoafqsipzymeehcswzto.supabase.co/functions/v1/rappels',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cle', (select cle from public.rappels_secrets where id = 1)),
+    url := 'https://aoafqsipzymeehcswzto.supabase.co/functions/v1/Rappels',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'apikey', 'sb_publishable_aLrH54IP-QcApvBF6jEfcw_Rb3x9GgH', 'Authorization', 'Bearer sb_publishable_aLrH54IP-QcApvBF6jEfcw_Rb3x9GgH', 'x-cle', (select cle from public.rappels_secrets where id = 1)),
     body := '{}'::jsonb
   );
 $$);
