@@ -38,3 +38,9 @@ Les tests contrôlent les scripts, les actifs locaux, le chiffrement d’un jour
 ## Restauration du code
 
 La version précédente est conservée sur la branche `backup/avant-version-web-20261104`. Les changements du 4 novembre corrigent l’affichage sur ordinateur, les volets masqués, les trois actions d’écriture de l’accueil, la navigation au clavier et la sauvegarde des gros carnets.
+
+### Correction du parcours Ma vie
+
+Les quatre cartes de « Faire connaissance » ouvrent leur questionnaire. « Commencer » et « Continuer » utilisent le chapitre choisi. Les réponses, le brouillon, la question en attente et la progression sont conservés séparément par chapitre dans le coffre existant. Revenir aux chapitres ne réinitialise plus le profil. Les reprises ne dupliquent pas « Ce que je t’ai confié », et le bouton IA reçoit le chapitre ouvert.
+
+Le contenu des chapitres complémentaires est regroupé dans `ma-vie-parcours.js`. Les essais locaux avec des réponses fictives couvrent les quatre ouvertures, l’envoi d’une réponse, le passage d’une question et la reprise après réouverture.

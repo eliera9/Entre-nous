@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' https://aoafqsipzymeehcswzto.supabase.co https://noembed.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
+<script src="ma-vie-parcours.js"></script>
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -438,6 +439,7 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT
 #en-lock{width:min(100%,520px);margin-inline:auto;box-shadow:0 0 80px rgba(70,37,52,.12)}
 #en-cc .in,.en-sh .in{max-width:520px;margin-inline:auto}
 #en-app .phone{box-sizing:border-box}
+#mv3 .mvin[hidden],#mv3 .mvlinks button[hidden]{display:none!important}
 #en-app .onb .ost{overflow-y:auto;overscroll-behavior:contain}
 #en-app .onb .o1{padding-top:clamp(70px,18vh,165px)}
 #en-app .onb .o2{padding-top:clamp(28px,8vh,75px)}
@@ -4840,8 +4842,8 @@ fill();})();
 <script type="text/x-en">
 (function(){const cards=document.getElementById('mvcards'),note=document.getElementById('mvnote2'),sm=document.getElementById('mvsm');
 document.getElementById('mvok').addEventListener('click',()=>{sm.src='illus/eveil-'+(window.__pet||'chat')+'.webp'});
-cards.onclick=e=>{const c=e.target.closest('.mvc');if(!c)return;note.textContent='« '+c.querySelector('b').textContent.toLowerCase().replace(/^./,x=>x.toUpperCase())+' » : on construit ce chapitre juste après.'};
-document.getElementById('mvgo').onclick=()=>{note.textContent='« Moi aujourd’hui » : on construit ce chapitre juste après.'};document.querySelector('#mv2 .mvlater').onclick=()=>{note.textContent='';window.__mvsay&&window.__mvsay('Pas de souci, je serai là quand tu voudras.')};
+cards.onclick=e=>{const c=e.target.closest('.mvc');if(!c)return;note.textContent='';window.__mvopen&&window.__mvopen(c.dataset.c)};
+document.getElementById('mvgo').onclick=()=>{note.textContent='';window.__mvopen&&window.__mvopen(window.__mvselected?window.__mvselected():'moi')};document.querySelector('#mv2 .mvlater').onclick=()=>{note.textContent='';window.__mvsay&&window.__mvsay('Pas de souci, je serai là quand tu voudras.');setTimeout(()=>window.__enShow('home'),1400)};
 document.querySelector('#mv2 .mvbk').onclick=()=>document.getElementById('mv').scrollIntoView({behavior:'smooth',block:'center'});
 })();
 </script>
@@ -4991,7 +4993,7 @@ function petReact(a){const past=has(a,/disparu|mort|décédé|parti|perdu/i),sad
  if(past&&P.animal_eu)parts.push('Et '+P.animal_eu+'… je suis désolé. '+(sad?'Perdre un compagnon, ça brise le cœur.':'Ça a dû être dur.'));
  else if(past)parts.push('Je suis désolé pour ton ancien compagnon.');
  return parts.join(' ')||null}
-const THEMES=[['ville','ville_bien','avec'],['trav'],['rev','jours','moment','rituel','sommeil'],['an'],['loisirs','oeuvre','refuge','humeur'],['mots','fier','energie','aide','annee'],['ton','dur','surnom']];
+let THEMES=[['ville','ville_bien','avec'],['trav'],['rev','jours','moment','rituel','sommeil'],['an'],['loisirs','oeuvre','refuge','humeur'],['mots','fier','energie','aide','annee'],['ton','dur','surnom']];
 function branchAvec(a){const o=[];detectPart(a);
  if(has(a,/couple|copain|copine|mari|femme|chéri|compagn/i)){P.avec='en couple';o.push('part_nom','part_duree','part_renc','part_hist')}
  else if(has(a,/solo|seule?\b/i)){P.avec='en solo';o.push('solo_plait','coeur')}
@@ -5014,57 +5016,66 @@ N.who={q:()=>P.whoN+NB+'? C’est qui, '+P.whoN+NB+'?',c:['mon animal','mon amou
 const NB='\u00a0';
 N.an_det={q:()=>'Oh, '+(/^(chienne|chatte|tortue)/.test(P.espece)?'une ':'un ')+P.espece.replace(/s$/,'')+' ! Comment il s’appelle ?',name:'animal'};
 function addStory(){const c=document.getElementById('mvcards');if(!c||c.querySelector('[data-c="histoire"]'))return;const b=document.createElement('button');b.type='button';b.className='mvc';b.dataset.c='histoire';b.innerHTML='<span class="mvch"><b>NOTRE HISTOIRE</b></span><small>'+(P.partenaire?'toi et '+P.partenaire:'votre histoire à deux')+', à ton rythme</small><span class="mvpr"><span class="mvpg"><i style="width:0%"></i></span><em class="mvcnt">0 SUR 9</em></span><span class="mvres">commencer par « la rencontre » ›</span>';c.appendChild(b)}
-let T=[],busy=false,queue=[],th=0,cur=null,curId=null,sel=[];
+const EXTRA=window.__enVieChapters({P,A});Object.assign(N,EXTRA.nodes);
+const CHAPTERS={moi:{title:'MOI AUJOURD’HUI',themes:THEMES,names:['chez toi','ton travail','ton quotidien','tes animaux','ce que tu aimes','toi','comment je te parle'],intro:'On y va ? Réponds comme tu veux. Si tu manques d’idées, je t’en souffle. Tu peux en choisir plusieurs et toucher un de tes messages pour le corriger.',end:()=>`Merci ${first()}. Je te connais un peu mieux maintenant.`},...EXTRA.chapters};
+const LIFE=window.__enKeep?window.__enKeep('lifeform',{selected:'moi',sessions:{}}):{selected:'moi',sessions:{}};
+LIFE.sessions=LIFE.sessions||{};
+let chapter=CHAPTERS[LIFE.selected]?LIFE.selected:'moi',opened=false,T=[],busy=false,queue=[],th=0,cur=null,curId=null,sel=[],introDone={},messages=[];
+let THN=CHAPTERS[chapter].names;
 const pet=()=>'illus/eveil-'+(window.__pet||'chat')+'.webp';
 const first=()=>{const x=document.getElementById('o2in');return P.surnom||(x&&x.value.trim())||window.__P0()};
+const text=v=>typeof v==='function'?v():v;
+const question=id=>N[id]?text(N[id].q):'';
+const go=id=>window.__enShow?window.__enShow(id):document.getElementById(id)?.scrollIntoView({block:'center'});
 function scroll(){chat.scrollTop=chat.scrollHeight}
-function row(el){const r=document.createElement('div');r.className='mvrow';r.innerHTML=`<span class="mvring"><img src="${pet()}" alt=""></span>`;r.appendChild(el);chat.appendChild(r);scroll();return r}
-function say(t,then){busy=true;const w=document.createElement('p');w.className='mvbub wt';w.innerHTML='<i></i><i></i><i></i>';const last=chat.lastElementChild;if(last&&last.classList.contains('mvrow'))last.querySelector('.mvring').classList.add('mvgh');row(w);
- T.push(setTimeout(()=>{w.className='mvbub';w.textContent=t;scroll();busy=false;then&&then()},Math.min(1600,550+t.length*12)))}
+function controls(){document.getElementById('mvsend').disabled=busy||!cur;document.getElementById('mvskip').disabled=busy||!cur;document.getElementById('mvskip').hidden=!cur;}
+function remember(){if(!opened)return;LIFE.selected=chapter;LIFE.sessions[chapter]={th,indices:THEMES.map(l=>l.__i||0),queue:[...queue],curId,introDone:{...introDone},messages:messages.map(m=>({...m})),draft:inp.value,done:th>=THEMES.length&&!curId};}
+function cancel(){T.forEach(clearTimeout);T=[];busy=false;chat.querySelectorAll('.wt').forEach(e=>e.closest('.mvrow')?.remove());}
+function row(el){const r=document.createElement('div');r.className='mvrow';const ring=document.createElement('span');ring.className='mvring';const i=document.createElement('img');i.src=pet();i.alt='';ring.appendChild(i);r.append(ring,el);chat.appendChild(r);scroll();return r}
+function say(t,then){busy=true;controls();const w=document.createElement('p');w.className='mvbub wt';w.innerHTML='<i></i><i></i><i></i>';row(w);
+ const delay=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:Math.min(1100,300+String(t).length*8);
+ T.push(setTimeout(()=>{w.className='mvbub';w.textContent=t;messages.push({type:'bot',t});scroll();busy=false;remember();controls();then&&then()},delay))}
 function chips(q){sel=[];const pool=typeof q.c==='function'?q.c(P):q.c;if(!pool||!pool.length)return;let off=0;
- const d=document.createElement('div');d.className='mvsug2'+(q.chipsOnly?'':' mvcard');d.id='mvchips';
- const w=document.createElement('div');w.className='mvchips';
- let more=null;
- if(!q.chipsOnly){const h=document.createElement('div');h.className='mvct';h.innerHTML='<span>QUELQUES IDÉES…</span>';if(pool.length>4){more=document.createElement('button');more.type='button';more.className='mvref';more.setAttribute('aria-label','D’autres idées');more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>';h.appendChild(more)}d.appendChild(h)}
- d.appendChild(w);
- function draw(){w.innerHTML='';const n=q.chipsOnly?pool.length:Math.min(4,pool.length);for(let j=0;j<n;j++){const x=pool[(off+j)%pool.length];const b=document.createElement('button');b.type='button';b.textContent=x;if(sel.includes(x))b.classList.add('on');
-   b.onclick=()=>{if(q.chipsOnly){answer(x);return}if(sel.includes(x))sel=sel.filter(y=>y!==x);else sel.push(x);b.classList.toggle('on');inp.value=joinNat(sel);inp.dispatchEvent(new Event('input'));inp.focus({preventScroll:true});inp.setSelectionRange(inp.value.length,inp.value.length)};w.appendChild(b)}
+ const d=document.createElement('div');d.className='mvsug2'+(q.chipsOnly?'':' mvcard');d.id='mvchips';const w=document.createElement('div');w.className='mvchips';let more=null;
+ if(!q.chipsOnly){const h=document.createElement('div');h.className='mvct';h.innerHTML='<span>QUELQUES IDÉES…</span>';if(pool.length>4){more=document.createElement('button');more.type='button';more.className='mvref';more.setAttribute('aria-label','D’autres idées');more.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>';h.appendChild(more)}d.appendChild(h)}d.appendChild(w);
+ function draw(){w.innerHTML='';const n=q.chipsOnly?pool.length:Math.min(4,pool.length);for(let j=0;j<n;j++){const x=pool[(off+j)%pool.length];const b=document.createElement('button');b.type='button';b.textContent=x;b.classList.toggle('on',sel.includes(x));b.onclick=()=>{if(q.chipsOnly){answer(x);return}sel=sel.includes(x)?sel.filter(y=>y!==x):[...sel,x];b.classList.toggle('on',sel.includes(x));inp.value=joinNat(sel);inp.dispatchEvent(new Event('input'));inp.focus({preventScroll:true});inp.setSelectionRange(inp.value.length,inp.value.length)};w.appendChild(b)}
   if(!q.chipsOnly){const o=document.createElement('button');o.type='button';o.className='mvother';o.textContent='autre…';o.onclick=()=>{inp.value=sel.length?joinNat(sel)+', ':'';inp.focus({preventScroll:true})};w.appendChild(o)}}
- if(more)more.onclick=()=>{off=(off+4)%pool.length;more.classList.remove('spin');void more.offsetWidth;more.classList.add('spin');draw()};draw();
- chat.appendChild(d);scroll()}
-const THN=['chez toi','ton travail','ton quotidien','tes animaux','ce que tu aimes','toi','comment je te parle'];
-function progress(){qb.style.width=Math.round(th/THEMES.length*100)+'%';const cc=document.querySelector('#mv2 .mvc[data-c="moi"]');if(cc){const d=Math.min(th,THEMES.length);cc.querySelector('.mvpg i').style.width=Math.round(d/THEMES.length*100)+'%';cc.querySelector('.mvcnt').textContent=d+' SUR '+THEMES.length;cc.querySelector('.mvres').textContent=d>=THEMES.length?'terminé ✓':d?'reprendre à « '+THN[d]+' » ›':'commencer par « chez toi » ›'}}
-let introDone={};
-function nextId(){while(true){if(queue.length){const id=queue.shift();if(N[id].skip&&N[id].skip())continue;return id}
- if(th>=THEMES.length)return null;const list=THEMES[th];if(!list.__i)list.__i=0;if(list.__i>=list.length){th++;progress();continue}
- const id=list[list.__i++];if(N[id].skip&&N[id].skip())continue;return id}}
-function skipIcon(){const rows=chat.querySelectorAll('.mvrow');const r=rows[rows.length-1];if(!r)return;const b=document.createElement('button');b.type='button';b.className='mvskipi';b.setAttribute('aria-label','Passer cette question');b.title='Passer cette question';b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17c1.5-6 6.5-9 13-7"/><path d="M15 6.5 18.5 10 15 13.5"/></svg>';b.onclick=pass;r.appendChild(b)}
-function next(){progress();const id=nextId();if(!id){cur=null;end();return}curId=id;cur=N[id];const qt=typeof cur.q==='function'?cur.q():cur.q;
- const go=()=>say(qt,()=>{skipIcon();chips(cur)});if(cur.intro&&!introDone[id]){introDone[id]=1;say(cur.intro,go)}else go()}
-function me(t,sk,id){document.getElementById('mvchips')?.remove();chat.querySelectorAll('.mvskipi').forEach(x=>x.remove());const p=document.createElement('p');p.className='mvme'+(sk?' sk':'');p.textContent=t;if(!sk&&id){p.dataset.id=id;p.title='Toucher pour modifier'}chat.appendChild(p);scroll();return p}
-function answer(t){if(busy||!cur)return;t=(t||'').trim().replace(/,\s*$/,'');if(!t)return;me(t,false,curId);inp.value='';inp.dispatchEvent(new Event('input'));const q=cur,id=curId;
- if(ALREADY.test(t)){say(pickR(['Ah oui, pardon, tu me l’as déjà dit !','Oups, c’est vrai, tu me l’as dit. On continue.']),next);return}
+ if(more)more.onclick=()=>{off=(off+4)%pool.length;draw()};draw();chat.appendChild(d);scroll()}
+function progress(){if(opened)qb.style.width=Math.round(th/THEMES.length*100)+'%';
+ document.querySelectorAll('#mvcards .mvc').forEach(c=>{const def=CHAPTERS[c.dataset.c];if(!def)return;const s=c.dataset.c===chapter&&opened?{th}:LIFE.sessions[c.dataset.c];const n=Math.min(s?.th||0,def.themes.length);c.querySelector('.mvpg i').style.width=Math.round(n/def.themes.length*100)+'%';c.querySelector('.mvcnt').textContent=n+' SUR '+def.themes.length;c.querySelector('.mvres').textContent=n>=def.themes.length?'terminé ✓':n||s?.messages?.length?'reprendre à « '+def.names[Math.min(n,def.names.length-1)]+' » ›':'commencer par « '+def.names[0]+' » ›';});
+ const b=document.getElementById('mvgo');b.textContent=LIFE.sessions[LIFE.selected]?.messages?.length?'Continuer':'Commencer';}
+function nextId(){let guard=0;while(guard++<500){let id;if(queue.length)id=queue.shift();else{if(th>=THEMES.length)return null;const l=THEMES[th];l.__i=l.__i||0;if(l.__i>=l.length){th++;progress();continue}id=l[l.__i++]}
+ const n=N[id];if(!n)continue;if(n.skip&&n.skip())continue;
+ // Anciennes réponses : on conserve le profil et on avance sans les redemander.
+ if(typeof P[id]==='string'&&P[id].trim()){if(n.then)queue.unshift(...(n.then(P[id])||[]));continue}return id}return null}
+function skipIcon(){chat.querySelectorAll('.mvskipi').forEach(e=>e.remove());const r=chat.querySelector('.mvrow:last-child');if(!r)return;const b=document.createElement('button');b.type='button';b.className='mvskipi';b.setAttribute('aria-label','Passer cette question');b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17c1.5-6 6.5-9 13-7"/><path d="M15 6.5 18.5 10 15 13.5"/></svg>';b.onclick=pass;r.appendChild(b)}
+function next(){progress();const id=nextId();if(!id){cur=null;curId=null;end();return}curId=id;cur=N[id];remember();controls();const ask=()=>say(question(id),()=>{skipIcon();chips(cur);controls()});if(cur.intro&&!introDone[id]){introDone[id]=1;say(text(cur.intro),ask)}else ask()}
+function me(t,sk,id,restoring=false,index=null){document.getElementById('mvchips')?.remove();chat.querySelectorAll('.mvskipi').forEach(x=>x.remove());const p=document.createElement('p');p.className='mvme'+(sk?' sk':'');p.textContent=t;if(id&&!sk){p.dataset.id=id;p.dataset.q=question(id);p.title='Toucher pour modifier'}if(restoring)p.dataset.restore='1';else{index=messages.length;messages.push({type:'me',t,sk,id})}p.dataset.ti=index;chat.appendChild(p);scroll();return p}
+function answer(t){if(busy||!cur)return;t=(t||'').trim().replace(/,\s*$/,'');if(!t)return;const q=cur,id=curId;me(t,false,id);inp.value='';inp.dispatchEvent(new Event('input'));
+ if(ALREADY.test(t)){cur=null;curId=null;remember();say('D’accord, on continue.',next);return}
  P[id]=t;if(q.set)P[q.set]=P[q.set]||t;if(q.name)P[q.name]=nameOf(t);
- const unsure=UNSURE.test(t);
- const detected=detect(t,id);const thenL=q.then?q.then(t):[];const fol=[...detected,...thenL];queue.unshift(...fol.filter((x,k)=>fol.indexOf(x)===k));
- let r=q.r&&q.r(t);const immediate=detected.length>0;if(!r&&!immediate)r=unsure?pickR(['Pas grave.','C’est normal, ça viendra.','Ce n’est pas grave.']):listen(t,thenL.length>0);
- if(r)say(r,next);else next()}
-function pass(){if(busy||!cur)return;me('Je préfère passer',true);say(pickR(['Pas de souci.','D’accord, on passe.','Aucun problème.']),next)}
-/* modifier un message envoyé */
-chat.addEventListener('click',e=>{const p=e.target.closest('.mvme[data-id]');if(!p||p.isContentEditable)return;const old=p.textContent;p.contentEditable='true';p.classList.add('ed');p.focus({preventScroll:true});document.getSelection().selectAllChildren(p);document.getSelection().collapseToEnd();
- const ok=document.createElement('button');ok.type='button';ok.className='mvedok';ok.textContent='✓ modifier';p.after(ok);
- const done=save=>{p.contentEditable='false';p.classList.remove('ed');ok.remove();const v=p.textContent.trim();if(!save||!v){p.textContent=old;return}if(v!==old){P[p.dataset.id]=v;const n=N[p.dataset.id];if(n&&n.name)P[n.name]=nameOf(v);if(n&&n.set)P[n.set]=v;if(!p.querySelector('.mved')){const s=document.createElement('small');s.className='mved';s.textContent=' · modifié';p.appendChild(s)}}};
+ const detected=chapter==='moi'?detect(t,id):[];const thenL=q.then?q.then(t):[];const fol=[...detected,...thenL];queue.unshift(...fol.filter((x,k)=>fol.indexOf(x)===k));
+ const r=q.r&&q.r(t);cur=null;curId=null;remember();if(r)say(r,next);else next()}
+function pass(){if(busy||!cur)return;me('Je préfère passer',true,curId);cur=null;curId=null;remember();say('D’accord, on passe.',next)}
+chat.addEventListener('click',e=>{const p=e.target.closest('.mvme[data-id]');if(!p||p.isContentEditable)return;const old=messages[+p.dataset.ti]?.t||p.textContent;p.contentEditable='true';p.classList.add('ed');p.focus({preventScroll:true});document.getSelection().selectAllChildren(p);document.getSelection().collapseToEnd();const ok=document.createElement('button');ok.type='button';ok.className='mvedok';ok.textContent='✓ modifier';p.after(ok);
+ const done=save=>{p.contentEditable='false';p.classList.remove('ed');ok.remove();const v=p.textContent.trim();if(!save||!v){p.textContent=old;return}if(v!==old){P[p.dataset.id]=v;const n=N[p.dataset.id];if(n?.name)P[n.name]=nameOf(v);if(n?.set)P[n.set]=v;if(messages[+p.dataset.ti])messages[+p.dataset.ti].t=v;document.dispatchEvent(new CustomEvent('en-vie-edit',{detail:{chapter,id:p.dataset.id,old,value:v}}));remember()}};
  ok.onmousedown=ev=>ev.preventDefault();ok.onclick=()=>done(true);p.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();done(true)}if(ev.key==='Escape')done(false)});p.addEventListener('blur',()=>setTimeout(()=>{if(p.isContentEditable)done(true)},150),{once:true})});
-function end(){th=THEMES.length;progress();say('Merci '+first()+'. Je te connais un peu mieux maintenant.',()=>{say('Tout ce que tu m’as dit reste entre nous, et tu pourras le changer quand tu veux.',()=>{const pg=document.querySelector('#mv2 .mvc[data-c="moi"] .mvpg i');if(pg)pg.style.width='100%'})})}
-function start(){T.forEach(clearTimeout);T=[];busy=false;chat.innerHTML='';queue=[];th=0;cur=null;introDone={};lastR=[];THEMES.forEach(l=>l.__i=0);for(const k in P)delete P[k];document.querySelector('#mvcards [data-c="histoire"]')?.remove();qb.style.width='0';say('On y va ? Réponds comme tu veux. Si tu manques d’idées, je t’en souffle. Tu peux en choisir plusieurs, les modifier, et toucher un de tes messages pour le corriger.',next)}
+function end(){th=THEMES.length;cur=null;curId=null;progress();remember();say(text(CHAPTERS[chapter].end),()=>{document.querySelector('#mv3 .mvin').hidden=true;document.getElementById('mvstop').textContent='retour aux chapitres';remember()})}
+function openChapter(id){if(!CHAPTERS[id])return;remember();cancel();chapter=id;LIFE.selected=id;THEMES=CHAPTERS[id].themes;THN=CHAPTERS[id].names;const s=LIFE.sessions[id];opened=true;th=s?.th||0;queue=[...(s?.queue||[])];curId=s?.curId||null;cur=curId?N[curId]:null;introDone={...(s?.introDone||{})};messages=(s?.messages||[]).map(x=>({...x}));THEMES.forEach((l,i)=>l.__i=s?.indices?.[i]||0);chat.innerHTML='';inp.value=s?.draft||'';document.querySelector('#mv3 .mvtt p').textContent=CHAPTERS[id].title;document.getElementById('mvnote2').textContent='';document.querySelector('#mv3 .mvin').hidden=!!s?.done;document.getElementById('mvstop').textContent='finir plus tard';
+ messages.forEach((m,i)=>{if(m.type==='me')me(m.t,m.sk,m.id,true,i);else{const p=document.createElement('p');p.className='mvbub';p.textContent=m.t;row(p)}});go('mv3');progress();
+ if(s?.done){document.getElementById('mvstop').textContent='retour aux chapitres';controls();return}
+ if(cur){const last=messages.at(-1);if(last?.type!=='bot'||last.t!==question(curId)){const t=question(curId),p=document.createElement('p');p.className='mvbub';p.textContent=t;row(p);messages.push({type:'bot',t})}skipIcon();chips(cur);controls();remember();return}
+ if(!s)say(text(CHAPTERS[id].intro),next);else next();remember()}
+function leave(){remember();cancel();cur=null;curId=null;opened=false;go('mv2');progress()}
 document.getElementById('mvsend').onclick=()=>answer(inp.value);
-inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();answer(inp.value)}});
+inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();answer(inp.value)}});inp.addEventListener('input',remember);
 document.getElementById('mvskip').onclick=pass;
-document.getElementById('mvstop').onclick=()=>{if(busy||!cur)return;document.getElementById('mvchips')?.remove();me('Je finirai plus tard',true);const pg=document.querySelector('#mv2 .mvc[data-c="moi"] .mvpg i');if(pg)pg.style.width=Math.round(th/THEMES.length*100)+'%';say('D’accord. On reprendra ici quand tu veux.');queue.unshift(curId);cur=null};
-document.getElementById('mvrestart').onclick=start;
-document.querySelector('#mv3 .mvbk').onclick=()=>document.getElementById('mv2').scrollIntoView({behavior:'smooth',block:'center'});
-window.__mvstart=start;
-new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting){start();ob.disconnect()}},{threshold:.5}).observe(document.getElementById('mv3'));
+document.getElementById('mvstop').onclick=leave;
+document.getElementById('mvrestart').onclick=()=>openChapter(chapter);
+document.querySelector('#mv3 .mvbk').onclick=leave;
+window.__mvstart=()=>openChapter(chapter);window.__mvopen=openChapter;window.__mvselected=()=>LIFE.selected||'moi';window.__mvchapter=()=>chapter;
+document.addEventListener('visibilitychange',remember);window.addEventListener('pagehide',remember);
+if(/^oui/i.test(P.part_hist||''))addStory();progress();
 })();;;
 </script>
 <script type="text/x-en">
@@ -5242,7 +5253,7 @@ function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';const L=['Là-bas,
 function set(a,sc){ai=a;if(sc!==undefined)scope=sc;window.__aiScope=scope;window.__aiWho=a;hd.textContent=(scope?'CE CHAPITRE ':'')+'AVEC '+LAB[ai].toUpperCase();go.textContent='Ouvrir '+LAB[ai];const q=window.__aiPrompt(scope);go.href=URL_[ai](q);pre.textContent=q;document.getElementById('mvaipet').src='illus/eveil-'+(window.__pet||'chat')+'.webp'}
 window.__aiOpen=(a,sc)=>{set(a,sc);ph.scrollIntoView({behavior:'smooth',block:'center'});play()};
 document.querySelectorAll('#mv2 .mvai button').forEach(b=>b.onclick=()=>window.__aiOpen(b.dataset.ai,null));
-document.getElementById('mvaic').onclick=()=>window.__aiOpen('chatgpt','moi');
+document.getElementById('mvaic').onclick=()=>window.__aiOpen('chatgpt',window.__mvchapter?window.__mvchapter():'moi');
 document.querySelectorAll('.aisw').forEach(b=>b.onclick=()=>{set(b.dataset.ai);play()});
 document.getElementById('aicopy').onclick=()=>{pre.hidden=!pre.hidden};
 const share=()=>{const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();window.__iaShare({ph,ai,title:(scope?'Ce chapitre':'Faire connaissance')+' avec '+LAB[ai],
@@ -8616,7 +8627,7 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
 /* 8 · « Ce que je t'ai confié » : tes vraies réponses, pas des exemples */
 (function(){const chat=document.getElementById('mvchat'),body=document.getElementById('dbody');if(!body)return;
  let LOG=[];const sv=window.__enLive&&window.__enLive('mvlog',()=>LOG);if(sv)LOG=sv;
- const CH={'MOI AUJOURD’HUI':'moi',"MOI AUJOURD'HUI":'moi','MES PROCHES':'proches','MON PASSÉ':'passe','MON INTÉRIEUR':'int'};
+ const CH={'MOI AUJOURD’HUI':'moi',"MOI AUJOURD'HUI":'moi','MES PROCHES':'proches','MON PASSÉ':'passe','MON INTÉRIEUR':'int','NOTRE HISTOIRE':'histoire'};
  const MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
  const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
  function draw(){if(!LOG.length){body.innerHTML='<p class="dempty">Ce que tu me confieras en faisant connaissance apparaîtra ici, rien que pour toi.</p>';return}
@@ -8624,9 +8635,10 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
   body.innerHTML=Object.entries(by).map(([c,L])=>{const t=L[0].ct||c;const days={};L.forEach(x=>{const d=new Date(x.at);const k=d.getDate()+' '+MOC[d.getMonth()];(days[k]=days[k]||[]).push(x)});
    return `<section class="dch" data-c="${c}"><p class="dcht">${esc(t)}</p><div class="dth">${Object.entries(days).map(([k,X])=>`<div class="dblk" data-s="form"><span class="dtag">AVEC PLUME · ${k}</span>${X.map(x=>(x.q?`<p class="dq">${esc(x.q)}</p>`:'')+`<p class="da">${esc(x.a)}</p>`).join('')}</div>`).join('')}</div></section>`}).join('')}
  draw();
- if(chat)new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('mvme')||n.classList.contains('sk'))return;
+ document.addEventListener('en-vie-edit',e=>{const d=e.detail;const x=[...LOG].reverse().find(x=>x.c===d.chapter&&(x.id===d.id||x.a===d.old));if(x){x.a=d.value;draw()}});
+ if(chat)new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('mvme')||n.classList.contains('sk')||n.dataset.restore==='1')return;
   let q='',p=n.previousElementSibling;while(p&&!q){if(!p.classList.contains('mvme')&&p.textContent.trim())q=p.textContent.trim();p=p.previousElementSibling}
-  const tt=((document.querySelector('#mv3 .mvtt p')||{}).textContent||'').trim();LOG.push({c:CH[tt]||'moi',ct:tt||'MOI AUJOURD’HUI',q,a:n.textContent.trim(),at:Date.now()});draw()}))).observe(chat,{childList:true});
+  const tt=((document.querySelector('#mv3 .mvtt p')||{}).textContent||'').trim();LOG.push({c:CH[tt]||'moi',ct:tt||'MOI AUJOURD’HUI',id:n.dataset.id,q:n.dataset.q||q,a:n.textContent.trim(),at:Date.now()});draw()}))).observe(chat,{childList:true});
 })();
 
 /* 9 · faire connaissance : ta vraie date de naissance, ton psy, ta photo — gardés dans tes réglages */

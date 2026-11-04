@@ -6,11 +6,11 @@ import { resolve } from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = resolve(root, 'dist');
 await mkdir(dist, { recursive: true });
-for (const path of ['index.html', 'manifest.webmanifest', 'sw.js', 'fonts', 'icons', 'illus']) {
+for (const path of ['index.html', 'manifest.webmanifest', 'sw.js', 'ma-vie-parcours.js', 'fonts', 'icons', 'illus']) {
   await cp(resolve(root, path), resolve(dist, path), { recursive: true });
 }
 const html = await readFile(resolve(root, 'index.html'), 'utf8');
-const version = createHash('sha256').update(html).digest('hex').slice(0, 12);
+const version = createHash('sha256').update(html).update(await readFile(resolve(root, 'ma-vie-parcours.js'))).digest('hex').slice(0, 12);
 const sw = await readFile(resolve(root, 'sw.js'), 'utf8');
 await writeFile(resolve(dist, 'sw.js'), sw.replace(/const V='[^']+'/, `const V='entre-nous-${version}'`));
 console.log('Entre nous : application prête dans dist/.');
