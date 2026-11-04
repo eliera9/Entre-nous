@@ -13,7 +13,7 @@ alter table public.abonnements enable row level security;
 do $$ begin
   if not exists (select 1 from pg_policies where tablename = 'abonnements' and policyname = 'abonnements_les_miens') then
     create policy abonnements_les_miens on public.abonnements for all to authenticated
-      using (user_id = auth.uid()) with check (user_id = auth.uid());
+      using (user_id::text = auth.uid()::text) with check (user_id::text = auth.uid()::text);
   end if;
 end $$;
 
