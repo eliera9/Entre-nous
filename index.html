@@ -8,8 +8,8 @@
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<script>/* Le nouvel accueil utilise le vrai viewport ; les autres écrans gardent leurs proportions existantes. */
-window.__enSetAuthLayout=function(active){document.documentElement.classList.toggle('en-auth-screen',!!active);const m=document.querySelector('meta[name=viewport]');const legacy=!active&&Math.min(screen.width,screen.height)<=500;const v=legacy?'width=302,viewport-fit=cover,user-scalable=no':'width=device-width,initial-scale=1,viewport-fit=cover';if(m&&m.content!==v)m.content=v};
+<script>/* Même viewport sur toutes les pages, y compris après l'accueil. */
+window.__enSetAuthLayout=function(active){document.documentElement.classList.toggle('en-auth-screen',!!active)};
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -26,7 +26,7 @@ window.__enSetAuthLayout=function(active){document.documentElement.classList.tog
 /* Entre nous · app : un écran à la fois, à la taille de l'iPhone */
 html,body{margin:0;height:100%;overflow:hidden;background:#F5E0D3;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-toast):not(script):not(style){display:none!important}
-#en-app{position:fixed;inset:0;width:min(100%,520px);margin-inline:auto;overflow:hidden;box-shadow:0 0 80px rgba(70,37,52,.12)}
+#en-app{position:fixed;inset:0;width:min(100%,600px);margin-inline:auto;overflow:hidden;box-sizing:border-box;background:inherit}
 #en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:100%!important;height:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
 #en-app .phone.en-on{visibility:visible;pointer-events:auto;z-index:1;translate:none}
 #en-app .phone::before,#en-app .phone::after{border-radius:0!important}
@@ -137,14 +137,24 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-
 #souv .en-sv0 p{font:italic 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted);margin:0 0 14px}
 html.en-nuit,html.en-nuit body{background:#2A1E26}
 .onb .o3a[hidden]{display:none!important}
-html.en-ready,html.en-ready body{height:100%;min-height:100lvh}
-#en-app{bottom:auto;height:100lvh}
-@supports not (height:100lvh){#en-app{height:100%;bottom:0}}
+html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:100dvh}
+#en-app{top:var(--en-viewport-top,0px);bottom:auto;height:100%;height:var(--en-viewport-height,100dvh)}
+/* Le fond couvre l'écran ; les commandes restent dans la zone utilisable. */
+#en-app .phone{top:env(safe-area-inset-top,0px)!important;height:calc(100% - env(safe-area-inset-top,0px))!important;transition:none}
+#en-app #onb{top:0!important;height:100%!important}
+#en-app #onb .otrack{min-height:0;min-width:0}
+#en-app #onb .ost{flex-shrink:0;min-height:0}
+#en-app #onb .o2{padding:calc(clamp(28px,6vh,70px) + env(safe-area-inset-top,0px)) max(26px,calc((100% - 440px)/2)) 24px;gap:10px}
+#en-app #onb .o2>*{flex-shrink:0;box-sizing:border-box}
+#en-app #onb .o2t{font-size:28px;line-height:1.25}
+#en-app #onb .o2in{min-height:44px;font-size:20px;scroll-margin-block:24px}
+#en-app #onb .o2lb{font-size:12px;line-height:1.35;margin-top:18px}
+#en-app #onb .o2phl,#en-app #onb .o2note{font-size:15px;line-height:1.35}
+#en-app #onb .o2pills select,#en-app #onb .o2psy button{min-height:44px;font-size:17px;line-height:1.25}
+#en-app #onb .obar{flex:none;padding:12px max(26px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+#en-app #onb .obar button{min-height:44px;box-sizing:border-box;display:flex;align-items:center;font-size:16px}
+#en-lock{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
 .mv .mvmic.rec svg{stroke:#C9766E}
-/* iPhone : l'écran commence sous l'heure et la batterie, comme sur la planche ; le fond derrière prend la couleur de l'écran */
-#en-app{top:env(safe-area-inset-top,0px);height:calc(100lvh - env(safe-area-inset-top,0px))}
-@supports not (height:100lvh){#en-app{top:env(safe-area-inset-top,0px);bottom:0;height:auto}}
-
 
 .mv .frd .frv{display:block;max-width:92px;margin:3px auto 0;font:italic 13.5px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--sink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;letter-spacing:0;text-transform:none}
 
@@ -331,6 +341,27 @@ window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.
 window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;await dbPut(KEY,rec);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
 
+/* Fond commun, resynchronisé à la navigation et aux changements de thème. */
+window.__enSyncChrome=function(){
+ const ph=document.querySelector('#en-app .phone.en-on'),lock=document.getElementById('en-lock');
+ const el=lock&&!lock.classList.contains('out')?lock:ph;if(!el)return;
+ const css=getComputedStyle(el),bg=css.backgroundColor;
+ if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')return;
+ for(const node of [document.documentElement,document.body])if(node.style.background!==bg)node.style.background=bg;
+ const meta=document.querySelector('meta[name="theme-color"]');if(meta&&meta.content!==bg)meta.content=bg;
+};
+new MutationObserver(ms=>{
+ if(ms.some(m=>m.target.matches&&m.target.matches('#en-app .phone.en-on,#en-lock')))window.__enSyncChrome();
+}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class','style','data-en-step']});
+function viewportBounds(){
+ const v=window.visualViewport;if(!v)return;
+ const root=document.documentElement;
+ root.style.setProperty('--en-viewport-height',v.height+'px');
+ root.style.setProperty('--en-viewport-top',v.offsetTop+'px');
+}
+if(window.visualViewport){window.visualViewport.addEventListener('resize',viewportBounds);window.visualViewport.addEventListener('scroll',viewportBounds);viewportBounds();}
+addEventListener('resize',()=>{viewportBounds();window.__enSyncChrome()});
+
 /* ---------- écrans : un seul à la fois ---------- */
 const BASE=302;let cur=null;
 function fit(){const z=innerWidth/BASE;document.documentElement.style.setProperty('--enz',z);document.documentElement.style.setProperty('--enh',(innerHeight/z)+'px')}
@@ -338,8 +369,7 @@ addEventListener('resize',fit);fit();
 function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock();return}if(ph.classList.contains('en-off'))return;
  document.querySelectorAll('#en-app .phone').forEach(p=>{const on=p===ph;p.classList.toggle('en-on',on);p.toggleAttribute('inert',!on);p.setAttribute('aria-hidden',on?'false':'true')});
  cur=ph;window.__enSetAuthLayout(ph.id==='onb'&&(ph.dataset.enStep||'0')==='0');try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
- /* le fond derrière l'écran prend sa couleur : jamais de bande d'une autre couleur en haut ou en bas */
- try{const bg=ph.id==='onb'&&!ph.classList.contains('en-auth-ready')?(document.documentElement.classList.contains('en-nuit')?'#2A1E26':'#F5E0D3'):getComputedStyle(ph).backgroundColor;if(bg&&bg!=='rgba(0, 0, 0, 0)'){document.documentElement.style.background=bg;document.body.style.background=bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=bg}}catch(e){}
+ window.__enSyncChrome();
  if(ph.id==='home'&&window.__enTourLater){const f=window.__enTourLater;window.__enTourLater=null;setTimeout(f,450)}}
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
 /* un volet est ouvert quand l'écran est figé (overflow hidden) ou qu'un voile est visible : l'écran derrière reste en place, la barre du bas s'efface */
@@ -383,7 +413,7 @@ function lockUI(meta,onOk,onSec,onFid){
  const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=nuit?'nuit':'';
  el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
  <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><p class="s" style="font-size:13px;opacity:.8">Efface le journal de ce téléphone et te déconnecte. Ce qui est gardé dans ton compte en ligne n’est pas touché : pour le supprimer, ouvre l’app puis Réglages › Mon compte › supprimer mon compte.</p><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
- document.body.appendChild(el);
+ document.body.appendChild(el);window.__enSyncChrome();
  let code='',busy=false,fails=0,until=0;dbGet('lockf').then(L=>{if(L&&L.until>Date.now())until=L.until}).catch(()=>{});const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
  const paint=()=>dots.forEach((x,i)=>x.classList.toggle('on',i<code.length));
  el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(Date.now()<until){sb.textContent='Patiente un petit moment…';return}
@@ -492,7 +522,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 </script>
 <style>
 /* Application web · téléphone, tablette et ordinateur */
-#en-lock{width:min(100%,520px);margin-inline:auto;box-shadow:0 0 80px rgba(70,37,52,.12)}
+#en-lock{width:min(100%,600px);margin-inline:auto}
 #en-cc .in,.en-sh .in{max-width:520px;margin-inline:auto}
 #en-app .phone{box-sizing:border-box}
 #mv3 .mvin[hidden],#mv3 .mvlinks button[hidden]{display:none!important}
@@ -502,7 +532,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 #en-app .onb .o3{padding-top:clamp(28px,10vh,90px)}
 #en-app .onb input,#en-app .onb select{font-size:16px}
 #en-app .phone :focus-visible{outline:2px solid var(--sacc);outline-offset:3px}
-@media(min-width:700px){#en-app{border-inline:1px solid rgba(155,108,128,.16)}}
+
 </style>
 <link rel="stylesheet" href="auth-connexion.css">
 <script src="auth-connexion.js" defer></script>
@@ -4463,6 +4493,7 @@ const phones=[document.getElementById("open"),document.getElementById("home")];
 const press=(id,v)=>document.getElementById(id).setAttribute("aria-pressed",String(v));
 function render(){
   const M=MOMENTS[state.m];
+  document.documentElement.classList.toggle("en-nuit",state.m==="nuit"||state.m==="soir");
   for(const p of phones){
     p.style.setProperty("--sbg",M.bg);p.style.setProperty("--sink",M.ink);p.style.setProperty("--stext",M.bg==="#2A1E26"?M.ink:"#7A5263");p.style.setProperty("--smuted",M.muted);
     p.style.setProperty("--sacc",M.acc);p.style.setProperty("--sline",M.line);p.style.setProperty("--scard",M.card);
@@ -4674,7 +4705,7 @@ new MutationObserver(sw).observe(h,{subtree:true,childList:true,attributes:true,
 
 <script type="text/x-en">
 (function(){const o=document.getElementById('onb'),src=document.getElementById('open'),tr=document.getElementById('otrack'),bk=document.getElementById('obk'),go=document.getElementById('ogo'),dots=[...document.querySelectorAll('#odots i')];let k=0;
-function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)})}
+function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)});o.classList.toggle('nuit',/2A1E26/i.test(src.style.getPropertyValue('--sbg')))}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
 o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.dataset.enStep=String(k);if(o.classList.contains('en-on'))window.__enSetAuthLayout(k===0);o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent=k===3?'Visiter':'Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.classList.toggle('dim',(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&!o3done))}
 let v=0;const o4tr=document.getElementById('o4tr'),o4skip=document.getElementById('o4skip');function v4(){o4tr.style.transform=`translateX(${-v*100}%)`;o4skip.classList.toggle('off',false)}
@@ -4694,7 +4725,7 @@ o.addEventListener('pointerup',e=>{if(sx!==null&&e.clientX-sx>50&&k>0){k--;show(
 
 <script type="text/x-en">
 (function(){const o=document.getElementById('pdj'),src=document.getElementById('open'),mn=document.getElementById('pmn'),menu=document.getElementById('pmenu');
-function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)})}
+function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)});o.classList.toggle('nuit',/2A1E26/i.test(src.style.getPropertyValue('--sbg')))}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
 o.dataset.mode='guider';o.querySelectorAll('.ptabs button[data-m]').forEach(b=>b.onclick=()=>{o.querySelectorAll('.ptabs button[data-m]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-selected',String(x===b))});o.dataset.mode=b.dataset.m;o.querySelectorAll('.pmode').forEach(m=>m.hidden=m.dataset.m!==b.dataset.m)});
 const EM={bas:['triste','fatiguée','inquiète','seule','en colère','submergée','déçue','perdue','vide','à fleur de peau'],mid:['calme','pensive','fatiguée','partagée','nostalgique','curieuse','préoccupée','sereine','lasse','tranquille'],haut:['joyeuse','reconnaissante','fière','apaisée','enthousiaste','aimée','légère','confiante','inspirée','soulagée']};

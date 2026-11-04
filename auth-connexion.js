@@ -55,13 +55,7 @@
    if(/failed to fetch|network|load failed/i.test(message))return 'Le service de connexion est momentanément inaccessible. Réessaie ; tes saisies restent dans ce volet.';
    return message||'La demande n’a pas pu être terminée. Réessaie.';
   }
-  function syncChrome(){
-   if(!onb.classList.contains('en-on'))return;
-   const css=getComputedStyle(onb),bg=onb.dataset.enStep==='0'?css.getPropertyValue('--auth-bg').trim():css.backgroundColor;
-   if(!bg||bg==='rgba(0, 0, 0, 0)')return;
-   document.documentElement.style.background=bg;document.body.style.background=bg;
-   const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=bg;
-  }
+  function syncChrome(){if(window.__enSyncChrome)window.__enSyncChrome();}
   function syncAuthTheme(){onb.classList.toggle('en-auth-night',document.documentElement.classList.contains('en-nuit'));syncChrome();}
   new MutationObserver(syncChrome).observe(onb,{attributes:true,attributeFilter:['class','style','data-en-step']});
   new MutationObserver(syncAuthTheme).observe(document.documentElement,{attributes:true,attributeFilter:['class']});syncAuthTheme();
