@@ -144,6 +144,9 @@ html.en-ready,html.en-ready body{height:100%;min-height:100lvh}
 
 
 .mv .frd .frv{display:block;max-width:92px;margin:3px auto 0;font:italic 13.5px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--sink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;letter-spacing:0;text-transform:none}
+
+/* volets du bas : rien ne passe par-dessus (barre du bas, bouton +, flèche ↑) */
+.phone.en-ovl .nav.nav3,.phone.en-ovl .gtop,.phone.en-ovl .actop,.phone.en-ovl .sblw,.phone.en-ovl .sbplume{opacity:0!important;pointer-events:none!important;transition:opacity .2s}
 /* Ma vie lisible : les volets ne s'écrasent plus, les textes longs restent entiers */
 .mv .fsh>*{flex-shrink:0}
 .mv .fshv.long{font:italic 500 23px/1.25 'Cormorant Garamond',Georgia,serif;text-align:center;max-width:100%}
@@ -335,10 +338,16 @@ function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock(
  try{const bg=getComputedStyle(ph).backgroundColor;if(bg&&bg!=='rgba(0, 0, 0, 0)'){document.documentElement.style.background=bg;document.body.style.background=bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=bg}}catch(e){}
  if(ph.id==='home'&&window.__enTourLater){const f=window.__enTourLater;window.__enTourLater=null;setTimeout(f,450)}}
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
+/* un volet est ouvert quand l'écran est figé (overflow hidden) ou qu'un voile est visible : l'écran derrière reste en place, la barre du bas s'efface */
+const OVL='.kov,.rgov,.ias-sheet,.pfov,.ad-sh,.mj-sh,.ps-sheet,.fdim:not([hidden]),.rdim:not([hidden]),.mvpdim:not([hidden])';
+function ovState(p){const lockd=p.style.overflowY==='hidden';const on=lockd||!!p.querySelector(OVL);p.classList.toggle('en-ovl',on);if(lockd){if(p.__lt==null)p.__lt=p.scrollTop}else p.__lt=null}
+new MutationObserver(ms=>{const seen=new Set();ms.forEach(m=>{const p=m.target.closest&&m.target.closest('#en-app .phone');if(p&&!seen.has(p)){seen.add(p);ovState(p)}})}).observe(document.documentElement,{attributes:true,attributeFilter:['style','hidden','class'],childList:true,subtree:true});
+document.addEventListener('scroll',e=>{const p=e.target;if(p&&p.classList&&p.classList.contains('phone')&&p.__lt!=null&&p.scrollTop!==p.__lt)p.scrollTop=p.__lt},true);
 const SIV=Element.prototype.scrollIntoView;
 /* on ne change d'écran que si c'est toi qui l'as demandé (un toucher il y a peu), jamais tout seul */
 let lastIn=0;['pointerdown','keydown','touchstart','click'].forEach(t=>addEventListener(t,()=>{lastIn=Date.now()},true));
-Element.prototype.scrollIntoView=function(o){const ph=this.closest&&this.closest('#en-app .phone');if(ph){if(this===ph){show(ph);return}if(ph!==cur){if(Date.now()-lastIn>4000)return;show(ph)}}return SIV.call(this,o&&typeof o==='object'?{...o,behavior:'auto'}:o)};
+Element.prototype.scrollIntoView=function(o){if(o&&typeof o==='object'&&o.inline&&(!o.block||o.block==='nearest')){let a=this.parentElement;while(a&&a!==document.body){const c=getComputedStyle(a);if(a.scrollWidth>a.clientWidth+1&&/auto|scroll/.test(c.overflowX)){const r=this.getBoundingClientRect(),q=a.getBoundingClientRect();const x=o.inline==='center'?r.left-q.left-(q.width-r.width)/2:o.inline==='start'?r.left-q.left:r.right-q.right;a.scrollTo({left:a.scrollLeft+x,behavior:o.behavior==='smooth'?'smooth':'auto'});return}a=a.parentElement}return}
+ const ph=this.closest&&this.closest('#en-app .phone');if(ph){if(this===ph){show(ph);return}if(ph!==cur){if(Date.now()-lastIn>4000)return;show(ph)}}return SIV.call(this,o&&typeof o==='object'?{...o,behavior:'auto'}:o)};
 
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
@@ -6229,7 +6238,7 @@ function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;co
    const mw=document.createElement('div');mw.className='kres';mw.innerHTML='<span class="k">mon mot du jour</span><input class="kbig2" style="font-size:16px;text-align:left;margin-top:4px" placeholder="Ce que je veux me dire ce jour-là…"><p class="knote">Il remplace le mot doux de l’accueil ce jour-là.</p>';const mi=mw.querySelector('input');mi.value=s.mot||'';mi.oninput=()=>s.mot=mi.value;form.appendChild(mw);
    line('souv','relier un souvenir',()=>'choisir',x=>x.innerHTML='<p class="knote">Tes souvenirs de la boîte apparaîtront ici.</p>')}}
  car();
- o.querySelector('.ksave').onclick=()=>{if(!s.n||!s.n.trim()){const b=form.querySelector('.kbig2');b.focus({preventScroll:true});b.style.borderBottomColor='#C26A7E';return}
+ o.querySelector('.ksave').onclick=()=>{if((!s.n||!s.n.trim())&&s.t==='psy')s.n='Ma psy';if(!s.n||!s.n.trim()){const b=form.querySelector('.kbig2');b.scrollIntoView({block:'center'});b.focus({preventScroll:true});b.style.borderBottomColor='#C26A7E';(window.__enToast||(()=>{}))(s.t==='anniv'?'Écris d’abord son prénom.':'Donne-lui d’abord un nom, tout en haut.');return}
   if(edit){const i=E.findIndex(e=>e.id===ev.id);E[i]=s}else{s.id=uid++;E.push(s)}
   const k=o.querySelector('.kok');k.classList.add('on');setTimeout(()=>{close();if(s.t==='rdv'||s.t==='psy')cur=D(s.y,s.m,s.d);else if(!edit)cur=D(cur.getFullYear(),s.m,s.d);refresh()},1000)};
  const del=o.querySelector('.kdel');if(del)del.onclick=()=>{const i=E.findIndex(e=>e.id===ev.id),gone=E.splice(i,1)[0];close();refresh();
