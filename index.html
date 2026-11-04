@@ -142,6 +142,12 @@ html.en-ready,html.en-ready body{height:100%;min-height:100lvh}
 #en-app{top:env(safe-area-inset-top,0px);height:calc(100lvh - env(safe-area-inset-top,0px))}
 @supports not (height:100lvh){#en-app{top:env(safe-area-inset-top,0px);bottom:0;height:auto}}
 
+
+.mv .frd .frv{display:block;max-width:92px;margin:3px auto 0;font:italic 13.5px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--sink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;letter-spacing:0;text-transform:none}
+/* Ma vie lisible : les volets ne s'écrasent plus, les textes longs restent entiers */
+.mv .fsh>*{flex-shrink:0}
+.mv .fshv.long{font:italic 500 23px/1.25 'Cormorant Garamond',Georgia,serif;text-align:center;max-width:100%}
+.mv .fcb em.long{font:italic 14px/1.28 'Cormorant Garamond',Georgia,serif!important;-webkit-line-clamp:4;margin-bottom:34px;flex-shrink:0}
 </style>
 <script>
 /* Entre nous · démarrage de l'app (PWA)
@@ -2754,7 +2760,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 #mvfiche .fch.hasdit{position:relative}
 .pfdit2{all:unset;cursor:pointer;position:absolute;left:18px;top:var(--dt,0px);width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg));display:flex;align-items:center;justify-content:center;letter-spacing:0}
 .pfdit2 svg{width:16px;height:16px;fill:none;stroke:var(--sacc);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
-.pfdtip{position:absolute;left:0;top:36px;white-space:nowrap;background:var(--sacc);color:var(--sbg);font:italic 13.5px 'Cormorant Garamond',Georgia,serif;letter-spacing:0;text-transform:none;padding:6px 11px;border-radius:4px 12px 12px 12px;opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:8}
+.pfdtip{position:absolute;left:0;top:36px;white-space:nowrap;background:var(--sacc);color:var(--sbg);font:italic 13.5px 'Cormorant Garamond',Georgia,serif;letter-spacing:0;text-transform:none;padding:6px 11px;border-radius:4px 12px 12px 12px;opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:2}
 .pfdtip.on{opacity:1;transform:none}
 /* Ma vie : introduction */
 .mvi{justify-content:flex-start!important;padding:0 20px 26px!important;text-align:center;font-family:'Cormorant Garamond',Georgia,serif}
@@ -5437,16 +5443,16 @@ aide:['CE QUI M’AIDE',V,[['QUAND ÇA VA MAL',V],['UN PETIT RITUEL',V],['UNE PE
 const ORD=['chez','coeur','pattes','passion','metier','reve','lectures','refuge','aide'],PH={};let cur=null,curBtn=null;
 const nuit=()=>!!ph.style.getPropertyValue('--sbg');
 const ic=()=>ph.querySelectorAll('img[data-ic]').forEach(i=>i.src='illus/ronds/'+i.dataset.ic+(nuit()?'-nuit':'')+'.webp');
-function fill(){$('fshmod').hidden=$('fshpho').hidden=false;$('fshic').parentElement.hidden=false;$('fshv').hidden=false;const d=D[cur];$('fshic').dataset.ic=cur;$('fshh').textContent=d[0];const v=$('fshv');v.textContent=d[1];v.classList.toggle('vide',d[1]===V);v.style.opacity=d[1]===V?.45:1;
+function fill(){$('fshmod').hidden=$('fshpho').hidden=false;$('fshic').parentElement.hidden=false;$('fshv').hidden=false;const d=D[cur];$('fshic').dataset.ic=cur;$('fshh').textContent=d[0];const v=$('fshv');v.textContent=d[1];v.classList.toggle('vide',d[1]===V);v.classList.toggle('long',String(d[1]).length>20);v.style.opacity=d[1]===V?.45:1;
 $('fshl').innerHTML=d[2].map(r=>'<div><b>'+r[0]+'</b><span class="'+(r[1]===V?'vide':'')+'">'+r[1]+'</span></div>').join('');
 const p=$('fshph');p.hidden=!PH[cur];if(PH[cur])p.style.backgroundImage='url('+PH[cur]+')';$('fshpho').querySelector('span').textContent=PH[cur]?'changer la photo':'photo';
 $('fshl').hidden=false;$('fshgrid').hidden=true;$('fshchg').querySelector('span').textContent='changer ce rond';edit(false);ic()}
 function edit(on){sh.classList.toggle('edit',on);[$('fshv'),...$('fshl').querySelectorAll('span')].forEach(e=>{e.contentEditable=on;if(on&&e.textContent===V){e.textContent='';e.classList.remove('vide');e.style.opacity=1}});
 const m=$('fshmod');m.querySelector('span').textContent=on?'enregistrer':'modifier';
-if(!on&&cur&&sh.dataset.was==='1'){const d=D[cur];d[1]=$('fshv').textContent.trim()||V;d[2].forEach((r,i)=>r[1]=$('fshl').querySelectorAll('span')[i].textContent.trim()||V)}sh.dataset.was=on?'1':''}
+if(!on&&cur&&sh.dataset.was==='1'){const d=D[cur];d[1]=$('fshv').textContent.trim()||V;d[2].forEach((r,i)=>r[1]=$('fshl').querySelectorAll('span')[i].textContent.trim()||V);rend()}sh.dataset.was=on?'1':''}
 let R=['coeur','pattes','passion'],adding=false,lpT=null,lpI=-1,lpDone=false;{const _s=window.__enLive&&window.__enLive('pfr',()=>({R,PH}));if(_s){if(Array.isArray(_s.R))R=_s.R;if(_s.PH)Object.assign(PH,_s.PH)}}const FR=$('fronds'),POP=$('fpop');
-function rend(){FR.innerHTML=R.map((k,i)=>'<button type="button" class="frd" data-k="'+k+'" data-i="'+i+'"><span class="frc"><img data-ic="'+k+'" alt=""></span><span class="frl">'+D[k][0]+'</span></button>').join('');ic()}
-window.__addRond=()=>{if(R.length>=5)return;hidePop();adding=true;cur=null;curBtn=null;openGrid();sh.hidden=dm.hidden=false};window.__nRonds=()=>R.length;window.__pfR=()=>R;window.__pfRSet=a=>{R=a;rend()};window.__rondNames=()=>R.map(k=>{const t=D[k][0].toLowerCase();return t.charAt(0).toUpperCase()+t.slice(1)});
+function rend(){FR.innerHTML=R.map((k,i)=>'<button type="button" class="frd" data-k="'+k+'" data-i="'+i+'"><span class="frc"><img data-ic="'+k+'" alt=""></span><span class="frl">'+D[k][0]+'</span>'+(D[k][1]&&D[k][1]!==V&&String(D[k][1]).trim()?'<em class="frv">'+String(D[k][1]).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</em>':'')+'</button>').join('');ic()}
+window.__addRond=()=>{if(R.length>=5)return;hidePop();adding=true;cur=null;curBtn=null;openGrid();sh.hidden=dm.hidden=false};window.__nRonds=()=>R.length;window.__pfR=()=>R;window.__pfRSet=a=>{R=a;rend()};window.__pfRRend=()=>rend();window.__rondNames=()=>R.map(k=>{const t=D[k][0].toLowerCase();return t.charAt(0).toUpperCase()+t.slice(1)});
 function hidePop(){POP.hidden=true;FR.querySelectorAll('.lp').forEach(x=>x.classList.remove('lp'))}
 FR.addEventListener('pointerdown',e=>{const b=e.target.closest('.frd:not(.add)');if(!b)return;lpDone=false;clearTimeout(lpT);lpT=setTimeout(()=>{lpDone=true;hidePop();lpI=+b.dataset.i;b.classList.add('lp');
  const r=b.getBoundingClientRect(),pr=ph.getBoundingClientRect();POP.style.left=Math.min(Math.max(r.left+r.width/2-pr.left,110),pr.width-110)+'px';POP.style.top=(r.top-pr.top+ph.scrollTop-44)+'px';
@@ -5686,7 +5692,7 @@ let K=[["JE SUIS", "Douce, curieuse, un peu anxieuse"], ["MA PLUS GRANDE QUALIT�
 const vis=()=>K.map((k,i)=>i).filter(i=>!K[i].h);
 const pen='<svg viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg>';
 function rend(keep){const flipped=keep?[...W.querySelectorAll('.fcard.flip')].map(c=>+c.dataset.i):[];
- W.innerHTML=vis().map(i=>{const k=K[i];return '<div role="button" tabindex="0" class="fcard'+(flipped.includes(i)?' flip':'')+'" data-i="'+i+'"><span class="fcin"><span class="fcf"><b>'+k.q+'</b><i>✦</i></span><span class="fcb"><b>'+k.q+'</b>'+(k.a?'<em>'+k.a+'</em><button type="button" class="fcpen" aria-label="Modifier">'+pen+'</button>':'<span class="fcvide">pas encore écrit…</span><button type="button" class="fcw">ÉCRIRE</button>')+'</span></span></div>'}).join('');
+ W.innerHTML=vis().map(i=>{const k=K[i];return '<div role="button" tabindex="0" class="fcard'+(flipped.includes(i)?' flip':'')+'" data-i="'+i+'"><span class="fcin"><span class="fcf"><b>'+k.q+'</b><i>✦</i></span><span class="fcb"><b>'+k.q+'</b>'+(k.a?'<em'+(String(k.a).length>38?' class="long"':'')+'>'+String(k.a).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</em><button type="button" class="fcpen" aria-label="Modifier">'+pen+'</button>':'<span class="fcvide">pas encore écrit…</span><button type="button" class="fcw">ÉCRIRE</button>')+'</span></span></div>'}).join('');
  const n=Math.ceil(vis().length/2);DT.innerHTML=Array.from({length:n},(_,k)=>'<i'+(k===0?' class="on"':'')+'></i>').join('');DT.querySelectorAll('i').forEach((d,k)=>{d.style.cursor='pointer';d.onclick=()=>{const c=W.children[k*2];c&&W.scrollTo({left:c.offsetLeft-30,behavior:'smooth'})}});dots();
  const H=K.map((k,i)=>i).filter(i=>K[i].h);$('fmhid').hidden=!H.length;$('fmhidl').innerHTML=H.map(i=>'<button type="button" data-i="'+i+'">'+K[i].q.charAt(0)+K[i].q.slice(1).toLowerCase()+' <i>réafficher</i></button>').join('')}
 function dots(){const pg=Math.round(W.scrollLeft/(W.clientWidth-48));DT.querySelectorAll('i').forEach((d,i,a)=>d.classList.toggle('on',i===Math.min(pg,a.length-1)))}
@@ -7101,7 +7107,7 @@ const F=$('mvfiche');if(F){const band=F.querySelector('.fband'),hd=F.querySelect
  const t=[...F.querySelectorAll('.fcht')].find(p=>/MOI AUJOURD/i.test(p.textContent));
  if(t){const b=document.createElement('button');b.type='button';b.className='pfdit2';b.setAttribute('aria-label','Ce que je t’ai confié');b.innerHTML='<svg viewBox="0 0 24 24"><path d="M4 11.5C4 7.4 7.6 5 12 5s8 2.4 8 6.5S16.4 18 12 18c-1 0-2-.1-2.9-.4L5 19.5l1.3-3.4C4.9 14.9 4 13.3 4 11.5z"/><path d="M8.5 10h7M8.5 13h4.5"/></svg><span class="pfdtip">Ce que je t’ai confié</span>';b.onclick=e=>{e.stopPropagation();const o=$('fditb');o&&o.click()};const fc=t.parentElement;fc.classList.add('hasdit');fc.appendChild(b);const pos=()=>fc.style.setProperty('--dt',(t.offsetTop+t.offsetHeight/2-15)+'px');pos();setTimeout(pos,500);
   const tip=b.querySelector('.pfdtip');let tm;const show=()=>{tip.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>tip.classList.remove('on'),2800)};
-  new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)show()}),{threshold:.5}).observe(F)}}
+  let seen=0;try{seen=+localStorage.getItem('en-tipdit')||0}catch(x){}new IntersectionObserver((es,ob)=>es.forEach(e=>{if(e.isIntersecting&&seen<2){seen++;try{localStorage.setItem('en-tipdit',seen)}catch(x){}show();ob.disconnect()}}),{threshold:.5}).observe(F)}}
 /* Ma vie : introduction */
 const I=$('mvintro');if(I){const go=later=>{window.__mvLater=later;const mv=$('mv');mv&&mv.scrollIntoView({behavior:'smooth',block:'center'})};
  I.querySelector('[data-w="now"]').onclick=()=>go(false);I.querySelector('[data-w="later"]').onclick=()=>go(true);
@@ -8999,7 +9005,7 @@ function run(){
  if(PR){const has=x=>PR.some(p=>p&&p.n&&p.n.toLowerCase()===String(x).toLowerCase());const add=(nm,l,r,d,a)=>{if(!ok(nm))return;nm=String(nm).replace(/[<>"&]/g,'').trim();if(!nm||nm.length>30||FF['p:'+nm.toLowerCase()])return;FF['p:'+nm.toLowerCase()]=1;if(has(nm))return;PR.push({n:nm,l:l||'',r,d:ok(d)?String(d):'',a:ok(a)?String(a):'',s:''});chP=true};
   add(P.partenaire,'mon cœur',1,P.part_duree,P.hi_aime_chez);add(P.pr_amie_nom,'ma meilleure amie',1,P.pr_amie_depuis,P.pr_amie_compte);add(P.pr_autre_nom,P.pr_autre,2,'',P.pr_autre_role);
   if(ok(P.pr_noms))String(P.pr_noms).split(/\s*(?:,|\bet\b)\s*/).filter(Boolean).forEach(x=>add(x,P.pr_place?'ma fratrie':'frère ou sœur',2,'',''))}
- if(chK&&window.__pfKRend)window.__pfKRend();if(chP&&window.__pfPRend)window.__pfPRend()}
+ window.__pfRRend&&window.__pfRRend();if(chK&&window.__pfKRend)window.__pfKRend();if(chP&&window.__pfPRend)window.__pfPRend()}
 window.__enFiche=run;run();
 /* Le portrait rapporté de ChatGPT ou Claude remplit « Ma vie » : ronds, cartes, proches, moments, passages, souvenirs, notre histoire (jamais par-dessus ce que tu as écrit) */
 (function(){const n=t=>String(t).replace(/[’`]/g,"'").toUpperCase().trim();const NK=t=>String(t).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[’`]/g,"'").replace(/\s+/g,' ').trim();
@@ -9007,6 +9013,7 @@ const vide=x=>x==null||String(x).trim()===''||x==='à compléter';const ok=v=>v!
 const cl=v=>String(v).replace(/[<>]/g,'').trim();
 const parts=v=>String(v).split('|').map(x=>x.trim()).map(x=>ok(x)?x:'');
 const chunks=v=>String(v).split(/\s*[;,]\s*/).map(x=>x.trim()).filter(Boolean);
+const short=v=>{if(!ok(v))return v;let t=String(v).split(/\s*[,;(]\s*|\s+[—–-]\s+|\s+(?:dans|chez|près|depuis|avec|pour|parce)\s+/i)[0].trim();if(t.length>34)t=t.slice(0,34).replace(/\s+\S*$/,'')+'…';return t};
 const MO={janv:1,jan:1,fev:2,feb:2,mars:3,mar:3,avr:4,apr:4,mai:5,may:5,juin:6,jun:6,juil:7,jul:7,aout:8,aug:8,sept:9,sep:9,oct:10,nov:11,dec:12,ete:7,hiver:1,printemps:4,automne:10,noel:12};
 function date(v){const t=NK(v||'');const y=(t.match(/\b(19|20)\d{2}\b/)||[])[0];let mo=null;const w=t.match(/[a-z]+/g)||[];for(const x of w){for(const k in MO){if(x.startsWith(k)){mo=MO[k];break}}if(mo)break}
  const nm=t.match(/\b(\d{1,2})\s*[\/.-]\s*(19|20)\d{2}\b/);if(nm)mo=+nm[1];return{y:y?+y:null,mo:mo&&mo<=12?mo:null,now:/aujourd|maintenant|en cours|toujours/.test(t)}}
@@ -9014,6 +9021,7 @@ const OBJ=[['livre',/livre|roman|bd|manga|album/],['doudou',/doudou|peluche|noun
 const objet=v=>{const t=NK(v);for(const [k,re] of OBJ)if(re.test(t))return k;return 'autre'};
 const CATK=[['dit',3],['ou',4],['ch',5],['po',6],['ma',7],['sa',8],['re',9],['de',10]];
 function apply(force){const PT=window.__portrait;if(!PT||typeof PT!=='object')return 0;const PRF=window.__profil||{};const sig=JSON.stringify(PT).length+':'+JSON.stringify(PT).slice(0,80);
+ if(!PRF._fps&&PRF._fp){const D0=window.__pfD&&window.__pfD();if(D0)Object.keys(D0).forEach(k=>{const d=D0[k];if(Array.isArray(d)&&ok(d[1])&&String(d[1]).length>34)d[1]=short(d[1])});PRF._fps=1}
  if(!force&&PRF._fp===sig)return 0;
  const D=window.__pfD&&window.__pfD(),K=window.__pfK&&window.__pfK(),PR=window.__enPfP&&window.__enPfP(),M=window.__pfM&&window.__pfM(),PA=window.__pfPa&&window.__pfPa(),G=window.__pfG&&window.__pfG(),S=window.__pfS&&window.__pfS();
  let ch={d:0,k:0,p:0,m:0,pa:0,g:0,s:0};
@@ -9022,15 +9030,15 @@ function apply(force){const PT=window.__portrait;if(!PT||typeof PT!=='object')re
  const any=lab=>{for(const s of ['moi','proches','passe','int','histoire']){const v=get(s,lab);if(ok(v))return v}return null};
  /* les ronds */
  const setD=(k,val,rows)=>{const d=D&&D[k];if(!Array.isArray(d))return;if(ok(val)&&vide(d[1])){d[1]=cl(val);ch.d++}(d[2]||[]).forEach(r=>{const x=rows&&rows[n(r[0])];if(ok(x)&&vide(r[1])){r[1]=cl(x);ch.d++}})};
- if(D){const ville=any('Ville');setD('chez',ville,{"DEPUIS":any('Depuis'),"AVEC QUI":any('Vit avec')});
-  setD('metier',any('Travail ou études'),{"CE QUE JE FAIS":any('Travail ou études'),"CE QUE J'EN PENSE":any('Ressenti sur le travail')});
-  const an=any('Animaux');if(ok(an)){const c=String(an).includes('|')?parts(an):chunks(an);setD('pattes',c[0],{"ESPÈCE":c[1],"CARACTÈRE":c.slice(2,c.length>3?-1:undefined).join(', ')||null,"AVEC MOI DEPUIS":c.length>3?c[c.length-1]:null})}
-  const lo=any('Loisirs et passion');if(ok(lo)){const c=String(lo).includes('|')?parts(lo):String(lo).split(/\s*;\s*/);setD('passion',chunks(c[0])[0],{"CE QUE J'Y FAIS":c[0],"MON COIN":c[1],"CE QUE ÇA M'APPORTE":c[2]})}
-  const li=any('Livres, films, musique');if(ok(li)){const c=String(li).includes('|')?parts(li):String(li).split(/\s*;\s*/);setD('lectures',chunks(c[0])[0],{"EN CE MOMENT":c[0],"MON PRÉFÉRÉ":c[1],"MON GENRE":c[2]})}
-  const re=any('Rêve');if(ok(re)){const c=parts(re);setD('reve',c[0],{"DEPUIS QUAND":c[1],"CE QUI M'EN SÉPARE":c[2],"LE PREMIER PAS":c[3]})}else{const e=any('Rêves')||any('Envies pour cette année');if(ok(e))setD('reve',chunks(e)[0],{})}
-  const rf=any('Endroits refuges');if(ok(rf))setD('refuge',chunks(rf)[0],{"OÙ":rf});
-  const ai=any('Ce qui aide')||any('Ce qui apaise');setD('aide',ai?chunks(ai)[0]:null,{"QUAND ÇA VA MAL":ai,"UN PETIT RITUEL":any('Mon petit rituel'),"UNE PERSONNE":any('Vers qui elle se tourne')});
-  const pa=any('Partenaire');setD('coeur',pa,{"ENSEMBLE DEPUIS":any('Ensemble depuis'),"RENCONTRE":any('Rencontre'),"CE QUE J'AIME":any("Ce qu'elle aime chez lui ou elle")});
+ if(D){const ville=any('Ville');setD('chez',short(ville),{"DEPUIS":any('Depuis'),"AVEC QUI":any('Vit avec'),"CE QUE J'Y AIME":ok(ville)&&short(ville)!==String(ville).trim()?String(ville).slice(String(short(ville)).length).replace(/^[\s,;(—–-]+/,'').replace(/\)$/,''):null});
+  setD('metier',short(any('Travail ou études')),{"CE QUE JE FAIS":any('Travail ou études'),"CE QUE J'EN PENSE":any('Ressenti sur le travail')});
+  const an=any('Animaux');if(ok(an)){const c=String(an).includes('|')?parts(an):chunks(an);setD('pattes',short(c[0]),{"ESPÈCE":c[1],"CARACTÈRE":c.slice(2,c.length>3?-1:undefined).join(', ')||null,"AVEC MOI DEPUIS":c.length>3?c[c.length-1]:null})}
+  const lo=any('Loisirs et passion');if(ok(lo)){const c=String(lo).includes('|')?parts(lo):String(lo).split(/\s*;\s*/);setD('passion',short(chunks(c[0])[0]),{"CE QUE J'Y FAIS":c[0],"MON COIN":c[1],"CE QUE ÇA M'APPORTE":c[2]})}
+  const li=any('Livres, films, musique');if(ok(li)){const c=String(li).includes('|')?parts(li):String(li).split(/\s*;\s*/);setD('lectures',short(chunks(c[0])[0]),{"EN CE MOMENT":c[0],"MON PRÉFÉRÉ":c[1],"MON GENRE":c[2]})}
+  const re=any('Rêve');if(ok(re)){const c=parts(re);setD('reve',short(c[0]),{"DEPUIS QUAND":c[1],"CE QUI M'EN SÉPARE":c[2],"LE PREMIER PAS":c[3]})}else{const e=any('Rêves')||any('Envies pour cette année');if(ok(e))setD('reve',short(chunks(e)[0]),{})}
+  const rf=any('Endroits refuges');if(ok(rf))setD('refuge',short(chunks(rf)[0]),{"OÙ":rf});
+  const ai=any('Ce qui aide')||any('Ce qui apaise');setD('aide',ai?short(chunks(ai)[0]):null,{"QUAND ÇA VA MAL":ai,"UN PETIT RITUEL":any('Mon petit rituel'),"UNE PERSONNE":any('Vers qui elle se tourne')});
+  const pa=any('Partenaire');setD('coeur',short(pa),{"ENSEMBLE DEPUIS":any('Ensemble depuis'),"RENCONTRE":any('Rencontre'),"CE QUE J'AIME":any("Ce qu'elle aime chez lui ou elle")});
   /* les ronds affichés : ceux qui sont remplis d'abord (5 au plus) */
   if(window.__pfR&&window.__pfRSet){const R=window.__pfR();const full=k=>D[k]&&!vide(D[k][1]);const ORD=['chez','coeur','pattes','passion','metier','reve','lectures','refuge','aide'];
    const keep=R.filter(full);const add=ORD.filter(k=>full(k)&&!keep.includes(k));const nr=keep.concat(add).slice(0,5);if(nr.length&&JSON.stringify(nr)!==JSON.stringify(R))window.__pfRSet(nr)}}
@@ -9042,7 +9050,7 @@ function apply(force){const PT=window.__portrait;if(!PT||typeof PT!=='object')re
  if(K)K.forEach(k=>{if(!k||Array.isArray(k))return;const v=KM[n(k.q)];if(ok(v)&&vide(k.a)){k.a=cl(v);ch.k++}});
  /* les proches */
  if(PR){const has=x=>PR.some(p=>p&&p.n&&NK(p.n)===NK(x));const FAM=/maman|mere|papa|pere|soeur|frere|grand|mamie|papi|tante|oncle|cousin|fils|fille|famille|compagnon|compagne|copain|copine|mari|femme|cheri|partenaire|amour|coeur/;
-  const add=(nm,l,d,a,s,r)=>{nm=cl(nm||'').replace(/^(mon|ma|mes)\s+/i,'');if(!ok(nm)||nm.length>30||has(nm))return;PR.push({n:nm.charAt(0).toUpperCase()+nm.slice(1),l:cl(l||''),r:r||(FAM.test(NK(l||''))?1:2),d:ok(d)?cl(d):'',a:ok(a)?cl(a):'',s:ok(s)?cl(s):''});ch.p++};
+  const add=(nm,l,d,a,s,r)=>{nm=cl(nm||'').replace(/^(mon|ma|mes)\s+/i,'');if(!ok(nm)||nm.length>30)return;const ex=PR.find(p=>p&&p.n&&NK(p.n)===NK(nm));if(ex){[['l',l],['d',d],['a',a],['s',s]].forEach(([k,v])=>{if(ok(v)&&!String(ex[k]||'').trim()){ex[k]=cl(v);ch.p++}});return}PR.push({n:nm.charAt(0).toUpperCase()+nm.slice(1),l:cl(l||''),r:r||(FAM.test(NK(l||''))?1:2),d:ok(d)?cl(d):'',a:ok(a)?cl(a):'',s:ok(s)?cl(s):''});ch.p++};
   const pa=any('Partenaire');if(ok(pa))add(pa,'mon cœur',any('Ensemble depuis'),any("Ce qu'elle aime chez lui ou elle"),null,1);
   (PT.proches||[]).forEach(([lab,v])=>{if(lab&&NK(lab)!=='proche')return;const c=v.includes('|')?parts(v):v.split(/\s+[—–-]\s+/).map(x=>x.trim());add(c[0],c[1],c[2],c[3],c[4])})}
  /* les moments */
@@ -9062,7 +9070,7 @@ function apply(force){const PT=window.__portrait;if(!PT||typeof PT!=='object')re
    const cc=CATK.filter(([k,i])=>ok(c[i])).map(([k,i])=>({k,v:cl(k==='dit'&&!/^«/.test(c[i])?'« '+c[i]+' »':c[i]),st:k==='dit'?'manuscrit':'ligne'}));
    G.push({m:'CHAPITRE '+num+(ok(c[1])?' · '+cl(c[1]).toUpperCase():''),t:cl(c[0]||''),x:ok(c[2])?cl(c[2]):'',c:cc});ch.g++})}
  PRF._fp=sig;
- if(ch.k&&window.__pfKRend)window.__pfKRend();if(ch.p&&window.__pfPRend)window.__pfPRend();if(ch.m&&window.__pfMRend)window.__pfMRend();if((ch.pa||ch.s)&&window.__pfPaRend){const f=PA&&PA.slice().sort((a,b)=>(a.y1||9999)-(b.y1||9999)).find(x=>x.y1||x.ou||x.mq);window.__pfPaRend(f&&f.k)}
+ if(ch.d&&window.__pfRRend)window.__pfRRend();if(ch.k&&window.__pfKRend)window.__pfKRend();if(ch.p&&window.__pfPRend)window.__pfPRend();if(ch.m&&window.__pfMRend)window.__pfMRend();if((ch.pa||ch.s)&&window.__pfPaRend){const f=PA&&PA.slice().sort((a,b)=>(a.y1||9999)-(b.y1||9999)).find(x=>x.y1||x.ou||x.mq);window.__pfPaRend(f&&f.k)}
  const tot=Object.values(ch).reduce((a,b)=>a+b,0);if(tot&&window.__vaultPushNow)setTimeout(()=>{try{window.__vaultPushNow()}catch(e){}},300);return tot}
 window.__enFichePortrait=apply;setTimeout(()=>apply(false),600);
 const MF=document.getElementById('mvfiche');if(MF)new MutationObserver(()=>{if(!MF.classList.contains('en-on'))return;requestAnimationFrame(()=>{const FR=document.getElementById('ffrise'),o=FR&&FR.querySelector('.on');if(o&&FR.clientWidth)FR.scrollTo({left:o.offsetLeft-(FR.clientWidth-o.offsetWidth)/2,behavior:'auto'})})}).observe(MF,{attributes:true,attributeFilter:['class']});
