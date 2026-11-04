@@ -224,7 +224,7 @@ window.__enKeepArr=(k,a)=>{const sv=M.st[k];a.splice(0,a.length,...((sv&&REEL()&
 window.__enGet=k=>LIVE[k]&&LIVE[k].o;
 window.__enLive=(k,fn)=>{const sv=REEL()&&M.st[k]?M.st[k].v:null;LIVE[k]={o:{get v(){return fn()}},fields:['v']};return sv};
 window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').replace(/[<>"&]/g,'').trim()};
-window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).replace(/[<>"&]/g,'').trim()};
+window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.appellation!==0&&r.petit)||window.__P0()).replace(/[<>"&]/g,'').trim()};
 window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis']){M.ls['en-depuis']=String(Date.now());touch()}};
 window.__enDepuis=()=>{const t=+M.ls['en-depuis']||Date.now();const d=new Date(t);return ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'][d.getMonth()]+' '+d.getFullYear()};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
@@ -386,7 +386,7 @@ Element.prototype.scrollIntoView=function(o){if(o&&typeof o==='object'&&o.inline
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
  L.forEach(s=>{const n=document.createElement('script');n.textContent=s.textContent;s.replaceWith(n)});
- document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel();if(window.__enInitConnexion)window.__enInitConnexion()}
+ document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel();if(window.__enInitConnexion)window.__enInitConnexion();if(window.__enInitIdentity)window.__enInitIdentity()}
 function mount(first){
  const app=document.createElement('div');app.id='en-app';document.body.appendChild(app);
  const HIDE=new Set(['wdgp','wdge','open']);
@@ -535,6 +535,8 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 
 </style>
 <link rel="stylesheet" href="auth-connexion.css">
+<link rel="stylesheet" href="profil-identite.css">
+<script src="profil-identite.js" defer></script>
 <script src="auth-connexion.js" defer></script>
 </head>
 <body>
@@ -4118,7 +4120,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
     <div class="screens"><div class="screen">
       <div class="phone onb" id="onb">
         <div class="otrack" id="otrack">
-          <div class="ost o1"><h1 class="o1t">Bienvenue dans<br class="en-auth-mobile-break"> ton espace intime</h1><p class="o1s">Ton journal, rien qu’à toi.</p><div class="o1o" aria-hidden="true"><i></i><span class="en-carnet-plume"></span><i></i></div><div class="oacc"><button type="button" id="en-auth-google">Continuer avec Google</button><button type="button" id="en-auth-email">Continuer avec mon e-mail</button></div><div class="en-guest-line"><button type="button" class="o1guest" id="o1guest">Continuer en invité</button><button type="button" class="en-guest-info" id="en-guest-info" aria-label="Informations sur le mode invité" aria-expanded="false" aria-controls="en-guest-note">ⓘ</button></div><p class="en-guest-note" id="en-guest-note" hidden>Sans compte · carnet enregistré dans ce navigateur.</p><p class="en-auth-status" id="en-auth-status" role="alert" hidden></p></div><div class="ost o2"><button type="button" class="o2ph" id="o2ph" aria-label="Ajouter une photo"><span>+</span></button><span class="o2phl" id="o2phl">ajouter une photo</span><p class="o2t">Comment t'appelles-tu&nbsp;?</p><input class="o2in" id="o2in" placeholder="Ton prénom" autocomplete="given-name"><p class="o2lb">Anniversaire <em>facultatif</em></p><div class="o2pills"><button type="button" data-v="26">jour</button><button type="button" data-v="mars">mois</button><button type="button" data-v="1994">année</button></div><p class="o2lb">Tu es accompagnée par un·e psy&nbsp;?</p><div class="o2psy"><button type="button">Oui</button><button type="button">Pas pour l'instant</button></div><p class="o2note">tu pourras changer ça à tout moment</p></div>
+          <div class="ost o1"><h1 class="o1t">Bienvenue dans<br class="en-auth-mobile-break"> ton espace intime</h1><p class="o1s">Ton journal, rien qu’à toi.</p><div class="o1o" aria-hidden="true"><i></i><span class="en-carnet-plume"></span><i></i></div><div class="oacc"><button type="button" id="en-auth-google">Continuer avec Google</button><button type="button" id="en-auth-email">Continuer avec mon e-mail</button></div><div class="en-guest-line"><button type="button" class="o1guest" id="o1guest">Continuer en invité</button><button type="button" class="en-guest-info" id="en-guest-info" aria-label="Informations sur le mode invité" aria-expanded="false" aria-controls="en-guest-note">ⓘ</button></div><p class="en-guest-note" id="en-guest-note" hidden>Sans compte · carnet enregistré dans ce navigateur.</p><p class="en-auth-status" id="en-auth-status" role="alert" hidden></p></div><div class="ost o2"><button type="button" class="o2ph" id="o2ph" aria-label="Ajouter une photo"><span>+</span></button><span class="o2phl" id="o2phl">ajouter une photo</span><p class="o2t">Comment t'appelles-tu&nbsp;?</p><input class="o2in" id="o2in" placeholder="Ton prénom" autocomplete="given-name"><details class="o2nick" id="o2nick-details" data-en-identity><summary>Surnom <em>facultatif</em><span class="o2chevron" aria-hidden="true">⌄</span></summary><label class="o2nick-label" for="o2nick">Ton surnom</label><input class="o2in" id="o2nick" placeholder="Ton petit nom" autocomplete="off" maxlength="50"></details><fieldset class="o2name-choice" id="o2name-choice" data-en-identity hidden><legend>Dans l’application, appelle-moi par…</legend><div class="o2name-options"><label><input type="radio" name="o2name-preference" value="0" checked><span>Mon prénom</span></label><label><input type="radio" name="o2name-preference" value="1"><span>Mon surnom</span></label></div><p class="o2name-greeting" id="o2name-greeting" aria-live="polite" hidden></p></fieldset><p class="o2lb">Anniversaire <em>facultatif</em></p><div class="o2pills"><button type="button" data-v="26">jour</button><button type="button" data-v="mars">mois</button><button type="button" data-v="1994">année</button></div><p class="o2lb">Tu es accompagnée par un·e psy&nbsp;?</p><div class="o2psy"><button type="button">Oui</button><button type="button">Pas pour l'instant</button></div><p class="o2note">Rien n’est figé, tu pourras ajuster tes choix.</p></div>
           <div class="ost o3"><div class="o3a" id="o3a"><p class="o3t" id="o3t">Choisis ton code</p><p class="o3s" id="o3s">4 chiffres, rien que pour toi</p><div class="dots" id="o3d"><i></i><i></i><i></i><i></i></div><div class="pad" id="o3p"><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b><b class="e"></b><b>0</b><b class="e o3del">⌫</b></div></div>
 <div class="o3b" id="o3b" hidden><p class="o3ok">✦ C'est noté</p><svg class="o3fid" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 14V9a5 5 0 0 1 5-5h5M34 4h5a5 5 0 0 1 5 5v5M44 34v5a5 5 0 0 1-5 5h-5M14 44H9a5 5 0 0 1-5-5v-5M17 17v4M31 17v4M24 17v10h-2M18 32c3.5 3 8.5 3 12 0"/></svg><p class="o3t">Ouvrir avec Face&nbsp;ID&nbsp;?</p><p class="o3s">ton code reste toujours possible</p><button type="button" class="o3on" id="o3on">Activer</button><button type="button" class="o3later" id="o3later">plus tard</button></div></div>
           <div class="ost o4"><div class="o4vp"><div class="o4tr" id="o4tr"><div class="o4p o4tour"><div class="o4img o4pl"><img src="illus/eveil-chat.webp" alt=""></div><p class="o4w">On fait le tour&nbsp;?</p><p class="o4s">Je te montre où tout se trouve, directement sur ton accueil.</p></div></div></div><button type="button" class="o4skip" id="o4skip">plus tard</button></div>
@@ -4518,8 +4520,8 @@ function render(){
   document.getElementById("hscene").src=`illus/bureau-${state.m}-${state.s}.jpg`;
   document.getElementById("date").textContent=SEASONS[state.s][1];
   document.getElementById("hdate").firstChild.nodeValue=SEASONS[state.s][1];
-  document.getElementById("hello").textContent=M.hello+(window.__P()?" "+window.__P0():"");
-  document.getElementById("hhello").textContent=M.hello+(window.__P()?" "+window.__P0():"");
+  document.getElementById("hello").textContent=M.hello+(window.__P()?" "+window.__P():"");
+  document.getElementById("hhello").textContent=M.hello+(window.__P()?" "+window.__P():"");
   document.getElementById("doux").textContent=state.bas?"Tu fais de ton mieux, et c'est déjà beaucoup.":M.doux;
   document.querySelectorAll("#c-moment .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.m)));
   document.querySelectorAll("#c-season .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.s)));
@@ -4661,7 +4663,7 @@ b.addEventListener('click',()=>{const on=!h.classList.contains('anniv');h.classL
 
 <script type="text/x-en">
 (function(){const h=document.getElementById('home'),b=document.getElementById('firsttog'),t=document.getElementById('hmott');let keep='';
-b.addEventListener('click',()=>{const on=!h.classList.contains('first');h.classList.toggle('first',on);if(on){keep=t.textContent;t.textContent='Bienvenue, '+window.__P0()+'. Cet espace est à toi, prends ton temps.'}else t.textContent=keep;b.textContent=on?'Revenir à l\'accueil rempli':'Voir la première ouverture';if(window.fitCards)fitCards()});})();
+b.addEventListener('click',()=>{const on=!h.classList.contains('first');h.classList.toggle('first',on);if(on){keep=t.textContent;t.textContent='Bienvenue, '+window.__P()+'. Cet espace est à toi, prends ton temps.'}else t.textContent=keep;b.textContent=on?'Revenir à l\'accueil rempli':'Voir la première ouverture';if(window.fitCards)fitCards()});})();
 </script>
 
 <script type="text/x-en">
@@ -4971,7 +4973,7 @@ document.querySelector('#mv2 .mvbk').onclick=()=>document.getElementById('mv').s
 </script>
 <script type="text/x-en">
 (function(){const box=document.getElementById('mvbubs'),ph=document.getElementById('mv2');let T=[];
-const first=()=>{const i=document.querySelector('#onb input[autocomplete="given-name"], #onb .oname, #onb input[name="prenom"]');return (i&&i.value.trim())||window.__P0()};
+const first=()=>window.__P();
 function bub(t){const b=document.createElement('p');b.className='mvbub';b.textContent=t;box.appendChild(b);return b}
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';box.appendChild(b);return b}
 function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';let w=wait();
@@ -5145,7 +5147,7 @@ LIFE.sessions=LIFE.sessions||{};
 let chapter=CHAPTERS[LIFE.selected]?LIFE.selected:'moi',opened=false,T=[],busy=false,queue=[],th=0,cur=null,curId=null,sel=[],introDone={},messages=[];
 let THN=CHAPTERS[chapter].names;
 const pet=()=>'illus/eveil-'+(window.__pet||'chat')+'.webp';
-const first=()=>{const x=document.getElementById('o2in');return P.surnom||(x&&x.value.trim())||window.__P0()};
+const first=()=>window.__P();
 const text=v=>typeof v==='function'?v():v;
 const question=id=>N[id]?text(N[id].q):'';
 const go=id=>window.__enShow?window.__enShow(id):document.getElementById(id)?.scrollIntoView({block:'center'});
@@ -5327,7 +5329,7 @@ histoire:`NOTRE HISTOIRE (si tu es en couple ; utilise le prénom de ton amour)
 - Pour chaque grande étape : la date, ce qui s'est passé, une phrase qu'il ou elle t'a dite, le lieu, votre chanson, ce que tu portais, ce que vous avez mangé ou bu, la météo ou la saison, ce que tu as ressenti, un détail à garder.`};
 const PETN={chat:'le petit chat',panda:'le petit panda',lapin:'le petit lapin',chien:'le petit chien',herisson:'le petit hérisson'};
 window.__aiPrompt=function(scope){
- const name=window.__petName||PETN[window.__pet||'chat'];const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();
+ const name=window.__petName||PETN[window.__pet||'chat'];const x=document.getElementById('o2in');const me=window.__P();
  const acc={f:'au féminin',m:'au masculin',n:'de façon neutre'}[window.__accord||'f'];
  const keys=scope&&CH[scope]?[scope]:Object.keys(CH);
  const themes=keys.map(k=>CH[k]).join('\n\n');
@@ -5378,7 +5380,7 @@ document.querySelectorAll('#mv2 .mvai button').forEach(b=>b.onclick=()=>window._
 document.getElementById('mvaic').onclick=()=>window.__aiOpen('chatgpt',window.__mvchapter?window.__mvchapter():'moi');
 document.querySelectorAll('.aisw').forEach(b=>b.onclick=()=>{set(b.dataset.ai);play()});
 document.getElementById('aicopy').onclick=()=>{pre.hidden=!pre.hidden};
-const share=()=>{const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();window.__iaShare({ph,ai,title:(scope?'Ce chapitre':'Faire connaissance')+' avec '+LAB[ai],
+const share=()=>{const x=document.getElementById('o2in');const me=window.__P();window.__iaShare({ph,ai,title:(scope?'Ce chapitre':'Faire connaissance')+' avec '+LAB[ai],
  parts:[{id:'prenom',label:'Mon prénom',hint:'« Je m’appelle '+me+'. »',on:false,personal:true}],
  build:sel=>{const q=window.__aiPrompt(scope);return sel.has('prenom')?q:q.replace(' Je m\'appelle '+me+'.','')},
  back:{label:'J’en reviens : coller mon portrait',fn:()=>document.getElementById('mvaiback').click()}})};
@@ -5487,7 +5489,7 @@ const SH={'Vit avec':'Avec','Travail ou études':'Travail','Ressenti sur le trav
 const low=x=>x.charAt(0).toLowerCase()+x.slice(1);
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';bub.appendChild(b);return b}
 function say(list){bub.innerHTML='';let t=200;list.forEach(l=>{let w;setTimeout(()=>{w=wait()},t);t+=1000;setTimeout(()=>{w.remove();const p=document.createElement('p');p.className='mvbub';p.textContent=l;bub.appendChild(p)},t);t+=300})}
-window.__showRetenu=function(P){const x=document.getElementById('o2in');const me=(x&&x.value.trim())||window.__P0();document.getElementById('mvretpet').src='illus/eveil-'+(window.__pet||'chat')+'.webp';
+window.__showRetenu=function(P){const x=document.getElementById('o2in');const me=window.__P();document.getElementById('mvretpet').src='illus/eveil-'+(window.__pet||'chat')+'.webp';
  say(['Merci '+me+', j’ai tout lu.','Voilà ce que j’ai compris. Tu peux corriger ce qui ne va pas.']);
  box.innerHTML='';CH.forEach(([k,title,tpl])=>{const rows=(P[k]||[]);if(!rows.length&&k==='histoire')return;
   const known=new Set(rows.map(r=>r[0]).filter(Boolean));const miss=tpl.filter(t=>!known.has(t));const total=tpl.length+(k==='proches'?rows.filter(r=>!r[0]).length:0);const filled=rows.length;const pct=Math.round(Math.min(1,filled/Math.max(total,1))*100);
@@ -5504,7 +5506,7 @@ new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting&&!box.children.length
 <script type="text/x-en">
 (function(){const f=document.getElementById('fbandfile'),b=document.getElementById('fband');document.getElementById('fbandedit').onclick=()=>f.click();
 f.onchange=()=>{const x=f.files[0];if(!x)return;const r=new FileReader();r.onload=()=>{b.style.backgroundImage='url('+r.result+')';b.classList.add('img')};r.readAsDataURL(x);f.value=''};
-document.getElementById('mvpgo').addEventListener('click',()=>setTimeout(()=>{const x=document.getElementById('o2in');document.getElementById('fname').textContent=(x&&x.value.trim())||window.__P0();document.getElementById('fphoto').src='illus/eveil-'+(window.__pet||'chat')+'.webp'},500));})();
+document.getElementById('mvpgo').addEventListener('click',()=>setTimeout(()=>{const x=document.getElementById('o2in');document.getElementById('fname').textContent=window.__P();document.getElementById('fphoto').src='illus/eveil-'+(window.__pet||'chat')+'.webp'},500));})();
 </script>
 <script type="text/x-en">(()=>{const ph=document.getElementById('mvfiche'),sh=document.getElementById('fsh'),dm=document.getElementById('fdim'),$=id=>document.getElementById(id);
 const V='à compléter';
@@ -5862,6 +5864,7 @@ const $=id=>document.getElementById(id);
 const main=$('rg'),page=$('rgp'),mb=$('rgmain'),pb=$('rgpb'),pt=$('rgpt');
 const goTo=id=>{const t=$(id);t&&t.scrollIntoView({behavior:'smooth',block:'center'})};
 const S=window.__enKeep?window.__enKeep('rg',{}):{};/* état des réglages */
+if(S.appellation===undefined)S.appellation=S.petit?1:0;
 const me=()=>(($('o2in')||{}).value||'').trim()||window.__P0();
 const pet=()=>window.__pet||'chat';
 const petImg=()=>'illus/eveil-'+pet()+'.webp';
@@ -5964,9 +5967,10 @@ compte:{t:'mon compte',r:()=>[
    f.onchange=()=>{const fl=f.files[0];if(!fl)return;const rd=new FileReader();rd.onload=()=>{S.photo=rd.result;const i=$('rgbigi');i.src=S.photo;i.classList.add('me');drawMain()};rd.readAsDataURL(fl)};
    rm.onclick=()=>{S.photo=null;const i=$('rgbigi');i.classList.remove('me');i.src=petImg();drawMain();x.hidden=rm.hidden=true;cam.classList.remove('on')}}},
  {t:'sc',l:'QUI JE SUIS'},
- {t:'text',k:'prenom',l:'Prénom',v:me(),on:()=>drawMain()},
+ {t:'text',k:'prenom',l:'Prénom',v:me(),on:()=>{drawMain();document.dispatchEvent(new Event('en-identity-change'))}},
  {t:'text',k:'nom',l:'Nom',v:''},
- {t:'text',k:'petit',l:'Petit nom',v:'',help:'C’est ainsi que Plume t’appellera.'},
+ {t:'text',k:'petit',l:'Surnom',v:'',on:()=>document.dispatchEvent(new Event('en-identity-change'))},
+ {t:'choice',k:'appellation',l:'Dans l’application, appelle-moi par…',d:S.petit?1:0,o:['mon prénom','mon surnom'],help:'Le prénom est utilisé si aucun surnom n’est renseigné.',on:()=>document.dispatchEvent(new Event('en-identity-change'))},
  {t:'wheel',k:'naiss',l:'Date de naissance',d:[0,0,40],cols:()=>[[...Array(31)].map((_,i)=>i+1),MOIS,[...Array(61)].map((_,i)=>1950+i)],fmt:v=>(v[0]+1)+' '+MOIS[v[1]]+' '+(1950+v[2]),help:'Plume te laissera un petit mot ce jour-là.'},
  {t:'choice',k:'accord',l:'On m’écrit au',o:['féminin','masculin','neutre'],help:'Tous les petits mots de Plume s’accordent.'},
  {t:'choice',k:'langue',l:'Langue',o:['français','english']},
@@ -6022,7 +6026,7 @@ notifications:{t:'notifications',ic:'notifications',r:()=>[
  {t:'sub',l:'pour écrire'},
  {t:'x',k:'rapx',l:'Rappel pour écrire',kw:'soir heure',v:()=>S.rap===false?'désactivé':(S.wheelRap||[21,0])[0]+' h'+((S.wheelRap||[21,0])[1]?' '+MIN[S.wheelRap[1]]:''),fill:(x,ph,paint)=>{
   render([{t:'toggle',k:'rap',l:'Activer',v:true,on:()=>{paint();stateNotif()}},{t:'wheel',k:'wheelRap',l:'Heure',d:[21,0],cols:()=>[HRS,MIN],fmt:v=>tfmt(...v),on:()=>{paint();stateNotif()}}],x,ph);
-  if(!S.jours)S.jours=[1,1,1,1,1,0,1];x.insertAdjacentHTML('beforeend','<p class="rgh rghl">jours</p><div class="rgdays">'+'LMMJVSD'.split('').map((d,i)=>'<button type="button" class="'+(S.jours[i]?'on':'')+'" data-i="'+i+'">'+d+'</button>').join('')+'</div><p class="rgh rghl">aperçu</p><p class="rgbub">« '+esc(S.petit||window.__P())+', tu veux me raconter ta journée ? »</p>');
+  if(!S.jours)S.jours=[1,1,1,1,1,0,1];x.insertAdjacentHTML('beforeend','<p class="rgh rghl">jours</p><div class="rgdays">'+'LMMJVSD'.split('').map((d,i)=>'<button type="button" class="'+(S.jours[i]?'on':'')+'" data-i="'+i+'">'+d+'</button>').join('')+'</div><p class="rgh rghl">aperçu</p><p class="rgbub">« '+esc(window.__P())+', tu veux me raconter ta journée ? »</p>');
   x.querySelectorAll('.rgdays button').forEach(b=>b.onclick=()=>{S.jours[b.dataset.i]^=1;b.classList.toggle('on')})}},
  {t:'x',k:'motsx',l:'Petits mots de Plume',v:()=>['jamais','parfois','souvent'][S.freq??1],fill:(x,ph,paint)=>{if(S.freq===undefined)S.freq=1;
   const ex=document.createElement('div');const dex=()=>{const L=[];if(S.m0!==false)L.push('« Je pensais à toi, ça va ? »');if(S.m1!==false)L.push('« Tu as souri aujourd’hui ? »');if(S.m2)L.push('« Je suis fière de toi, tu sais. »');ex.innerHTML=L.length?L.map(t=>'<p class="rgbub">'+t+'</p>').join(''):'<p class="rgh">Aucun petit mot pour l’instant.</p>'};
@@ -6062,8 +6066,8 @@ journal:{t:'mon journal',ic:'journal',r:()=>[
   x.querySelectorAll('[data-s]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const k=b.dataset.s;if(k==='r'){f.click();return}try{const r=await (k==='c'?window.__vaultExport():k==='a'?window.__enSave.archive():window.__enSave.lisible());toast(ph,r==='ok'?'Fichier proposé au téléchargement':r==='declined'?'Rien n’a été téléchargé':'Le téléchargement n’est pas possible ici')}catch(error){toast(ph,error.message||'La sauvegarde n’a pas pu être créée.')}})}}
 ]},
 voix:{t:'voix et oral',ic:'voix',r:()=>[
- {t:'html',h:'<div class="rgcard"><span><img alt="" src="'+petImg()+'"></span><p>« Bonsoir '+esc(S.petit||window.__P())+', je t’écoute. »<span class="rgwave">'+[6,10,14,8,12,5,9,13,7].map(h=>'<i style="height:'+h+'px"></i>').join('')+'</span></p><button type="button" class="rgplay" id="rgplay" aria-label="Écouter">▶</button></div>',
-  init:(b,ph)=>{$('rgplay').onclick=()=>{if(!speak('Bonsoir '+(S.petit||window.__P())+', je t’écoute.'))toast(ph,'La voix n’est pas disponible ici')}}},
+ {t:'html',h:'<div class="rgcard"><span><img alt="" src="'+petImg()+'"></span><p>« Bonsoir '+esc(window.__P())+', je t’écoute. »<span class="rgwave">'+[6,10,14,8,12,5,9,13,7].map(h=>'<i style="height:'+h+'px"></i>').join('')+'</span></p><button type="button" class="rgplay" id="rgplay" aria-label="Écouter">▶</button></div>',
+  init:(b,ph)=>{$('rgplay').onclick=()=>{if(!speak('Bonsoir '+(window.__P())+', je t’écoute.'))toast(ph,'La voix n’est pas disponible ici')}}},
  {t:'sub',l:'la voix de Plume'},
  {t:'x',k:'voixx',l:'Voix',v:()=>VOICES[S.voix??0][0],fill:(x,ph,paint)=>{if(S.voix===undefined)S.voix=0;
   VOICES.forEach((v,i)=>x.insertAdjacentHTML('beforeend','<div class="rgl" data-i="'+i+'"><span class="rgll"><button type="button" class="rgpb" aria-label="Écouter '+v[0]+'">▶</button><span>'+v[0]+'<small>'+v[1]+'</small></span></span><span class="rgck">'+(i===S.voix?'✓':'')+'</span></div>'));
@@ -6396,7 +6400,7 @@ const mi=k=>'<img data-mi="'+k+'" alt="">';
 const GEAR='<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>';
 const goTo=id=>{const t=document.getElementById(id);t&&t.scrollIntoView({behavior:'smooth',block:'center'})};
 function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
- const me=((document.getElementById('o2in')||{}).value||'').trim()||window.__P0(),pet=window.__pet||'chat',photo=document.getElementById('fphoto');
+ const me=window.__P(),pet=window.__pet||'chat',photo=document.getElementById('fphoto');
  const d=document.createElement('div');d.className='sbdim';d.hidden=true;const r=document.createElement('nav');r.className='sbdr';r.setAttribute('aria-label','Menu');
  r.innerHTML='<button type="button" class="sbpr"><span class="sbav"><span><img alt="" src="'+(photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp')+'"></span><i><img alt="" src="illus/eveil-'+pet+'.webp"></i></span><span><span class="sbn">'+me+'</span><span class="sbsub">voir mon profil ›</span></span></button>'
  +'<p class="sbsc">MES PAGES</p>'+PAGES.filter(p=>!(window.__noPsy&&p[0]==='psy')).map(p=>{const g=GRP(act)===p[0],ph0=photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp';return '<div class="sbgrp'+(g&&p[3].length?' open':'')+'"><button type="button" class="sbit sbg'+(p[0]===act?' on':'')+'" data-go="'+p[0]+'" data-subs="'+p[3].length+'">'+mi(p[2]==='@photo'?'espace':p[2])+p[1]+(p[3].length?'<i class="sbch">›</i>':'')+'</button>'+(p[3].length?'<div class="sbsubs">'+p[3].map(q=>'<button type="button" class="sbsub2'+(q[0]===act?' on':'')+'" data-go="'+(q[0]||'')+'">'+q[1]+'</button>').join('')+'</div>':'')+'</div>'}).join('')
@@ -8003,7 +8007,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 const __ce=el=>!!el&&(el.isContentEditable||(el.getAttribute&&el.getAttribute('contenteditable')==='true'));
 const SKIP_TYPES=/^(range|file|password|checkbox|radio|hidden|button|submit|color)$/i;
 function eligible(el){if(!el||!el.closest)return false;const ph=el.closest('.phone');if(!ph)return false;
- if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide,#en-mail-overlay'))return false;
+ if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide,#en-mail-overlay,[data-en-identity]'))return false;
  if(el.tagName==='INPUT'){if(SKIP_TYPES.test(el.type))return false;const p=(el.placeholder||'')+' '+(el.id||'');if(/chercher|un mot, une personne|un lieu, une personne|\bq\b|mjq|svq|psq|opw/i.test(p))return false}
  else if(el.tagName!=='TEXTAREA'&&!__ce(el))return false;
  if(__ce(el)&&el.closest('[contenteditable="true"]')!==el)return false;
@@ -8411,7 +8415,7 @@ const MOTS=["« Une année toute neuve ne te demande rien. Elle s’ouvre, simpl
 const S={i:0,night:null,mot:MOTS[(()=>{const d=new Date(),C=[0,31,59,90,120,151,181,212,243,273,304,334];return C[d.getMonth()]+Math.min(d.getDate(),d.getMonth()===1?28:31)-1})()]};
 const night=()=>S.night!=null?S.night:!!(window.__W&&window.__W.night&&window.__W.night());
 const written=()=>!!(window.__MJ&&window.__MJ.todayWritten);
-const name=()=>(window.__profil&&window.__profil.prenom)||window.__P0();
+const name=()=>window.__P();
 const N=()=>night();
 const plume=()=>N()?'illus/dort-chat-nuit.webp':'illus/eveil-chat.webp';
 const stars=(a)=>a.map(([x,y,z])=>`<span class="st" style="${x};${y};font-size:${z}px">✦</span>`).join('');
@@ -8507,7 +8511,7 @@ render();
 })();
 </script>
 <script type="text/x-en">(()=>{/* Se déconnecter (03.11.2026) : Plume dit au revoir dans un volet, avant de revenir à l'écran d'ouverture */
-const name=()=>{const x=document.getElementById('o2in');return(window.__profil&&window.__profil.prenom)||(x&&x.value.trim())||window.__P0()};
+const name=()=>{const x=document.getElementById('o2in');return window.__P()};
 const night=ph=>/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'))||ph.classList.contains('nuit');
 window.__decoOpen=(ph,go)=>{if(!ph){go&&go();return}ph.querySelectorAll('.ad-dim,.ad-sh').forEach(x=>x.remove());
  const pet=window.__pet||'chat',img=`illus/dort-${pet}${night(ph)?'-nuit':''}.webp`;
@@ -8556,7 +8560,7 @@ if(fg){fg.setAttribute('role','button');fg.tabIndex=0;fg.style.cursor='pointer';
 </script>
 <script type="text/x-en">(()=>{/* Visite sur les vrais écrans (03.11.2026) : après l'inscription, un projecteur montre chaque endroit de l'accueil */
 const H=document.getElementById('home');if(!H)return;
-const name=()=>{const x=document.getElementById('o2in');return(x&&x.value.trim())||window.__P0()};
+const name=()=>{const x=document.getElementById('o2in');return window.__P()};
 const hasPsy=()=>{const n=[...H.querySelectorAll('.nav span')].find(s=>/Psy/.test(s.textContent));return !!n&&n.offsetParent!==null};
 const navOf=t=>[...H.querySelectorAll('.nav span')].find(s=>s.textContent.trim()===t);
 const STEPS=()=>[
@@ -8747,10 +8751,10 @@ new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySe
 /* 5 · ton prénom : gardé dans tes réglages, repris partout */
 (function(){const RG=window.__enGet&&window.__enGet('rg');const x=document.getElementById('o2in');if(!RG||!x)return;
  if(RG.prenom&&!x.value)x.value=RG.prenom;
- let shown=window.__P0();
- const hi=()=>{const nw=window.__P0();['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(!e)return;let t=e.textContent.trim();if(shown&&t.endsWith(' '+shown))t=t.slice(0,-shown.length-1);e.textContent=t+(nw?' '+nw:'')});shown=nw};
- x.addEventListener('input',()=>{RG.prenom=x.value.trim();hi()});hi();
- const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P0()?', '+window.__P0():'')+'.';})();
+ let shown=window.__P();
+ const hi=()=>{const nw=window.__P();['hello','hhello'].forEach(id=>{const e=document.getElementById(id);if(!e)return;let t=e.textContent.trim();if(shown&&t.endsWith(' '+shown))t=t.slice(0,-shown.length-1);e.textContent=t+(nw?' '+nw:'')});shown=nw};
+ x.addEventListener('input',()=>{RG.prenom=x.value.trim();hi()});document.addEventListener('en-identity-change',hi);hi();
+ const welcome=()=>{const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P()?', '+window.__P():'')+'.'};document.addEventListener('en-identity-change',welcome);welcome();})();
 
 const nextPsy=window.__enNextPsy,hh=window.__enHH;
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a="enaddpsy"]');if(!b)return;e.stopImmediatePropagation();window.__enShow('calp');setTimeout(()=>window.__calOpen&&window.__calOpen(null,new Date()),250)},true);
@@ -8766,14 +8770,14 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
  const panes=()=>[...F.querySelectorAll('.fpane')];
  const sv=window.__enLive&&window.__enLive('pfx',()=>({phrase:ph?ph.innerHTML:''}));
  if(sv&&ph&&sv.phrase!=null)ph.innerHTML=sv.phrase;
- const nm=()=>{if(fn)fn.textContent=window.__P0()||'Moi'};nm();document.getElementById('o2in')?.addEventListener('input',nm);
+ const nm=()=>{if(fn)fn.textContent=window.__P()||'Moi'};nm();document.getElementById('o2in')?.addEventListener('input',nm);document.addEventListener('en-identity-change',nm);
  if(ph)ph.dataset.ph='Une phrase qui te ressemble…';
  function fiche(){const cards=[...F.querySelectorAll('#fcards .fcb, #fcards [data-i]')];const K=window.__enGet&&null;
   const txt=F.querySelector('#fcards')?F.querySelector('#fcards').innerText:'';const total=17;const vides=(txt.match(/pas encore écrit/g)||[]).length;
   const passe=F.querySelectorAll('.fpl span:not(.vide)').length,passeT=F.querySelectorAll('.fpl span').length||1;
   const pc=Math.max(0,Math.min(100,Math.round(((total-Math.min(vides,total))/total*0.6+passe/passeT*0.25+((ph&&ph.textContent.trim())?0.15:0))*100)));
   const b=F.querySelector('.ffbar i'),n=F.querySelector('.ffn');if(b)b.style.width=pc+'%';if(n)n.textContent=pc+' %'}
- const bk=()=>{const c=F.querySelector('.fbnames');if(!c)return;const D=window.__enGet&&window.__enGet('pfd');const part=(D&&D.v&&D.v.coeur&&D.v.coeur[1])||'';c.innerHTML=(window.__P0()||'Moi')+'<br><i>&amp;</i><br>'+(part||'…')};
+ const bk=()=>{const c=F.querySelector('.fbnames');if(!c)return;const D=window.__enGet&&window.__enGet('pfd');const part=(D&&D.v&&D.v.coeur&&D.v.coeur[1])||'';c.innerHTML=(window.__P()||'Moi')+'<br><i>&amp;</i><br>'+(part||'…')};
  const tick=()=>{nm();fiche();bk()};tick();new MutationObserver(()=>{clearTimeout(tick.t);tick.t=setTimeout(tick,200)}).observe(F,{subtree:true,childList:true,characterData:true});
 })();
 
