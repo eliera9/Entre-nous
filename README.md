@@ -16,7 +16,9 @@ Les espaces existants sont conservés : écriture libre, guidée ou rapide, jour
 
 Le dépôt contient le code, les polices et les illustrations. Les pages créées dans l’application ne sont pas écrites dans GitHub.
 
-Le coffre local est chiffré dans IndexedDB avec AES-GCM ; une clé de données aléatoire est enveloppée avec une clé dérivée du code par PBKDF2. Les sauvegardes locales sont exécutées dans l’ordre et un échec conserve les modifications à réessayer. Les archives lisibles proposées séparément dans les réglages sont en clair.
+Le coffre local est chiffré dans IndexedDB avec AES-GCM ; une clé de données aléatoire est enveloppée avec une clé dérivée du code par PBKDF2. Les sauvegardes locales sont exécutées dans l’ordre et un échec conserve les modifications à réessayer. Dans Réglages → Mon journal → Sauvegarde, **Mon carnet complet** exporte le coffre et les vocaux chiffrés. La restauration les écrit ensemble dans une transaction et conserve le carnet précédent ; l’écran « Code oublié ? » propose d’annuler la dernière restauration. Le code du fichier reste nécessaire.
+
+Les archives lisibles proposées séparément dans les réglages sont en clair. Leur import récupère les brouillons seulement ; elles ne remplacent pas la sauvegarde complète.
 
 Le compte Supabase, la synchronisation du coffre chiffré et les clés d’accès sont repris du code existant. Leur fonctionnement avec un vrai compte, plusieurs appareils et Face ID doit être vérifié sur les appareils concernés. Cette livraison ne constitue pas un audit des règles d’accès du serveur Supabase. Un code de quatre chiffres reste une protection limitée face à une copie volée du coffre.
 
@@ -44,3 +46,13 @@ La version précédente est conservée sur la branche `backup/avant-version-web-
 Les quatre cartes de « Faire connaissance » ouvrent leur questionnaire. « Commencer » et « Continuer » utilisent le chapitre choisi. Les réponses, le brouillon, la question en attente et la progression sont conservés séparément par chapitre dans le coffre existant. Revenir aux chapitres ne réinitialise plus le profil. Les reprises ne dupliquent pas « Ce que je t’ai confié », et le bouton IA reçoit le chapitre ouvert.
 
 Le contenu des chapitres complémentaires est regroupé dans `ma-vie-parcours.js`. Les essais locaux avec des réponses fictives couvrent les quatre ouvertures, l’envoi d’une réponse, le passage d’une question et la reprise après réouverture.
+
+### Audit du mode invité — 4 novembre 2026
+
+Les parcours accessibles ont été essayés avec un profil et des textes fictifs dans l’aperçu. **26 tests automatisés passent**, et la compilation réussit. Ces tests ne représentent pas une validation individuelle de chaque bouton ou de toutes les branches possibles.
+
+Les corrections couvrent les dates du calendrier (sans décalage des rendez-vous enregistrés), les extraits tirés du vrai journal, les thèmes personnalisés, la sauvegarde du suivi et de la préparation Psy, le parcours après séance, les séances conservées sans doublon, le retour d’une page secrète au journal avec ses médias, et la sauvegarde complète chiffrée. Les menus fermés sont exclus de la navigation au clavier. Les interfaces de rappels et de connexion aux applications du téléphone indiquent désormais leurs limites réelles.
+
+La vérification en navigateur du coffre, des téléchargements chiffrés et de la restauration n’a pas pu être menée dans l’aperçu HTTP, qui ne fournit pas Web Crypto. Les fonctions de chiffrement et les transformations des sauvegardes ont été testées sous Node. L’accès à la production est resté protégé : le compte du navigateur de test n’est pas autorisé à ouvrir le site. Aucun accès n’a été élargi.
+
+Restent à terminer ou à vérifier séparément : remplissage automatique de la fiche depuis le portrait et le questionnaire, conservation de certaines personnalisations du profil, cohérence des petits pas entre Psy et Mon espace, conservation de la forme choisie pour le bilan guidé, rappels automatiques, parcours avec un vrai compte et plusieurs appareils, médias, Face ID et installation sur iPhone. Les éléments de la maquette encore présents dans le code ne constituent pas des intégrations natives actives.

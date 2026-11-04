@@ -159,6 +159,16 @@ function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onu
 async function dbGet(k){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction(STORE).objectStore(STORE).get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error)})}
 async function dbPut(k,v){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
 async function dbDel(k){const d=await idb();return new Promise(res=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).delete(k);t.oncomplete=()=>res();t.onerror=()=>res()})}
+async function dbEntries(){const d=await idb();return new Promise((res,rej)=>{const store=d.transaction(STORE).objectStore(STORE),keys=store.getAllKeys(),values=store.getAll();store.transaction.oncomplete=()=>res(keys.result.map((k,i)=>[k,values.result[i]]));store.transaction.onerror=()=>rej(store.transaction.error)})}
+async function dbWriteEntries(entries){const d=await idb();return new Promise((res,rej)=>{const transaction=d.transaction(STORE,'readwrite'),store=transaction.objectStore(STORE);for(const [key,value] of entries)store.put(value,key);transaction.oncomplete=()=>res();transaction.onerror=transaction.onabort=()=>rej(transaction.error||new Error('La restauration n’a pas pu être enregistrée.'))})}
+async function backupPayload(record){if(!record?.box||!record?.w?.code)throw new Error('Le coffre n’est pas encore enregistré.');const medias={};for(const [key,value] of await dbEntries())if(typeof key==='string'&&key.startsWith('m:'))medias[key.slice(2)]=b64(value);return {app:'Entre nous',type:'coffre',...record,medias}}
+async function restoreVaultRecord(payload){
+ if(payload.app!=='Entre nous'||payload.type!=='coffre'||![1,2].includes(payload.v)||typeof payload.box?.iv!=='string'||typeof payload.box?.ct!=='string'||(payload.v===2&&!payload.w?.code))throw new Error('Ce fichier n’est pas une sauvegarde chiffrée Entre nous.');
+ const {app,type,medias={},...record}=payload,mediaEntries=Object.entries(medias);
+ const decoded=mediaEntries.map(([id,value])=>{if(!/^[a-z0-9]+$/i.test(id)||typeof value!=='string')throw new Error('Un média de la sauvegarde est invalide.');return ['m:'+id,ub64(value).buffer]});
+ const previous=await dbGet(KEY);const writes=[...decoded,[KEY,{...record,at:Date.now()}]];if(previous)writes.push(['restore-previous',previous]);
+ await dbWriteEntries(writes);
+}
 
 /* ---------- chiffrement ---------- */
 async function deriveKey(code,salt){const base=await crypto.subtle.importKey('raw',enc.encode('entre-nous:'+code),'PBKDF2',false,['deriveKey']);
@@ -237,10 +247,12 @@ window.__vaultMakeSecours=async()=>{const c=genSec();W.sec=await wrap(normSec(c)
 window.__vaultHasSecours=()=>!!W.sec;
 window.__vaultName=n=>{META.nm=String(n||'').trim().split(/\s+/)[0].slice(0,24);dirty=true};
 window.__vaultLock=()=>{save().finally(()=>location.reload())};
-window.__vaultExport=async()=>{await save(true);const v=await dbGet(KEY);const blob=new Blob([JSON.stringify({app:'Entre nous',type:'coffre',...v})],{type:'application/json'});
+window.__vaultExport=async()=>{await save(true);const v=await dbGet(KEY);const blob=new Blob([JSON.stringify(await backupPayload(v))],{type:'application/json'});
  const d=new Date(),n='entre-nous-sauvegarde-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.json';
- const f=new File([blob],n,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sauvegarde Entre nous'});return}catch(e){if(e&&e.name==='AbortError')return}}
- const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)};
+ const f=new File([blob],n,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sauvegarde Entre nous'});return 'ok'}catch(e){if(e&&e.name==='AbortError')return 'declined'}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=n;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);return 'ok'};
+window.__vaultReady=()=>!!(DEK&&W.code);
+window.__vaultRestoreFile=async file=>{const payload=JSON.parse(await file.text());if(!confirm('Cette sauvegarde remplacera le carnet de cet appareil. Son code sera celui utilisé lors de la sauvegarde. Tu pourras annuler la restauration depuis l’écran de code. Continuer ?'))return;await restoreVaultRecord(payload);location.reload()};
 
 /* ---------- compte en ligne (Supabase) : on n'y envoie que le coffre déjà chiffré ---------- */
 const SB='https://aoafqsipzymeehcswzto.supabase.co',SBK='sb_publishable_aLrH54IP-QcApvBF6jEfcw_Rb3x9GgH';
@@ -304,7 +316,7 @@ window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
 const SIV=Element.prototype.scrollIntoView;
 /* on ne change d'écran que si c'est toi qui l'as demandé (un toucher il y a peu), jamais tout seul */
 let lastIn=0;['pointerdown','keydown','touchstart','click'].forEach(t=>addEventListener(t,()=>{lastIn=Date.now()},true));
-Element.prototype.scrollIntoView=function(o){const ph=this.closest&&this.closest('#en-app .phone');if(ph){if(ph!==cur){if(Date.now()-lastIn>4000)return;show(ph)}if(this===ph)return}return SIV.call(this,o&&typeof o==='object'?{...o,behavior:'auto'}:o)};
+Element.prototype.scrollIntoView=function(o){const ph=this.closest&&this.closest('#en-app .phone');if(ph){if(this===ph){show(ph);return}if(ph!==cur){if(Date.now()-lastIn>4000)return;show(ph)}}return SIV.call(this,o&&typeof o==='object'?{...o,behavior:'auto'}:o)};
 
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
@@ -346,7 +358,8 @@ function lockUI(meta,onOk,onSec,onFid){
  const sh=el.querySelector('#en-sh');el.querySelector('#en-fg').onclick=()=>{sh.hidden=false};el.querySelector('#en-shx').onclick=()=>{sh.hidden=true};
  el.querySelector('#en-wipe').onclick=async e=>{const b=e.currentTarget;if(!b.dataset.c){b.dataset.c=1;b.textContent='TOUCHE ENCORE POUR TOUT EFFACER';return}await dbDel(KEY);location.reload()};
  el.querySelector('#en-secgo').onclick=async()=>{const x=el.querySelector('#en-secin').value,er=el.querySelector('#en-secer');er.hidden=true;const ok=await onSec(x);if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{er.textContent='Ce code de secours ne correspond pas.';er.hidden=false}};
- el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const o=JSON.parse(await f.text());if(o.app!=='Entre nous'||!o.box)throw 0;const {app,type,...rec}=o;await dbPut(KEY,{...rec,at:Date.now()});location.reload()}catch(x){sh.querySelector('.k').textContent='CE FICHIER N’EST PAS UNE SAUVEGARDE'}};
+ el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await restoreVaultRecord(JSON.parse(await f.text()));location.reload()}catch(x){sh.querySelector('.k').textContent='CE FICHIER N’EST PAS UNE SAUVEGARDE VALIDE'}};
+ dbGet('restore-previous').then(previous=>{if(!previous?.box)return;const undo=document.createElement('button');undo.type='button';undo.className='lk';undo.textContent='annuler la dernière restauration';sh.querySelector('.in').appendChild(undo);undo.onclick=async()=>{await dbPut(KEY,previous);await dbDel('restore-previous');location.reload()}}).catch(()=>{});
 }
 
 /* ---------- départ ---------- */
@@ -382,10 +395,12 @@ window.__enPsyEph=()=>{const n=nextPsy();
  if(!n)return `<div class="ps-eph"><div class="d"><b>✦</b><small>À VENIR</small></div><div class="m"><p>Pas encore de séance prévue</p><span>ajoute-la à ton calendrier</span></div><button class="ps-btn2" data-a="enaddpsy">AJOUTER</button></div>`;
  const rel=n.i===0?'aujourd’hui':n.i===1?'demain':'dans '+n.i+' jours';const ou=['au cabinet','en visio'][n.e.ou||0]||'au cabinet';
  return `<div class="ps-eph"><div class="d"><b>${n.dt.getDate()}</b><small>${J[n.dt.getDay()]} ${MOC[n.dt.getMonth()]}</small></div><div class="m"><p>Ta séance</p><span>${hh(n.e)} · ${ou}<br>${rel}</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>`};
-window.__enPsySeance=(L,ap)=>{const d=new Date();const sel=ap.ressens&&ap.ressens.sel?[...ap.ressens.sel]:[];
- L.unshift({id:'s'+Date.now(),y:d.getFullYear(),mo:MOL[d.getMonth()].toUpperCase()+' '+d.getFullYear(),j:JL[d.getDay()].toUpperCase()+' '+d.getDate(),jl:JL[d.getDay()]+' '+d.getDate()+' '+MOL[d.getMonth()]+' '+d.getFullYear(),
-  q:(ap.retiens&&ap.retiens.a)?'« '+ap.retiens.a+' »':'',emo:sel,star:(ap.ressens&&ap.ressens.star)||sel[0]||'',suj:Object.keys((ap.parler&&ap.parler.ck)||{}),prev:[],notes:[],
-  apres:{parler:(ap.parler&&(Object.values(ap.parler.txt||{}).join(' ')||ap.parler.plus))||'',retiens:(ap.retiens&&[ap.retiens.a,ap.retiens.b,ap.retiens.c].filter(Boolean).join(' '))||'',ressens:sel.join(', '),pas:''}})};
+window.__enPsySeance=(L,ap)=>{const d=/^\d{4}-\d{2}-\d{2}$/.test(ap.date||'')?new Date(ap.date+'T12:00:00'):new Date();const sel=ap.ressens&&ap.ressens.sel?[...ap.ressens.sel]:[];
+ const id=ap.sessionId||(ap.sessionId='s'+Date.now());const record={id,y:d.getFullYear(),mo:MOL[d.getMonth()].toUpperCase()+' '+d.getFullYear(),j:JL[d.getDay()].toUpperCase()+' '+d.getDate(),jl:JL[d.getDay()]+' '+d.getDate()+' '+MOL[d.getMonth()]+' '+d.getFullYear(),
+  q:(ap.retiens&&ap.retiens.a)?'« '+ap.retiens.a+' »':'',emo:sel,star:(ap.ressens&&ap.ressens.star)||sel[0]||'',suj:ap.subjects||[],prev:ap.prev||[],notes:ap.notes||[],
+  apres:{parler:(ap.parler&&(Object.values(ap.parler.txt||{}).join(' ')||ap.parler.plus))||'',retiens:(ap.retiens&&[ap.retiens.a,ap.retiens.b,ap.retiens.c].filter(Boolean).join(' '))||'',ressens:sel.join(', '),pas:(ap.pasAdded||[]).map(p=>p.t).join(', ')}};
+ const index=L.findIndex(s=>s.id===id);if(index<0)L.unshift(record);else L[index]=record;
+};
 window.__enNextPsy=nextPsy;window.__enHH=hh;})();
 /* petits mots de Plume, tirés de ta vraie vie */
 (function(){const pick=a=>a[Math.floor(Math.random()*a.length)];const nm=()=>window.__P?window.__P():'';const sp=()=>nm()?' '+nm():'';
@@ -2388,8 +2403,8 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .mv .mvhd.sbhas .sblw{margin-top:-6px}.mv .mvhd.sbhas .mvbk{margin-top:0!important}
 .sbdim{position:absolute;left:0;right:0;z-index:40;background:rgba(42,30,38,.32);opacity:0;transition:opacity .3s}
 .sbdim.on{opacity:1}
-.sbdr{position:absolute;left:0;z-index:41;width:80%;background:color-mix(in srgb,var(--sacc) 6%,var(--sbg));border-radius:0 24px 24px 0;padding:58px 16px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;box-shadow:12px 0 30px -16px rgba(30,15,22,.6);transform:translateX(-104%);transition:transform .38s cubic-bezier(.3,.7,.3,1)}
-.sbdr.on{transform:none}
+.sbdr{position:absolute;left:0;z-index:41;width:80%;background:color-mix(in srgb,var(--sacc) 6%,var(--sbg));border-radius:0 24px 24px 0;padding:58px 16px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;box-shadow:12px 0 30px -16px rgba(30,15,22,.6);transform:translateX(-104%);transition:transform .38s cubic-bezier(.3,.7,.3,1);pointer-events:none}
+.sbdr.on{transform:none;pointer-events:auto}
 .sbpr{all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:0 4px 16px;border-bottom:.6px solid var(--sline)}
 .sbav{width:46px;height:46px;border-radius:50%;flex:none;position:relative;background:#F0D2C5;box-shadow:0 0 0 2px var(--sbg),0 0 0 2.7px var(--sline)}
 .sbav>span{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden}
@@ -5214,7 +5229,7 @@ window.__aiPrompt=function(scope){
 Applique STRICTEMENT ce format à chacun de tes messages, sans exception :
 1. À partir de ta deuxième question, commence par valider ma réponse précédente en une ou deux phrases, avec l'empathie d'une amie et la finesse d'une psy. Pas de résumé, pas de répétition de mes mots.
 2. Pose-moi UNE SEULE question, simple, directe et précise. Jamais deux questions dans le même message.
-3. Présente cette question sous la forme d'un QCM : 3 à 5 choix, un par ligne, chacun précédé d'une lettre (A, B, C…), pour que je puisse répondre en tapant juste la lettre. Si ton interface permet des boutons de choix cliquables, utilise-les.
+3. Présente cette question sous la forme d'un QCM : 3 à 5 choix, un par ligne, chacun précédé d'une lettre (A, B, C…). Je peux sélectionner plusieurs réponses et répondre avec plusieurs lettres. Si ton interface permet des cases à cocher multisélection, utilise-les.
 4. Termine toujours tes choix par « ✎ Je préfère écrire ». Si je le choisis, ou si je réponds sans utiliser les choix, invite-moi à écrire librement et laisse-moi la place de le faire.
 5. Arrête ton message juste après les choix et attends que je réponde avant de passer à la question suivante.
 
@@ -5795,24 +5810,20 @@ function moment(k){const b=document.querySelector('#c-moment [data-k="'+k+'"]');
 function autoK(){const h=new Date().getHours();return h<6?'nuit':h<12?'matin':h<18?'aprem':h<22?'soir':'nuit'}
 const FONTS=["'Cormorant Garamond'","'EB Garamond'","'Lora'","'Caveat'"],FSZ=[16,15,14,19];
 function stateConf(){const t=(window.__fidOn&&window.__fidOn())?'Ton journal est protégé par ton code et Face ID.':S.code!==false?'Ton journal est protégé par un code.':'Ton journal n’est pas verrouillé.';const e=$('rgcst');if(e)e.textContent=t}
-function stateNotif(){const e=$('rgnst');if(!e)return;const t=S.wheelRap||[21,0];e.textContent=S.rap!==false?'Je te ferai signe ce soir à '+t[0]+' h'+(t[1]?' '+MIN[t[1]]:'')+'.':'Je ne te ferai pas signe aujourd’hui.'}
+function stateNotif(){const e=$('rgnst');if(e)e.textContent='Tes préférences sont gardées ici. Les rappels automatiques ne sont pas encore disponibles dans cette version web.'}
 function codeBox(x,ph,lbl){x.insertAdjacentHTML('beforeend','<p class="rgh">'+lbl+'</p><input class="rgcode" type="password" inputmode="numeric" maxlength="4" aria-label="Code">');
  const i=x.querySelector('.rgcode:last-of-type'),h=i.previousElementSibling;let first=null;
  i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'');if(i.value.length===4){if(first===null){first=i.value;i.value='';h.textContent='Tape-le encore une fois.'}else if(first===i.value){window.__enCodeBox&&window.__enCodeBox(lbl,first);h.textContent='✓ C’est enregistré.';i.value='';first=null}else{h.textContent='Les deux codes sont différents, recommence.';i.value='';first=null}}});setTimeout(()=>i.focus({preventScroll:true}),50)}
 const TIC={cal:'<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M4 10h16M9 4v4M15 4v4"/>',pho:'<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/>',san:'<path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/>',mus:'<path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/>'};
 const tic=k=>'<svg class="rglogo" style="fill:none;stroke:var(--sacc);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" aria-hidden="true">'+TIC[k]+'</svg>';
-function tapp(name,k,uses,why){return{t:'x',k,l:name,pill:()=>'<span class="rgpi'+(S[k]?' on':'')+'">'+(S[k]?'✓ reliée':'relier')+'</span>',ic:tic(k),
- fill:(x,ph,paint)=>{render([{t:'h',l:'ce que ton journal utilisera',cl:'rghl'}],x,ph);render(uses.map((u,i)=>({t:'toggle',k:k+i,l:u,v:i<2})),x,ph);
-  if(S[k]){render([{t:'h',l:why}],x,ph);x.insertAdjacentHTML('beforeend','<button type="button" class="rglk">délier '+name.toLowerCase()+'</button>');x.querySelector('.rglk').onclick=()=>{S[k]=false;paint();x.innerHTML='';x.hidden=true;paint();toast(ph,name+' déliée')}}
-  else{x.insertAdjacentHTML('beforeend','<button type="button" class="rgbtn">relier '+name.toLowerCase()+'</button>');x.querySelector('.rgbtn').onclick=()=>{const o=overlay(ph,'<p style="font-family:system-ui;font-size:14px"><b>« Entre nous » souhaite accéder à '+name+'</b></p><p style="font-size:13.5px;margin-top:6px;color:var(--smuted)">'+why+'</p><div class="b"><button type="button" class="rgbtn o" data-a="n">Refuser</button><button type="button" class="rgbtn" data-a="o">Autoriser</button></div>');
-   o.querySelector('[data-a=n]').onclick=o.close;o.querySelector('[data-a=o]').onclick=()=>{o.close();S[k]=true;x.hidden=true;paint();toast(ph,name+' reliée')}}}}}}
+function tapp(name,k,uses,why){return {t:'x',k,l:name,pill:()=>'<span class="rgpi">à la demande</span>',ic:tic(k),fill:(x,ph)=>render([{t:'h',l:k==='cal'?'Pour ajouter une date au calendrier du téléphone, ouvre son détail puis « ajouter aussi au Calendrier de mon iPhone ». La lecture automatique de ton calendrier n’est pas disponible.':'Pour ajouter une photo, utilise le bouton photo dans une page ou un souvenir. Aucune association permanente à ta photothèque n’est nécessaire.'}],x,ph)}}
 function acct(name,k,ic,mail){if(S[k]===undefined)S[k]=k==='apple';return{t:'x',k:k+'x',l:name,ic,kw:'se connecter lier compte gmail',pill:()=>'<span class="rgpi'+(S[k]?' on':'')+'">'+(S[k]?'✓ lié':'lier')+'</span>',
  fill:(x,ph,paint)=>{if(S[k]){render([{t:'h',l:'Lié à '+mail+'. Tu peux te connecter en un geste avec ton compte '+name+'.'}],x,ph);x.insertAdjacentHTML('beforeend','<button type="button" class="rglk">délier mon compte '+name+'</button>');x.querySelector('.rglk').onclick=()=>{S[k]=false;x.hidden=true;paint();toast(ph,'Compte '+name+' délié')}}
   else{render([{t:'h',l:'Lie ton compte '+name+' pour te connecter en un geste, sans mot de passe.'}],x,ph);x.insertAdjacentHTML('beforeend','<button type="button" class="rgbtn">lier mon compte '+name.toLowerCase()+'</button>');
    x.querySelector('.rgbtn').onclick=()=>{const o=overlay(ph,'<p style="font-family:system-ui;font-size:14px"><b>Se connecter à « Entre nous » avec '+name+'</b></p><p style="font-size:13.5px;margin-top:6px;color:var(--smuted)">'+mail+'</p><div class="b"><button type="button" class="rgbtn o" data-a="n">Annuler</button><button type="button" class="rgbtn" data-a="o">Continuer</button></div>');
     o.querySelector('[data-a=n]').onclick=o.close;o.querySelector('[data-a=o]').onclick=()=>{o.close();S[k]=true;x.hidden=true;paint();toast(ph,'Compte '+name+' lié')}}}}}}
 function iaRow(name,k,url){return{t:'x',k,l:name,ic:'<span class="rgg">'+(name==='ChatGPT'?'◎':'✦')+'</span>',v:()=>S[k]===1?'sur le site':'dans l’app',
- fill:(x,ph,paint)=>{render([{t:'h',l:'ouvrir '+name,cl:'rghl'},{t:'checks',k,o:['Dans l’app','Sur le site'],on:()=>paint()},{t:'h',l:S[k]===1?'Ton IA s’ouvrira dans le navigateur.':'L’app '+name+' est installée sur ton téléphone.'}],x,ph);
+ fill:(x,ph,paint)=>{render([{t:'h',l:'ouvrir '+name,cl:'rghl'},{t:'checks',k,o:['Dans l’app','Sur le site'],on:()=>paint()},{t:'h',l:'Le lien ouvre '+name+' selon les possibilités de ton téléphone : dans son application ou dans le navigateur.'}],x,ph);
   x.insertAdjacentHTML('beforeend','<button type="button" class="rgbtn">essayer</button>');x.querySelector('.rgbtn').onclick=()=>window.open(url,'_blank','noopener')}}}
 const VOICES=[['Amélie','douce, posée'],['Thomas','chaleureuse'],['Audrey','claire, légère'],['Daniel','grave, calme']];
 let sysV=[];const loadV=()=>{try{sysV=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang))}catch(e){}};if('speechSynthesis' in window){loadV();speechSynthesis.onvoiceschanged=loadV}
@@ -5923,10 +5934,10 @@ journal:{t:'mon journal',ic:'journal',r:()=>[
   render([{t:'h',l:'Les pages restent 30 jours avant de disparaître.'}],x,ph);x.insertAdjacentHTML('beforeend','<button type="button" class="rglk" data-a="v">tout vider</button>');
   x.querySelectorAll('[data-a]').forEach(b=>b.onclick=e=>{e.stopPropagation();const a=b.dataset.a;if((a==='v'||a==='e')&&!b.dataset.sure){b.dataset.sure='1';b.textContent=a==='v'?'tout effacer pour de bon ? touche encore':'pour de bon ?';setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent=a==='v'?'tout vider':'effacer'}},4000);return}if(a==='v'){CORB.length=0;toast(ph,'Corbeille vidée')}else{const c=CORB.splice(+b.dataset.i,1)[0];toast(ph,a==='r'?'« '+c[0]+' » est revenue':'Page effacée')}draw();paint()})};draw()}},
  {t:'x',k:'sauv',l:'Sauvegarde',v:()=>window.__enSave&&window.__enSave.stats().ok?'sur cet appareil':'indisponible',fill:(x,ph,paint)=>{const st=window.__enSave?window.__enSave.stats():{ok:false,brouillons:0,size:0};
-  render([{t:'h',l:st.ok?'Tes textes s’enregistrent pendant que tu écris, dans ce téléphone seulement. Ils ne sont pas encore copiés ailleurs ni synchronisés, et ils ne sont pas chiffrés.':'Le stockage de ce navigateur est bloqué : tes textes ne peuvent pas être enregistrés ici.'},{t:'h',l:st.brouillons+' brouillon'+(st.brouillons>1?'s':'')+' en cours · '+Math.max(1,Math.round(st.size/1024))+' Ko',cl:'rghl'}],x,ph);
-  x.insertAdjacentHTML('beforeend','<div class="rgl ro"><span class="rgll"><span>Une archive à restaurer<small>fichier .json, non chiffré</small></span></span><span class="rgac"><button type="button" data-s="a">exporter</button></span></div><div class="rgl ro"><span class="rgll"><span>Une version à lire<small>page .html, lisible sans l’app</small></span></span><span class="rgac"><button type="button" data-s="l">exporter</button></span></div><div class="rgl ro"><span class="rgll"><span>Restaurer une archive<small>rien n’est effacé : l’actuel passe dans l’historique</small></span></span><span class="rgac"><button type="button" data-s="r">choisir</button></span></div><input type="file" accept="application/json,.json" hidden>');
-  const f=x.querySelector('input[type=file]');f.onchange=()=>{const fl=f.files[0];f.value='';if(fl)window.__enSave.restaurer(fl,(ok,n)=>toast(ph,ok?'✦ Archive restaurée ('+n+' brouillon'+(n>1?'s':'')+')':'Ce fichier n’est pas une archive Entre nous'))};
-  x.querySelectorAll('[data-s]').forEach(b=>b.onclick=e=>{e.stopPropagation();const k=b.dataset.s;if(k==='r'){f.click();return}const res=k==='a'?window.__enSave.archive():window.__enSave.lisible();Promise.resolve(res).then(r=>toast(ph,r==='ok'?(k==='a'?'Archive proposée au téléchargement':'Version à lire proposée au téléchargement'):r==='declined'?'Rien n’a été téléchargé':'Le téléchargement n’est pas possible ici'))})}}
+  render([{t:'h',l:window.__vaultReady?.()?'Ton carnet est chiffré sur cet appareil. En mode invité, garde une sauvegarde pour le reprendre sur un autre appareil.':'Le coffre chiffré n’est pas disponible dans cette session. Tes textes ne sont pas encore protégés et sauvegardés.'},{t:'h',l:st.brouillons+' brouillon'+(st.brouillons>1?'s':'')+' en cours · '+Math.max(1,Math.round(st.size/1024))+' Ko',cl:'rghl'}],x,ph);
+  x.insertAdjacentHTML('beforeend','<div class="rgl ro"><span class="rgll"><span>Mon carnet complet<small>sauvegarde chiffrée avec mes vocaux · mon code reste nécessaire</small></span></span><span class="rgac"><button type="button" data-s="c">sauvegarder</button></span></div><div class="rgl ro"><span class="rgll"><span>Une archive de mes écrits<small>fichier .json non chiffré · import des brouillons seulement</small></span></span><span class="rgac"><button type="button" data-s="a">exporter</button></span></div><div class="rgl ro"><span class="rgll"><span>Une version à lire<small>page .html, lisible sans l’app et non chiffrée</small></span></span><span class="rgac"><button type="button" data-s="l">exporter</button></span></div><div class="rgl ro"><span class="rgll"><span>Reprendre un fichier<small>une sauvegarde complète remplace le carnet ; une archive importe seulement les brouillons</small></span></span><span class="rgac"><button type="button" data-s="r">choisir</button></span></div><input type="file" accept="application/json,.json" hidden>');
+  const f=x.querySelector('input[type=file]');f.onchange=async()=>{const fl=f.files[0];f.value='';if(!fl)return;try{const data=JSON.parse(await fl.text());if(data.type==='coffre'){await window.__vaultRestoreFile(fl);return}window.__enSave.restaurer(fl,(ok,n)=>toast(ph,ok?'✦ Brouillons importés ('+n+')':'Ce fichier n’est pas une archive Entre nous'))}catch(error){toast(ph,error.message||'Ce fichier n’a pas pu être repris.')}};
+  x.querySelectorAll('[data-s]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const k=b.dataset.s;if(k==='r'){f.click();return}try{const r=await (k==='c'?window.__vaultExport():k==='a'?window.__enSave.archive():window.__enSave.lisible());toast(ph,r==='ok'?'Fichier proposé au téléchargement':r==='declined'?'Rien n’a été téléchargé':'Le téléchargement n’est pas possible ici')}catch(error){toast(ph,error.message||'La sauvegarde n’a pas pu être créée.')}})}}
 ]},
 voix:{t:'voix et oral',ic:'voix',r:()=>[
  {t:'html',h:'<div class="rgcard"><span><img alt="" src="'+petImg()+'"></span><p>« Bonsoir '+esc(S.petit||window.__P())+', je t’écoute. »<span class="rgwave">'+[6,10,14,8,12,5,9,13,7].map(h=>'<i style="height:'+h+'px"></i>').join('')+'</span></p><button type="button" class="rgplay" id="rgplay" aria-label="Écouter">▶</button></div>',
@@ -5947,9 +5958,7 @@ apps:{t:'apps associées',ic:'apps',r:()=>[
  {t:'sub',l:'mon téléphone'},
  tapp('Calendrier','cal',['Afficher mes rendez-vous','Ajouter mes dates importantes'],'Tes rendez-vous apparaissent sur l’accueil et dans ton calendrier.'),
  tapp('Photos','pho',['Photo du jour','Souvenirs « il y a un an »'],'Pour ajouter tes photos à tes pages et tes souvenirs.'),
- {t:'x',k:'mus',l:'Musique',ic:tic('mus'),v:()=>S.musOk?['Spotify','Deezer'][S.musS||0]:'',pill:()=>S.musOk?'<span class="rgpi on">✓ '+['spotify','deezer'][S.musS||0]+'</span>':'<span class="rgpi">relier</span>',
-  fill:(x,ph,paint)=>{if(S.musS===undefined)S.musS=0;const b=document.createElement('button');b.type='button';b.className='rgbtn';const lb=()=>{b.textContent=(S.musOk?'délier ':'relier ')+['spotify','deezer'][S.musS]};
-   render([{t:'checks',k:'musS',o:['Spotify','Deezer'],on:()=>{S.musOk=false;lb();paint()}}],x,ph);lb();x.appendChild(b);render([{t:'h',l:'Pour ajouter la chanson du jour à une page.'}],x,ph);b.onclick=()=>{S.musOk=!S.musOk;lb();paint();toast(ph,S.musOk?['Spotify','Deezer'][S.musS]+' relié':'Délié')}}},
+ {t:'x',k:'mus',l:'Musique',ic:tic('mus'),v:'par lien',fill:(x,ph)=>render([{t:'h',l:'Dans un souvenir ou une page secrète, touche « une musique » et colle le lien du morceau. Aucun compte Spotify ou Deezer n’est relié automatiquement.'}],x,ph)},
  {t:'sub',l:'mes IA'},
  {t:'h',l:'Rien n’est envoyé sans toi : tu relis toujours avant de partager.'},
  iaRow('ChatGPT','gpt','https://chatgpt.com'),
@@ -6056,12 +6065,20 @@ let uid=1;const E=[
  {t:'anniv',n:'Thomas',y:1995,m:1,d:2,veille:1},{t:'anniv',n:'Maman',y:0,m:5,d:18,veille:1},{t:'moi',n:'Notre rencontre',y:2021,m:2,d:12,chaque:1,genre:0,mot:'Tout a commencé ici…'},
  {t:'rdv',n:'Brunch',y:2026,m:10,d:11,h:11,mi:0,res:'joyeux',rap:0},{t:'rdv',n:'Médecin',y:2026,m:5,d:18,h:11,mi:0,res:'fatigant',rap:1},{t:'rdv',n:'Mariage de Julie',y:2026,m:7,d:21,h:15,mi:0,res:'excitant',rap:1},
  {t:'rdv',n:'Réveillon',y:2026,m:11,d:24,h:19,mi:0,res:'joyeux',rap:1},{t:'rdv',n:'Concert',y:2026,m:3,d:2,h:20,mi:0,res:'excitant',rap:0}].map(e=>(e.id=uid++,e));window.__enKeepArr&&window.__enKeepArr('kal',E);try{uid=Math.max(uid,...E.map(x=>(x.id||0)+1))}catch(_){}
-/* vraie date : les rendez-vous d'exemple autour du 28 octobre 2026 suivent le jour réel ; fêtes et anniversaires restent à leur date ; la séance psy hebdomadaire tombe demain, comme dans l'espace Psy */
-E.forEach(e=>{if(e.t==='psy'){const d=window.__TD();d.setDate(d.getDate()+1-28);e.y=d.getFullYear();e.m=d.getMonth();e.d=d.getDate();return}if(e.t!=='rdv'||/Halloween|Réveillon/.test(e.n))return;const k=Math.round((new Date(e.y,e.m,e.d)-new Date(2026,9,28))/864e5);if(k<-75||k>45)return;const d=window.__DSH(e.y,e.m,e.d);e.y=d.getFullYear();e.m=d.getMonth();e.d=d.getDate()});
-const PG={'2026-9-27':['#D9A0A6','« Grosse journée, mais fière de moi. »'],'2026-9-28':['#E8B9B0','« Ce matin, le café avait un goût de vacances… »'],'2026-9-26':['#C9A3AE','« Un lundi tout doux. »'],'2026-9-6':['#B98A93','« Pas facile, le dentiste… »']};
-const MD={'2026-9-28':[[3,'#E8B9B0'],[2,'#D9A0A6'],[4,'#C9A3AE']],'2026-9-27':[[5,'#D9A0A6'],[2,'#B98A93']]};
-const shK=o=>{const r={};Object.keys(o).forEach(k=>{const[a,b,c]=k.split('-').map(Number);const d=window.__DSH(a,b,c);r[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=o[k]});return r};{const p2=shK(PG);Object.keys(PG).forEach(k=>delete PG[k]);Object.assign(PG,p2)}
-{const m2=shK(MD);Object.keys(MD).forEach(k=>delete MD[k]);Object.assign(MD,m2)}
+/* Les dates du coffre restent celles choisies par la personne, sans décalage de démonstration. */
+const PG={},MD={};
+function syncJournal(){
+ Object.keys(PG).forEach(k=>delete PG[k]);Object.keys(MD).forEach(k=>delete MD[k]);
+ const colors=['#8A8FA8','#B7A7C2','#E2CFD3','#E8A9A0','#E58A72'];
+ for(const page of window.__MJ?.days||[]){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(page.d||''))continue;
+  const [y,m,d]=page.d.split('-').map(Number),k=y+'-'+(m-1)+'-'+d;
+  const color=colors[Math.min(4,Math.max(0,Math.round((page.v??50)/25)))];
+  const text=(page.parts||[]).map(p=>p.f==='guider'?(p.qa||[]).map(q=>q[1]).join(' '):p.x||'').filter(Boolean).join(' ').trim();
+  if(text||(page.parts||[]).some(p=>p.media?.length))PG[k]=[color,text?'« '+text.slice(0,180)+' »':'Une page avec un média',page.d];
+  if(page.moodSet)MD[k]=[[1,color]];
+ }
+}
 let view='m',cur=new Date(TODAY),first=true;
 const key=dt=>dt.getFullYear()+'-'+dt.getMonth()+'-'+dt.getDate();
 const same=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
@@ -6074,8 +6091,8 @@ const col=e=>e.t==='anniv'?RC.joyeux:e.t==='moi'?RC.fierte:RC[e.res]||'#A9989C';
 const ico=e=>e.t==='anniv'?'illus/ajout2/anniv.webp':e.t==='moi'?'illus/ajout2/moi.webp':'illus/ressenti-'+(e.res||'neutre')+'.webp';
 const hh=e=>e.h==null?'':e.h+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
 const isT=dt=>same(dt,TODAY),past=dt=>dt<TODAY&&!isT(dt);
-const R=e=>'<div class="kr" data-id="'+e.id+'"><img alt="" src="'+ico(e)+'">'+String(e.n||'').replace(/[<>&"]/g,'')+'<em>'+hh(e)+'</em></div>';
-const PGL=p=>'<div class="kr" data-page="1"><span class="kdt" style="box-shadow:inset 0 0 0 1.4px '+p[0]+'"></span><i>ma page du jour</i><em>›</em></div>';
+const R=e=>'<div class="kr" role="button" tabindex="0" data-id="'+e.id+'"><img alt="" src="'+ico(e)+'">'+String(e.n||'').replace(/[<>&"]/g,'')+'<em>'+hh(e)+'</em></div>';
+const PGL=p=>'<div class="kr" role="button" tabindex="0" data-page="'+p[2]+'"><span class="kdt" style="box-shadow:inset 0 0 0 1.4px '+p[0]+'"></span><i>ma page du jour</i><em>›</em></div>';
 function toast(t){const el=document.createElement('span');el.className='ktoast';el.textContent=t;el.style.top=(ph.scrollTop+ph.clientHeight-60)+'px';ph.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function detail(dt){const r=evOn(dt),p=PG[key(dt)];let h='<p class="kcap">'+JN[dow(dt)]+' '+dt.getDate()+' '+MN[dt.getMonth()]+(isT(dt)?' · aujourd’hui':'')+'</p>'+r.map(R).join('');if(p)h+=PGL(p);if(!r.length&&!p)h+='<p class="kit" style="margin:6px 0">Rien ce jour-là.</p>';return h}
 function year(){const y=cur.getFullYear();let h='<div class="kms">';for(let m=0;m<12;m++){const f=dow(D(y,m,1)),n=D(y,m+1,0).getDate();h+='<div class="km'+(m===TODAY.getMonth()&&y===TODAY.getFullYear()?' cur':'')+'" data-m="'+m+'"><div class="n">'+MN[m]+'</div><div class="kmg">'+'<span></span>'.repeat(f);
@@ -6091,20 +6108,20 @@ function week(){const s=wstart(),L=[...Array(7)].map((_,i)=>{const t=new Date(s)
 function dayv(){const r=evOn(cur),p=PG[key(cur)],md=MD[key(cur)];let h='';
  if(r.length)h+='<p class="kcap" style="margin-top:0">rendez-vous</p>'+r.map(R).join('');
  if(md)h+='<p class="kcap">mes humeurs</p><div class="kmood">'+md.map(x=>'<span style="flex:'+x[0]+';background:'+x[1]+'"></span>').join('')+'</div><p class="kit" style="margin:0;font-size:12.5px">ma journée en couleurs</p>';
- if(p)h+='<p class="kcap">ma page</p><div class="kcard" data-page="1" style="cursor:pointer"><div style="display:flex;justify-content:space-between"><span style="font-size:15.5px">Ma page du jour</span><span style="color:var(--sacc)">›</span></div><p class="kit" style="margin:4px 0 0">'+p[1]+'</p></div>';
+ if(p)h+='<p class="kcap">ma page</p><div class="kcard" role="button" tabindex="0" data-page="'+p[2]+'" style="cursor:pointer"><div style="display:flex;justify-content:space-between"><span style="font-size:15.5px">Ma page du jour</span><span style="color:var(--sacc)">›</span></div><p class="kit" style="margin:4px 0 0">'+p[1].replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</p></div>';
  return h||'<p class="kit" style="text-align:center;margin-top:60px">Une journée libre.</p>'}
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 function title(){const y=cur.getFullYear(),s=wstart(),e=new Date(s);e.setDate(s.getDate()+6);
  const T={a:[String(y),''],m:[cap(MN[cur.getMonth()]),String(y)],s:[s.getDate()+' '+AB[s.getMonth()]+' – '+e.getDate()+' '+AB[e.getMonth()],String(e.getFullYear())],j:[cap(JN[dow(cur)])+' '+cur.getDate(),MN[cur.getMonth()]+' '+y]}[view];
  const set=()=>{tt.innerHTML='<div class="a" style="'+(view==='s'?'font-size:23px':'')+'">'+T[0]+'</div><div class="b">'+T[1]+'</div>';tt.style.opacity=1};if(first)set();else{tt.style.opacity=0;setTimeout(set,160)}}
-const html=()=>view==='a'?year():view==='m'?month():view==='s'?week():dayv();
+const html=()=>{syncJournal();return view==='a'?year():view==='m'?month():view==='s'?week():dayv()};
 function bind(n){
  n.querySelectorAll('.km').forEach(m=>m.onclick=()=>{cur=D(cur.getFullYear(),+m.dataset.m,(+m.dataset.m===TODAY.getMonth()&&cur.getFullYear()===TODAY.getFullYear())?TODAY.getDate():1);show('m')});
  n.querySelectorAll('.kbig .c').forEach(c=>{let t,long=false;c.onpointerdown=()=>{long=false;t=setTimeout(()=>{long=true;openSheet(null,D(cur.getFullYear(),cur.getMonth(),+c.dataset.d))},550)};c.onpointerup=c.onpointerleave=()=>clearTimeout(t);c.oncontextmenu=e=>e.preventDefault();
   c.onclick=()=>{if(long)return;cur=D(cur.getFullYear(),cur.getMonth(),+c.dataset.d);n.querySelectorAll('.kbig .c').forEach(x=>x.classList.toggle('sel',+x.dataset.d===cur.getDate()&&!x.classList.contains('td')));const det=n.querySelector('.kdet');det.style.transition='opacity .2s';det.style.opacity=0;setTimeout(()=>{det.innerHTML=detail(cur);bindRows(det);det.style.opacity=1},200)}});
  n.querySelectorAll('.kstrip [data-k]').forEach(c=>c.onclick=()=>{const [y,m,d]=c.dataset.k.split('-').map(Number);cur=D(y,m,d);refresh()});
  bindRows(n)}
-function bindRows(n){n.querySelectorAll('[data-id]').forEach(r=>r.onclick=()=>openSheet(E.find(e=>e.id===+r.dataset.id)));n.querySelectorAll('[data-page]').forEach(r=>r.onclick=()=>goTo('pdj'))}
+function bindRows(n){n.querySelectorAll('[data-id]').forEach(r=>r.onclick=()=>openSheet(E.find(e=>e.id===+r.dataset.id)));n.querySelectorAll('[data-page]').forEach(r=>r.onclick=()=>{if(window.__acOpenDay)window.__acOpenDay(r.dataset.page);else goTo('mj')});n.querySelectorAll('[role="button"]').forEach(r=>r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click()}})}
 function refresh(){const v=st.querySelector('.kview');v.innerHTML=html();bind(v);title()}
 function show(v){const old=st.querySelector('.kview'),n=document.createElement('div');n.className='kview';view=v;n.innerHTML=html();bind(n);
  ph.querySelectorAll('.kseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));title();
@@ -6149,7 +6166,7 @@ function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;co
  const dateLbl=()=>s.t==='rdv'||s.t==='psy'?JN[dow(D(s.y,s.m,s.d))].slice(0,3)+'. '+s.d+' '+AB[s.m]:s.d+' '+MN[s.m]+(s.t==='moi'&&s.y?' '+s.y:'');
  function date(withYear){line('date','date',dateLbl,(x,up)=>{const YS=[...Array(withYear?81:6)].map((_,i)=>withYear?1950+i:new Date().getFullYear()+i);const yi=Math.max(0,YS.indexOf(s.y));x.appendChild(wheel([[[...Array(31)].map((_,i)=>i+1),s.d-1],[MN,s.m]].concat(withYear!==false?[[YS,yi]]:[]),v=>{s.d=v[0]+1;s.m=v[1];if(v[2]!=null)s.y=YS[v[2]];const mx=D(s.y||new Date().getFullYear(),s.m+1,0).getDate();if(s.d>mx)s.d=mx;up();const ago=form.querySelector('.kago');if(ago)ago.textContent=agoT()}))})}
  function hour(){line('h','heure',()=>hh(s),(x,up)=>x.appendChild(wheel([[[...Array(24)].map((_,i)=>i+' h'),s.h],[['00','15','30','45'],[0,15,30,45].indexOf(s.mi)]],v=>{s.h=v[0];s.mi=[0,15,30,45][v[1]];up()})))}
- function ress(){const w=document.createElement('div');w.className='kres';w.innerHTML='<span class="k">ressenti</span><div class="kresr">'+RS.map(r=>'<button type="button" data-r="'+r[0]+'" style="--c:'+r[2]+'" class="'+(s.res===r[0]?'on':'')+'"><img alt="" src="illus/ressenti-'+r[0]+'.webp"></button>').join('')+'</div><div class="kresn">'+(RS.find(r=>r[0]===s.res)||RS[3])[1]+'</div>';
+ function ress(){const w=document.createElement('div');w.className='kres';w.innerHTML='<span class="k">ressenti</span><div class="kresr">'+RS.map(r=>'<button type="button" aria-label="'+r[1]+'" data-r="'+r[0]+'" style="--c:'+r[2]+'" class="'+(s.res===r[0]?'on':'')+'"><img alt="" src="illus/ressenti-'+r[0]+'.webp"></button>').join('')+'</div><div class="kresn">'+(RS.find(r=>r[0]===s.res)||RS[3])[1]+'</div>';
   w.querySelectorAll('button').forEach(b=>b.onclick=()=>{s.res=b.dataset.r;w.querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b));w.querySelector('.kresn').textContent=RS.find(r=>r[0]===s.res)[1];b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})});form.appendChild(w);setTimeout(()=>{const on=w.querySelector('.on');if(on)on.scrollIntoView({inline:'center',block:'nearest'})},80)}
  const agoT=()=>{if(!s.y)return '';const n=TODAY.getFullYear()-s.y-((TODAY.getMonth()<s.m||(TODAY.getMonth()===s.m&&TODAY.getDate()<s.d))?1:0);return n>0?'il y a '+n+' an'+(n>1?'s':''):''};
  function big(ph2){const i=document.createElement('input');i.className='kbig2';i.placeholder=ph2;i.value=s.n||'';i.oninput=()=>{s.n=i.value;const m=form.querySelector('.kmot');if(m)m.textContent=motT();const a=form.querySelector('.kage');if(a)a.textContent=ageT()};form.appendChild(i);return i}
@@ -6262,8 +6279,8 @@ function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
  r.innerHTML='<button type="button" class="sbpr"><span class="sbav"><span><img alt="" src="'+(photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp')+'"></span><i><img alt="" src="illus/eveil-'+pet+'.webp"></i></span><span><span class="sbn">'+me+'</span><span class="sbsub">voir mon profil ›</span></span></button>'
  +'<p class="sbsc">MES PAGES</p>'+PAGES.filter(p=>!(window.__noPsy&&p[0]==='psy')).map(p=>{const g=GRP(act)===p[0],ph0=photo&&photo.classList.contains('me')?photo.src:'illus/eveil-'+pet+'.webp';return '<div class="sbgrp'+(g&&p[3].length?' open':'')+'"><button type="button" class="sbit sbg'+(p[0]===act?' on':'')+'" data-go="'+p[0]+'" data-subs="'+p[3].length+'">'+mi(p[2]==='@photo'?'espace':p[2])+p[1]+(p[3].length?'<i class="sbch">›</i>':'')+'</button>'+(p[3].length?'<div class="sbsubs">'+p[3].map(q=>'<button type="button" class="sbsub2'+(q[0]===act?' on':'')+'" data-go="'+(q[0]||'')+'">'+q[1]+'</button>').join('')+'</div>':'')+'</div>'}).join('')
  +'<span class="sbsp"></span><div class="sbsep"><i></i>✦<i></i></div><button type="button" class="sbit'+(/^rg/.test(act)?' on':'')+'" data-go="reglages">'+mi('reglages')+'Réglages</button><button type="button" class="sbout">VERROUILLER</button><button type="button" class="sbhelp">Aide et contact</button>';
- ph.appendChild(d);ph.appendChild(r);
- const close=()=>{r.classList.remove('on');d.classList.remove('on');setTimeout(()=>{d.hidden=true;ph.style.overflowY=''},380)};
+ r.setAttribute('inert','');ph.appendChild(d);ph.appendChild(r);
+ const close=()=>{r.setAttribute('inert','');r.classList.remove('on');d.classList.remove('on');setTimeout(()=>{d.hidden=true;ph.style.overflowY=''},380)};
  d.onclick=close;let x0=null;r.addEventListener('pointerdown',e=>x0=e.clientX);r.addEventListener('pointerup',e=>{if(x0!=null&&x0-e.clientX>50)close();x0=null});
  const toast=t=>{const el=document.createElement('span');el.className='sbtoast';el.textContent=t;el.style.top=(ph.scrollTop+ph.clientHeight-54)+'px';ph.appendChild(el);setTimeout(()=>el.remove(),1800)};
  r.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
@@ -6274,7 +6291,7 @@ function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
   if(b.dataset.go==='@write'){close();setTimeout(()=>window.__mjWrite&&window.__mjWrite(),300);return}
   if(b.dataset.go==='@sec'){close();setTimeout(()=>{goTo('mvfiche');const t=document.querySelector('#mvfiche .pftr button[data-t="sec"]');t&&t.click()},300);return}
   const g=b.dataset.go;if(g==='reglages'){close();setTimeout(()=>goTo('rg'),300);return}if(!g){toast('Cette page arrive bientôt');return}close();setTimeout(()=>goTo(g),300)});
- ph.__sb=()=>{const nt=/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'));r.querySelectorAll('img[data-mi]').forEach(i=>i.src='illus/menu/'+i.dataset.mi+(nt?'-nuit':'')+'.webp');const st=ph.scrollTop,h=ph.clientHeight;[d,r].forEach(x=>{x.style.top=st+'px';x.style.height=h+'px'});ph.style.overflowY='hidden';d.hidden=false;requestAnimationFrame(()=>{d.classList.add('on');r.classList.add('on')})}}
+ ph.__sb=()=>{r.removeAttribute('inert');const nt=/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'));r.querySelectorAll('img[data-mi]').forEach(i=>i.src='illus/menu/'+i.dataset.mi+(nt?'-nuit':'')+'.webp');const st=ph.scrollTop,h=ph.clientHeight;[d,r].forEach(x=>{x.style.top=st+'px';x.style.height=h+'px'});ph.style.overflowY='hidden';d.hidden=false;requestAnimationFrame(()=>{d.classList.add('on');r.classList.add('on')})}}
 const BR=()=>{const e=document.createElement('span');e.className='sbbrand';e.innerHTML='<i>✦</i>ENTRE NOUS<i>✦</i>';return e};
 function btn(){const b=document.createElement('button');b.type='button';b.className='smenu';b.setAttribute('aria-label','Ouvrir le menu');b.innerHTML=ICO;b.onclick=e=>{e.stopPropagation();const ph=b.closest('.phone');build(ph);ph.__sb()};return b}
 ['home'].forEach(id=>{const ph=document.getElementById(id);if(!ph)return;const b=btn();b.classList.add('float');ph.appendChild(b)});
@@ -6534,11 +6551,20 @@ function reset(mode){S={mode,stack:[],tab:mode==='soir'?'apres':'avant',notes:mo
  pas:mode==='vide'||mode==='first'?[]:PAS0(),pasYay:null,veille:{},
  ap:{parts:{},vrac:'',from:{},saved:0,ressens:{sel:new Set(),star:null,mots:''},retiens:{a:'',b:'',c:'',k:0,keep:1},parler:{ck:{},txt:{},plus:'',extra:[]},paspro:[],pasAdded:[],vracOpen:0},
  sv:{tab:'suivi',mo:'',an:'',ry:'',why:'',dj:'',dm:'',ab:'',abPills:null,sv:'',out:'',aid:[],aidNew:null,sus:'',susL:null,ia:{},hint:{}},
- first:{p:{},done:{}},seSel:null,seTab:'apres',evSel:null,ph:0,filt:'toutes',q:'',iaPick:'claude'};
+ first:{p:{},done:{}},seSel:null,seTab:'apres',evSel:null,ph:{},filt:'toutes',q:'',iaPick:'claude'};
  if(mode==='first')S.stack=[{v:'intro'}];
 
 }
-reset('avant');{const sv=window.__enLive&&window.__enLive('psy',()=>({notes:S.notes,pas:S.pas,mode:S.mode,first:S.first}));if(sv){reset(sv.mode==='first'?'first':'vide');S.notes=sv.notes||[];S.pas=sv.pas||[];if(sv.first)S.first=sv.first}else reset('first')}
+function psySnapshot(){return {notes:S.notes,pas:S.pas,mode:S.mode,first:S.first,sv:S.sv,tab:S.tab,
+ prep:{...S.prep,stars:[...S.prep.stars]},ap:{...S.ap,ressens:{...S.ap.ressens,sel:[...S.ap.ressens.sel]}},msNotes:S.msNotes,msCk:S.msCk,msDone:S.msDone,sessionDate:S.sessionDate,msSubjects:S.msSubjects}}
+reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);if(saved){
+ reset(saved.mode==='first'?'first':'vide');S.notes=saved.notes||[];S.pas=saved.pas||[];
+ if(saved.first)S.first=saved.first;if(saved.sv)Object.assign(S.sv,saved.sv);if(saved.tab)S.tab=saved.tab;
+ if(saved.prep)S.prep={...S.prep,...saved.prep,stars:new Set(saved.prep.stars||[])};
+ if(saved.ap)S.ap={...S.ap,...saved.ap,ressens:{...S.ap.ressens,...saved.ap.ressens,sel:new Set(saved.ap.ressens?.sel||[])}};
+ S.msNotes=saved.msNotes||null;S.msCk=saved.msCk||{};S.msDone=!!saved.msDone;S.sessionDate=saved.sessionDate;S.msSubjects=saved.msSubjects||[];
+}}
+function sessionLabel(upper){const d=S.sessionDate?new Date(S.sessionDate+'T12:00:00'):new Date();const t=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});return upper?t.toUpperCase():t}
 const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
 const go=(v,o)=>{S.stack.push(Object.assign({v},o||{}));render(1)};
 const back=()=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro'))S.stack.pop();render(1)};
@@ -6631,7 +6657,9 @@ function vRead(){const r=S.rd;let h=`<div class="ps-k" style="margin-top:16px">C
 function msHTML(){const m=S.ms,p=S.prep;const subj=[...S.notes].sort((a,b)=>(p.stars.has(b.id)?1:0)-(p.stars.has(a.id)?1:0));
  if(m.bye)return`<div class="bye"><span style="color:#E9B98F">${CANDLE}</span><p>Bravo d'y être allée.</p><span>Tes notes t'attendent dans l'onglet APRÈS, ce soir.</span><button data-a="msclose">FERMER</button></div>`;
  const first=S.mode==='first';
- let h=`<div class="scr"><div class="hd"><button class="x" data-a="msx" aria-label="Fermer">✕</button><span class="k">MODE SÉANCE · ${__DF('2026-10-29','{wd} {d}','u','2026-10-28')} · 18 H</span><button class="x" data-a="msdim" aria-label="Baisser la lumière">☾</button></div>`;
+ const next=window.__enNextPsy&&window.__enNextPsy();
+ const stamp=next?next.dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric'}).toUpperCase()+' · '+window.__enHH(next.e).toUpperCase():'MES NOTES';
+ let h=`<div class="scr"><div class="hd"><button class="x" data-a="msx" aria-label="Fermer">✕</button><span class="k">MODE SÉANCE · ${stamp}</span><button class="x" data-a="msdim" aria-label="Baisser la lumière">☾</button></div>`;
  const ntl=k=>(m.notes[k]||[]).map(n=>`<div class="nt"><small>${n[0]}</small>${esc(n[1])}</div>`).join('');
  const sj=(k,name,star,feel,txt,noCk,kw)=>`<div class="sj${m.cur===k?' cur':''}${m.open[k]?' open':''}"><div class="tt">${noCk?'<span class="ck" style="opacity:0"></span>':`<button class="ck${m.ck[k]?' on':''}" data-a="msck" data-k="${k}"></button>`}<button class="nm" data-a="mscur" data-k="${k}" data-n="${esc(kw||name)}">${star?'✦ ':''}${esc(name)}</button>${txt?`<button class="rdb" data-a="msopen" data-k="${k}">lire ${m.open[k]?'⌃':'⌄'}</button>`:''}${m.cur===k?'<span class="cu">EN COURS</span>':''}</div>${feel&&feel.length?`<div class="pa">${feel.map(e=>`<span>${e}</span>`).join('')}</div>`:''}${txt?`<div class="txt">${esc(txt)}</div>`:''}${ntl(k)}</div>`;
  if(first){const f=S.first.p;
@@ -6652,10 +6680,10 @@ function msRender(){const o=ph.querySelector('.ms');if(o){o.innerHTML=msHTML();o
 
 /* ---------- APRÈS ---------- */
 const pasD=()=>S.mode==='soir'||S.msDone;
-function tApres(){if(S.mode==='vide'||S.mode==='first')return`<div class="ps-empty"><div class="pr"><i></i></div><p class="ps-s">Après ta séance, tu pourras poser ici ce qui s'est dit.</p></div>`;
- if(!pasD()){const s=SEANCES[0];return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${__DF('2026-10-15','{d} {mo}','u','2026-10-28')}</div><p class="ps-t">${s.q}</p>`+partsRows(true,s)+`<p class="ps-s" style="margin-top:14px">Demain soir, ta séance du ${__DF('2026-10-29','{d} {mo}','l','2026-10-28')} t'attendra ici.</p>`}
+function tApres(){if(!S.msDone&&!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i></div><p class="ps-s">Après ta séance, tu pourras poser ici ce qui s'est dit.</p></div>`;
+ if(!pasD()){const s=SEANCES[0];return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${__DF('2026-10-15','{d} {mo}','u','2026-10-28')}</div><p class="ps-t">${esc(s.q)}</p>`+partsRows(true,s)+`<p class="ps-s" style="margin-top:14px">Demain soir, ta séance du ${sessionLabel()} t'attendra ici.</p>`}
  const n=allNotes();
- return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${__DF('2026-10-29','{d} {mo}','u','2026-10-28')}</div><p class="ps-t">Comment c'était ?</p>
+ return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${sessionLabel(true)}</div><p class="ps-t">Comment c'était ?</p>
  <div class="ps-notes">${fold('mn','MES NOTES PENDANT LA SÉANCE · '+n.length,'',`<div style="margin-top:6px">${n.map(x=>`<div class="ps-note"><b>${x[0]}</b>${esc(x[2])}</div>`).join('')}</div>`)}${S.ph.mn?'':(n[0]?`<div class="ps-note" style="border:0;margin-top:4px"><b>${n[0][0]}</b>${esc(n[0][2])}</div>`:'')}</div>
  <div class="ps-two"><button class="ps-row" style="flex-direction:column;text-align:center;gap:4px" data-a="parts"><span class="tt" style="font:italic 500 16px 'Cormorant Garamond',serif">Par parties</span><span class="st" style="font:italic 12.5px 'Cormorant Garamond',serif;color:var(--smuted)">Plume te guide</span></button><button class="ps-row" style="flex-direction:column;text-align:center;gap:4px" data-a="vrac"><span class="tt" style="font:italic 500 16px 'Cormorant Garamond',serif">En vrac</span><span class="st" style="font:italic 12.5px 'Cormorant Garamond',serif;color:var(--smuted)">tout ce qui vient</span></button></div>
  ${Object.keys(S.ap.parts).length?H('MA SÉANCE')+partsRows():''}`}
@@ -6667,9 +6695,9 @@ function partState(k){const a=S.ap;if(k==='parler'){const c=Object.values(a.parl
 function partsRows(done,s){const L=[['parler','parler','De quoi on a parlé'],['retiens','retiens','Ce que j\'en retiens'],['ressens','ressens','Ce que je ressens'],['pas','pas','Mes petits pas']];
  if(done)return L.map(l=>row('none',l[1],l[2],s.apres[l[0]]||'','<span class="go">✓</span>')).join('');
  return L.map(l=>{const f=S.ap.parts[l[0]]||(l[0]==='ressens'&&S.ap.ressens.sel.size)||(l[0]==='pas'&&S.ap.pasAdded.length);const tag=S.ap.from[l[0]]?'<span class="tag">DE TON VRAC</span>':'';return row('part" data-k="'+l[0],l[1],l[2],partState(l[0]),tag||`<span class="go">${f?'✓':'›'}</span>`)}).join('')}
-function vParts(){return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${__DF('2026-10-29','{d} {mo}','u','2026-10-28')}</div>${partsRows()}<button class="ps-btn" data-a="apsave">ENREGISTRER</button>`}
+function vParts(){return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${sessionLabel(true)}</div>${partsRows()}<button class="ps-btn" data-a="apsave">ENREGISTRER</button>`}
 function vPart(o){const a=S.ap,k=o.k;let h='';
- if(k==='parler'){h+=H('DE QUOI ON A PARLÉ');const sj=S.notes.length?S.notes:NOTES0();
+ if(k==='parler'){h+=H('DE QUOI ON A PARLÉ');const sj=S.msSubjects?.length?S.msSubjects:S.notes;
   sj.forEach(x=>{const on=a.parler.ck[x.id]!=null?a.parler.ck[x.id]:(S.msCk[x.id]?1:0);a.parler.ck[x.id]=on;const ns=(S.msNotes&&S.msNotes[x.id])||[];
    h+=`<div style="border-bottom:.7px solid var(--sline);padding:8px 0"><div class="ps-li" style="border:0;padding:0"><button class="ck${on?' on':''}" data-a="apck" data-i="${x.id}"></button><span class="tx">${esc(x.t)}</span><span class="ps-tag" style="${on?'':'color:var(--smuted)'}">${on?'ABORDÉ':'REVIENT DANS « À ABORDER »'}</span></div>${ns.map(n=>`<p style="margin:4px 0 0 29px;font:italic 13.5px 'Cormorant Garamond',serif;color:var(--smuted)">✎ ${esc(n[1])}</p>`).join('')}${on?`<div style="margin-left:29px">${fld('ap.parler.txt.'+x.id,'ce qu\'on en a dit…',a.parler.txt[x.id])}</div>`:''}</div>`});
   a.parler.extra.forEach((e,i)=>{h+=`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(e)}</span><span class="ps-tag">ABORDÉ</span></div>`});
@@ -6699,14 +6727,13 @@ function vVrac(){const n=allNotes();return` <button class="ps-ia" data-a="ia" da
 function tPas(){const P=S.pas;let h='';
  if(!P.length&&S.mode!=='soir')return`<div class="ps-empty"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));display:flex;align-items:center;justify-content:center"><img alt="" src="${ico('pas')}" style="width:26px"></div><p class="ps-t">Pas encore de petit pas.</p><p class="ps-s">Ta psy t'a proposé quelque chose à essayer ?<br>Ou tu as une envie à toi ?</p></div><p class="ps-s" style="text-align:left;margin-top:14px">Plume a quelques idées :</p>${['Marcher 10 minutes après le travail','Écrire 3 gratitudes ce soir','Envoyer un message à quelqu\'un qui compte'].map(t=>`<button class="ps-sug" data-a="pasidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}<button class="ps-btn" data-a="pasnew">+ UN PETIT PAS</button>`;
  if(S.mode==='avant'){const cur=P.filter(p=>!p.done&&!S.veille[p.id]);if(cur.length)h+=`<div class="ps-card" style="margin-top:14px;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg))"><div class="ps-k">TA SÉANCE EST DEMAIN</div><p class="ps-t" style="font-size:16px">Que fait-on de tes petits pas en cours ?</p>${cur.map(p=>`<div class="ps-li"><span class="tx">${esc(p.t)}</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="c">CONTINUER</button><span class="ps-tag" style="color:var(--sline)">·</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="a">ARCHIVER</button></div>`).join('')}<p class="ps-s" style="margin-top:6px;font-size:12.5px">Sans réponse, ils passent dans « les séances d'avant ».</p></div>`}
- const src=S.mode==='soir'?(__DF('2026-10-29','{d} {mo}','l','2026-10-28')):(__DF('2026-10-15','{d} {mo}','l','2026-10-28')),until=S.mode==='soir'?(__DF('2026-11-12','{d} {mo}','l','2026-10-28')):(__DF('2026-10-29','{d} {mo}','l','2026-10-28'));
- h+=`<div class="ps-k" style="margin-top:18px;color:var(--sink)">EN COURS</div><p class="ps-s">depuis la séance du ${src} · jusqu'au ${until}</p>`;
+ h+=`<div class="ps-k" style="margin-top:18px;color:var(--sink)">EN COURS</div>`;
  const grp=w=>P.filter(p=>!p.done&&p.when===w&&S.veille[p.id]!=='a');
  ['AUJOURD\'HUI','CETTE SEMAINE'].forEach(w=>{const g=grp(w);if(g.length)h+=H(w)+g.map(pasLine).join('')});
  const dn=P.filter(p=>p.done&&S.pasYay!==p.id);const yay=P.find(p=>p.id===S.pasYay);if(yay&&!grp(yay.when).includes(yay)){}
  if(dn.length)h+=H('ÇA M\'A FAIT DU BIEN')+dn.map(p=>`<div class="ps-li"><span class="ck on"></span><button class="tx" data-a="pasopen" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>FAIT ${p.day||'AUJOURD\'HUI'}${p.feel?' · « '+p.feel.toUpperCase()+' »':''}</small></button></div>`).join('');
- h+=`<button class="ps-add" data-a="pasnew">+ un petit pas</button>`+H('LES SÉANCES D\'AVANT');
- const old=Object.assign({},S.mode==='soir'?{'15 octobre':P0old()}:{},OLDPAS);
+ h+=`<button class="ps-add" data-a="pasnew">+ un petit pas</button>`;
+ const old={};
  Object.keys(old).forEach(k=>{const L=old[k],d=L.filter(x=>x[1]).length;h+=`<div class="ps-card" style="padding:10px 12px">${fold('o'+k,'Séance du '+k,d+' sur '+L.length+' fait'+(d>1?'s':''),L.map(x=>`<div class="ps-li" style="padding:7px 0"><span class="ck${x[1]?' on':''}"></span><span class="tx">${esc(x[0])}<small>${x[1]?'FAIT'+(x[2]?' · « '+x[2].toUpperCase()+' »':''):'PAS FAIT, CE N\'EST PAS GRAVE'}</small></span></div>`).join(''))}</div>`});
  if(S.veille&&Object.values(S.veille).includes('a'))h+=`<p class="ps-s" style="margin-top:6px">${Object.values(S.veille).filter(v=>v==='a').length} petit pas archivé pour la séance du ${__DF('2026-10-15','{d} {mo}','l','2026-10-28')}.</p>`;
  return h}
@@ -6725,34 +6752,34 @@ function sheetPas(p,isNew){const reps=['une fois','chaque jour','chaque semaine'
  <button class="ps-btn" data-a="edsave">${isNew?'AJOUTER':'ENREGISTRER'}</button>${isNew?'':'<button class="ps-del" data-a="eddel">retirer ce petit pas</button>'}<p class="ps-s" style="font-size:12px;margin-top:8px">glisse vers le bas pour annuler</p>`}
 
 /* ---------- MES SÉANCES ---------- */
-function seList(){const L=[...SEANCES];if(pasD()&&S.ap.saved||S.mode==='soir')L.unshift(cur29());return L}
+function seList(){return [...SEANCES]}
 function cur29(){const r=S.ap.ressens,rt=S.ap.retiens;const q=[rt.a,rt.b,rt.c][rt.k]||rt.a||'« Tu n\'as pas à tout porter seule. »';return{id:'s29',y:(+__DF('2026-10-29','{y}','l','2026-10-28')),mo:__DF('2026-10-29','{mo} {y}','u','2026-10-28'),j:__DF('2026-10-29','{wd} {d}','u','2026-10-28'),jl:(__DF('2026-10-29','{wd} {d} {mo}','l','2026-10-28')),q,emo:r.sel.size?[...r.sel]:['légère'],star:r.star||'légère',suj:['Thomas','le sommeil'],prev:S.notes.map(n=>n.t),notes:allNotes().map(n=>[n[0],n[1],n[2]]),apres:{parler:'Thomas, le sommeil',retiens:q,ressens:[...r.sel].join(', '),pas:S.ap.pasAdded.length+' petit(s) pas'}}}
-function tSeances(){if(S.mode==='vide'||S.mode==='first')return`<div class="ps-empty"><div class="pr"><i></i><i></i><i></i></div><p class="ps-t">Ton fil de séances commencera ici.</p><p class="ps-s">Après chaque séance, une perle s'ajoute.</p><button class="ps-btn" data-a="prepgo">PRÉPARER MA SÉANCE</button></div>`+(S.mode==='first'?'':'')+avantApp();
- let L=seList();const tot=L.length;const sj=['toutes','Thomas','le travail','ma mère','le sommeil','ma fatigue'];
+function tSeances(){if(!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i><i></i><i></i></div><p class="ps-t">Ton fil de séances commencera ici.</p><p class="ps-s">Après chaque séance, une perle s'ajoute.</p><button class="ps-btn" data-a="prepgo">PRÉPARER MA SÉANCE</button></div>`+avantApp();
+ let L=seList();const tot=L.length;const sj=['toutes',...new Set(L.flatMap(s=>s.suj||[]))];
  if(S.filt!=='toutes')L=L.filter(s=>s.suj.includes(S.filt));if(S.q)L=L.filter(s=>(s.q+' '+s.suj.join(' ')).toLowerCase().includes(S.q.toLowerCase()));
- let h=`<p class="ps-s" style="margin-top:14px">${tot} séances depuis mars 2025</p><label class="ps-srch">${SRCH}<input id="psq" placeholder="chercher un mot, un sujet…" value="${esc(S.q)}"></label><div class="ps-chips">${sj.map(s=>`<button class="ps-pl${S.filt===s?' on':''}" data-a="filt" data-k="${s}">${s}</button>`).join('')}</div>`;
- let mo='';h+='<div class="ps-fil">';L.forEach((s,i)=>{if(s.mo!==mo){mo=s.mo;h+=H(mo)}const last=!L[i+1]||L[i+1].mo!==mo;h+=`<button class="r" data-a="seopen" data-i="${s.id}"><span class="ln">${perle(s.emo,s.star,14)}${last?'':'<i></i>'}</span><span><span class="d" style="display:block">${s.j}</span><span class="q" style="display:block">${s.q}</span><span class="m" style="display:block">${s.star} · ${s.suj.join(', ')}</span></span></button>`});
+ let h=`<p class="ps-s" style="margin-top:14px">${tot} séance${tot>1?'s':''} gardée${tot>1?'s':''}</p><label class="ps-srch">${SRCH}<input id="psq" placeholder="chercher un mot, un sujet…" value="${esc(S.q)}"></label><div class="ps-chips">${sj.map(s=>`<button class="ps-pl${S.filt===s?' on':''}" data-a="filt" data-k="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
+ let mo='';h+='<div class="ps-fil">';L.forEach((s,i)=>{if(s.mo!==mo){mo=s.mo;h+=H(mo)}const last=!L[i+1]||L[i+1].mo!==mo;h+=`<button class="r" data-a="seopen" data-i="${s.id}"><span class="ln">${perle(s.emo,s.star,14)}${last?'':'<i></i>'}</span><span><span class="d" style="display:block">${s.j}</span><span class="q" style="display:block">${esc(s.q)}</span><span class="m" style="display:block">${s.star} · ${esc(s.suj.join(', '))}</span></span></button>`});
  if(!L.length)h+=`<p class="ps-s" style="margin-top:16px">Aucune séance ne correspond.</p>`;
  return h+'</div>'+avantApp()}
-function avantApp(){if(S.mode==='vide'&&!S.sv.mo)return'';return H('AVANT L\'APP')+`<div class="ps-fil"><button class="r" data-a="suivi"><span class="ln"><span class="pe" style="border:.8px dashed var(--sacc)"></span></span><span><span class="d" style="display:block">DEPUIS ${(S.sv.mo||'MARS').toUpperCase()} ${S.sv.an||'2025'}</span><span class="q" style="display:block">Là où j'ai commencé</span><span class="m" style="display:block">${S.sv.ry||'toutes les deux semaines'} · ${S.sv.abPills?S.sv.abPills.filter(p=>p.on).map(p=>p.t).join(', '):'ma mère, le travail'}</span></span></button></div>`}
-function vSeance(o){const s=seList().concat(SEANCES).find(x=>x.id===o.i)||SEANCES[0];const t=S.seTab;let h=`<div style="text-align:center;margin-top:16px">${perle(s.emo,s.star,26)}</div><div class="ps-k" style="margin-top:10px">${s.jl.toUpperCase()}</div><p class="ps-t">${s.q}</p><div class="ps-stabs">${[['avant','AVANT'],['pendant','PENDANT'],['apres','APRÈS']].map(x=>`<button class="${t===x[0]?'on':''}" data-a="setab" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+function avantApp(){if(!S.sv.mo&&!S.sv.an&&!S.sv.why)return'';return H('AVANT L\'APP')+`<div class="ps-fil"><button class="r" data-a="suivi"><span class="ln"><span class="pe" style="border:.8px dashed var(--sacc)"></span></span><span><span class="d" style="display:block">${S.sv.mo||S.sv.an?'DEPUIS '+esc([S.sv.mo,S.sv.an].filter(Boolean).join(' ').toUpperCase()):'MON SUIVI'}</span><span class="q" style="display:block">Là où j'ai commencé</span><span class="m" style="display:block">${esc([S.sv.ry,S.sv.abPills?S.sv.abPills.filter(p=>p.on).map(p=>p.t).join(', '):''].filter(Boolean).join(' · '))}</span></span></button></div>`}
+function vSeance(o){const s=seList().concat(SEANCES).find(x=>x.id===o.i)||SEANCES[0];const t=S.seTab;let h=`<div style="text-align:center;margin-top:16px">${perle(s.emo,s.star,26)}</div><div class="ps-k" style="margin-top:10px">${s.jl.toUpperCase()}</div><p class="ps-t">${esc(s.q)}</p><div class="ps-stabs">${[['avant','AVANT'],['pendant','PENDANT'],['apres','APRÈS']].map(x=>`<button class="${t===x[0]?'on':''}" data-a="setab" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`;
  if(t==='avant')h+=(s.prev.length?H('CE QUE J\'AVAIS PRÉVU')+s.prev.map(p=>`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(p)}</span></div>`).join(''):`<p class="ps-s" style="margin-top:16px">Pas de préparation gardée pour cette séance.</p>`);
  if(t==='pendant')h+=(s.notes.length?H('MES NOTES')+s.notes.map(n=>`<div class="ps-note" style="border-top:.7px solid var(--sline)"><b>${n[0]}</b><span style="font:12px Figtree,sans-serif;color:var(--smuted);margin-right:6px">${n[1]}</span>${esc(n[2])}</div>`).join(''):`<p class="ps-s" style="margin-top:16px">Aucune note prise pendant cette séance.</p>`);
- if(t==='apres')h+=(s.apres&&s.apres.parler?partsRows(true,s):`<p class="ps-s" style="margin-top:16px">Rien n'a été écrit après cette séance.</p>`);
+ if(t==='apres')h+=(s.apres&&Object.values(s.apres).some(Boolean)?partsRows(true,s):`<p class="ps-s" style="margin-top:16px">Rien n'a été écrit après cette séance.</p>`);
  return h}
 
 /* ---------- ÉVOLUTION ---------- */
-function tEvol(){if(S.mode==='vide'||S.mode==='first')return`<div class="ps-empty"><div class="pr"><i></i><i></i><i></i></div><p class="ps-s">Ton collier commencera à ta première séance.</p></div>`+H('LÀ OÙ J\'AI COMMENCÉ')+row('suivi','book'===''?'':SV.book,'Là où j\'ai commencé',S.sv.mo?S.sv.mo+' '+S.sv.an+' · pourquoi j\'ai commencé':'raconte-moi ton suivi');
+function tEvol(){if(!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i><i></i><i></i></div><p class="ps-s">Ton collier commencera à ta première séance.</p></div>`+H('LÀ OÙ J\'AI COMMENCÉ')+row('suivi','book'===''?'':SV.book,'Là où j\'ai commencé',S.sv.mo?S.sv.mo+' '+S.sv.an+' · pourquoi j\'ai commencé':'raconte-moi ton suivi');
  const L=seList().slice().reverse();const ys=[...new Set(L.map(s=>s.y))];const sel=S.evSel||L[L.length-1].id;const ss=L.find(s=>s.id===sel)||L[L.length-1];
  let h='';ys.forEach(y=>{h+=`<div class="ps-yr">${y}</div><div class="ps-col" data-col>${L.filter(s=>s.y===y).map(s=>`<button data-a="evsel" data-i="${s.id}">${perle(s.emo,s.star,20,s.id===sel?'sel':'')}</button>`).join('')}</div>`});
- h+=`<div class="ps-cap"><small>${ss.jl.toUpperCase()} · ${ss.star.toUpperCase()}</small>${ss.q}</div>`;
- const PH=(S.ap.retiens.keep&&S.ap.saved?[[cur29().q,(__DF('2026-10-29','{d} {mo}','u','2026-10-28')+" · PHRASE")]]:[]).concat(PHRASES);const k=Math.min(S.phI||0,PH.length-1);
- h+=H('MES PHRASES GARDÉES')+`<div class="ps-q" data-sw="ph" style="min-height:74px;display:flex;flex-direction:column;justify-content:center">${PH[k][0]}<small>${PH[k][1]}</small></div><div class="ps-dots">${PH.map((p,i)=>`<i class="${i===k?'on':''}" data-a="phi" data-i="${i}"></i>`).join('')}</div>`;
- const pd=S.pas.filter(p=>p.done).length+12;
+ h+=`<div class="ps-cap"><small>${ss.jl.toUpperCase()} · ${ss.star.toUpperCase()}</small>${esc(ss.q)}</div>`;
+ const PH=L.filter(s=>s.q).map(s=>[s.q,s.jl.toUpperCase()+' · PHRASE']);const k=Math.min(S.phI||0,PH.length-1);
+ if(PH.length)h+=H('MES PHRASES GARDÉES')+`<div class="ps-q" data-sw="ph" style="min-height:74px;display:flex;flex-direction:column;justify-content:center">${esc(PH[k][0])}<small>${PH[k][1]}</small></div><div class="ps-dots">${PH.map((p,i)=>`<i class="${i===k?'on':''}" data-a="phi" data-i="${i}"></i>`).join('')}</div>`;
+ const pd=S.pas.filter(p=>p.done).length;
  h+=`<div class="ps-two" style="margin-top:20px"><div class="ps-nb"><b>${seList().length}</b><small>SÉANCES</small></div><div class="ps-nb"><b>${pd}</b><small>PETITS PAS FAITS</small></div></div>`;
- const rev=[['Thomas'],['ma mère'],['le travail'],['le sommeil']].map(x=>{const dots=L.map(s=>s.suj.includes(x[0])||(x[0]==='le sommeil'&&s.suj.includes('le sommeil')));return[x[0],dots,dots.filter(Boolean).length]}).sort((a,b)=>b[2]-a[2]);
- h+=H('CE QUI REVIENT')+rev.map(r=>`<div class="ps-rev">${r[0]}<span class="dt">${r[1].map(d=>`<i class="${d?'f':''}"></i>`).join('')}</span></div>`).join('');
- h+=H('LÀ OÙ J\'AI COMMENCÉ')+row('suivi',SV.book,'Là où j\'ai commencé',(S.sv.mo||'mars')+' '+(S.sv.an||'2025')+' · pourquoi j\'ai commencé');
+ const rev=[...new Set(L.flatMap(s=>s.suj||[]))].map(t=>{const dots=L.map(s=>(s.suj||[]).includes(t));return[t,dots,dots.filter(Boolean).length]}).sort((a,b)=>b[2]-a[2]);
+ if(rev.length)h+=H('CE QUI REVIENT')+rev.map(r=>`<div class="ps-rev">${esc(r[0])}<span class="dt">${r[1].map(d=>`<i class="${d?'f':''}"></i>`).join('')}</span></div>`).join('');
+ h+=H('LÀ OÙ J\'AI COMMENCÉ')+row('suivi',SV.book,'Là où j\'ai commencé',esc([S.sv.mo,S.sv.an].filter(Boolean).join(' '))||'raconte-moi ton suivi');
  return h}
 
 /* ---------- première ouverture ---------- */
@@ -6851,7 +6878,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'keep':S.stack=[];render(1);toast('✦ Ta préparation est gardée pour demain');break;
  case'ms':openMS();break;
  case'msx':S.ms.bye=1;msRender();break;
- case'msclose':{const o=ph.querySelector('.ms');o&&o.remove();unlock();if(S.mode!=='first'){S.msNotes=S.ms.notes;S.msCk=S.ms.ck;S.notes=S.notes.filter(n=>!S.ms.ck[n.id]);S.msDone=1}S.stack=[];S.tab='avant';render(1);break}
+ case'msclose':{const o=ph.querySelector('.ms');o&&o.remove();unlock();S.msNotes=S.ms.notes;S.msCk=S.ms.ck;S.msSubjects=S.notes.map(n=>({...n}));S.msDone=1;const today=new Date();S.sessionDate=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');if(S.mode==='first')S.mode='vide';S.stack=[];S.tab='apres';render(1);break}
  case'msdim':S.ms.dim=!S.ms.dim;msRender();break;
  case'msck':S.ms.ck[d.k]=!S.ms.ck[d.k];msRender();break;
  case'msq':S.ms.qck[d.k]=!S.ms.qck[d.k];msRender();break;
@@ -6896,7 +6923,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'parep':ap.pasAdded[d.i].rep=d.k;render();break;
  case'relance':toast(d.t.replace('si tu bloques : ',''));break;
  case'range':if(!enVrac())break;S.stack=S.stack.filter(x=>x.v!=='vrac');go('parts');toast('Plume a rangé ton vrac dans tes quatre cartes');break;
- case'apsave':ap.saved=1;try{window.__enPsySeance&&window.__enPsySeance(SEANCES,ap)}catch(_){};S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
+ case'apsave':ap.saved=1;ap.date=S.sessionDate;ap.subjects=(S.msSubjects||S.notes).filter(n=>ap.parler.ck[n.id]).map(n=>n.t);ap.prev=(S.msSubjects||[]).map(n=>n.t);ap.notes=allNotes();try{window.__enPsySeance&&window.__enPsySeance(SEANCES,ap)}catch(_){};S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
  /* petits pas */
  case'pasck':{const p=S.pas.find(x=>x.id===d.i);if(S.pasYay===p.id){S.pasYay=null}else S.pasYay=p.id;render();break}
  case'pasfeel':{const p=S.pas.find(x=>x.id===d.i);p.done=1;p.feel=d.k;p.day='AUJOURD\'HUI';S.pasYay=null;render();break}
@@ -6927,7 +6954,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'starter':{const k=d.k;S.sv[k]=d.t;render();const n=B.querySelector(`[data-f="sv.${k}"]`);n&&n.focus();break}
  case'svforgot':S.sv.dj='';S.sv.dm='';render();toast('Pas grave, on fera sans.');break;
  case'svforgot2':toast('Ce n\'est pas grave.');break;
- case'svnext':toast('Ouvre l\'ajout d\'une séance dans le calendrier');break;
+ case'svnext':window.__enShow('calp');setTimeout(()=>{window.__calOpen&&window.__calOpen(null,new Date());const im=document.querySelector('#calp .kcar img[data-t="psy"]');im&&im.click()},250);break;
  case'abtire':if(!S.sv.ab.trim()){toast('Écris d\'abord quelques mots');break}S.sv.abPills=S.sv.ab.replace(/\.$/,'').split(/,| et /).map(x=>x.trim().replace(/^(on a (beaucoup )?parlé d[eu]s? |de |du |d')/i,'')).filter(Boolean).slice(0,5).map(t=>({t,on:1}));render();break;
  case'abp':S.sv.abPills[d.i].on=!S.sv.abPills[d.i].on;render();break;
  case'aidadd':S.sv.aidNew={ty:''};render();break;
@@ -7309,6 +7336,15 @@ function coverSheet(){Object.assign(N,D.cv);const d=document.createElement('div'
  s.addEventListener('click',e=>{const b=e.target.closest('[data-y]');if(!b)return;e.stopPropagation();const y=b.dataset.y;
   if(y==='x')return close();if(y==='title')return;if(y==='ok'){Object.assign(D.cv,N);close();render();toast('✦ Ta couverture est gardée');return}
   N[y]=b.dataset.k;const sc=s.querySelector('.in').scrollTop;draw();s.querySelector('.in').scrollTop=sc;s.classList.add('on')})}
+function restoreSecretPage(page){
+ const journal=window.__MJ;if(!page||!journal||!Array.isArray(journal.days))return false;
+ let entry=journal.days.find(d=>d.d===page.d);
+ if(!entry){entry={d:page.d,th:[],v:50,em:[...(page.mood||[])],parts:[]};journal.days.push(entry)}
+ entry.parts=entry.parts||[];const uid='secret:'+page.id;
+ if(!entry.parts.some(p=>p.uid===uid))entry.parts.push({uid,f:'raconter',h:'',x:[page.t,page.x].filter(Boolean).join('\n\n'),media:(page.media||[]).map(m=>({...m}))});
+ if(page.d===journal.today)journal.todayWritten=true;
+ window.__mjRender&&window.__mjRender();return true;
+}
 function onClick(e){const b=e.target.closest('[data-sx]');if(!b||!px||!px.contains(b))return;e.stopPropagation();const x=b.dataset.sx;
  switch(x){
  case'open':S.v='open';render(1);break;
@@ -7319,7 +7355,7 @@ function onClick(e){const b=e.target.closest('[data-sx]');if(!b||!px||!px.contai
  case'more':S.menu=!S.menu;render();break;
  case'm-mod':S.menu=0;S.edit=1;render();break;
  case'esave':{const p=D.pages.find(q=>q.id===S.i);p.t=px.querySelector('[data-f="t"]').value||p.t;p.x=px.querySelector('[data-f="x"]').value;if(window.__enMediaOf){const _pd=px.querySelector('.en-pend');if(_pd)p.media=window.__enMediaOf(_pd)}S.edit=0;render();toast('✦ C’est noté');break}
- case'm-out':{const p=D.pages.find(q=>q.id===S.i);D.pages=D.pages.filter(q=>q!==p);S.v='open';S.menu=0;render();toast('Elle retourne dans ton journal, au '+dt(p.d).getDate()+' '+MOIS[dt(p.d).getMonth()]);break}
+ case'm-out':{const p=D.pages.find(q=>q.id===S.i);if(!restoreSecretPage(p)){toast('Le journal n’a pas pu recevoir cette page. Elle reste dans ton carnet.');break}D.pages=D.pages.filter(q=>q!==p);S.v='open';S.menu=0;render();toast('Elle retourne dans ton journal, au '+dt(p.d).getDate()+' '+MOIS[dt(p.d).getMonth()]);break}
  case'm-del':S.menu=0;S.confirm=1;render();break;
  case'cf-no':S.confirm=0;render();break;
  case'cf-yes':D.pages=D.pages.filter(q=>q.id!==S.i);S.confirm=0;S.v='open';render();toast('Page supprimée');break;
@@ -7349,6 +7385,7 @@ const FI={raconter:'raconter',guider:'guider',vider:'vider'};
 const WAYS=[['raconter','Me raconter','Tout ce qui vient'],['guider','Être guidée','Une piste à suivre'],['vider','Vider mon sac','Quelques mots, vite']];
 const R=(f,h,x)=>({f,h,x}),G=(h,qa)=>({f:'guider',h,qa});
 const TH=window.__MJTH=[{id:'famille',n:'Famille'},{id:'couple',n:'Couple'},{id:'amis',n:'Amis'},{id:'travail',n:'Travail'},{id:'projets',n:'Projets'},{id:'moi',n:'Moi'},{id:'emotions',n:'Émotions'},{id:'sommeil',n:'Sommeil'}];
+{const saved=window.__enLive&&window.__enLive('mjthemes',()=>TH);if(Array.isArray(saved))TH.splice(0,TH.length,...saved)}
 const D=window.__MJ={today:(__DI('2026-10-29','2026-10-29')),todayWritten:true,days:[
  {d:(__DI('2026-10-29','2026-10-29')),th:['famille'],v:64,em:['apaisée','reconnaissante'],parts:[R('raconter','9 h 10',"Cher journal, ce matin j'ai enfin rappelé Maman. Ça m'a fait du bien de l'entendre rire, on a parlé presque une heure."),G('14 h 30',[["Qu'est-ce qui pèse le plus, là, maintenant ?","Le travail, je crois. Trop de choses en même temps."],["Et qu'est-ce qui t'aiderait ce week-end ?","Souffler. Ne rien prévoir du tout."]])]},
  {d:(__DI('2026-10-28','2026-10-29')),th:['couple'],fav:1,v:66,em:['joyeuse'],parts:[R('raconter','9 h 05',"Cher journal, Thomas m'a fait rire ce matin avec son histoire de chat coincé dans le placard. Une journée douce."),R('raconter','21 h 40',"Soirée calme, j'ai lu au lit jusqu'à tomber de sommeil.")]},
@@ -7480,7 +7517,7 @@ ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.
  case'm-mod':{closeSheet();const e=ph.querySelector('.mj-x[contenteditable]');if(e){e.focus();const r=document.createRange();r.selectNodeContents(e);r.collapse(false);const g=getSelection();g.removeAllRanges();g.addRange(r)}break}
  case'esave':{const x=day(c.i);ph.querySelectorAll('[data-pe]').forEach(t=>{const p=x.parts[+t.dataset.pe];if(p&&p.f!=='guider')p.x=t.value});S.edit=0;render();toast('✦ C’est noté');break}
  case'm-psy':closeSheet();dayAct('psy',c.i);break;
- case'm-sec':{closeSheet();const x=day(c.i);if(window.__SX){window.__SX.pages.push({id:'j'+x.d,d:x.d,m:'soir',t:'Ma page du '+dt(x.d).getDate()+' '+MOIS[dt(x.d).getMonth()],mood:x.em,x:x.parts.map(plain).join('\n\n')});window.__SX.vide=false}D.days=D.days.filter(y=>y!==x);if(x.d===D.today)D.todayWritten=false;S.stack=[];render(1);toast('✦ Gardée dans ton carnet secret');break}
+ case'm-sec':{closeSheet();const x=day(c.i);if(window.__SX){window.__SX.pages.push({id:'j'+x.d,d:x.d,m:'soir',t:'Ma page du '+dt(x.d).getDate()+' '+MOIS[dt(x.d).getMonth()],mood:x.em,x:x.parts.map(plain).join('\n\n'),media:x.parts.flatMap(p=>p.media||[]).map(m=>({...m}))});window.__SX.vide=false}D.days=D.days.filter(y=>y!==x);if(x.d===D.today)D.todayWritten=false;S.stack=[];render(1);toast('✦ Gardée dans ton carnet secret');break}
  }});
 /* ---- thèmes : créer, renommer, supprimer ---- */
 function thName(id){const t=id&&thOf(id);const sh=sheet(`<p class="mj-k">${t?'RENOMMER LE THÈME':'NOUVEAU THÈME'}</p><input class="mj-in" id="mjthn" maxlength="24" placeholder="son nom…" value="${t?esc(t.n):''}"><button type="button" class="mj-btn" data-a="thok" data-k="${id||''}">${t?'RENOMMER':'CRÉER'}</button>`);setTimeout(()=>{const n=$('mjthn');n&&n.focus()},60)}
@@ -7524,7 +7561,7 @@ function dayAct(a,k,host){const x=day(k);if(!x)return;host=host||ph;
  const dd=dt(x.d),lab=dd.getDate()+' '+MOIS[dd.getMonth()],txt=(x.parts||[]).map(plain).join(' ').trim();
  if(a==='psy'){if(window.__psyAbord)window.__psyAbord(snip(x).slice(0,60)+(snip(x).length>60?'…':''),'PAGE DU '+lab.toUpperCase(),txt);tst(host,'✦ Ajoutée à « à aborder » de ton espace psy');return}
  if(a==='souv'){if(window.__svAddFrom)window.__svAddFrom({t:snip(x).split(/[.!?]/)[0].slice(0,40),when:MOIS[dd.getMonth()]+' '+dd.getFullYear(),r:txt});else tst(host,'Ouvre Mes souvenirs');return}
- if(a==='sec'){if(window.__SX){window.__SX.pages.push({id:'j'+x.d,d:x.d,m:'soir',t:'Ma page du '+dt(x.d).getDate()+' '+MOIS[dt(x.d).getMonth()],mood:x.em,x:x.parts.map(plain).join('\n\n')});window.__SX.vide=false}
+ if(a==='sec'){if(window.__SX){window.__SX.pages.push({id:'j'+x.d,d:x.d,m:'soir',t:'Ma page du '+dt(x.d).getDate()+' '+MOIS[dt(x.d).getMonth()],mood:x.em,x:x.parts.map(plain).join('\n\n'),media:x.parts.flatMap(p=>p.media||[]).map(m=>({...m}))});window.__SX.vide=false}
   D.days=D.days.filter(y=>y!==x);if(x.d===D.today)D.todayWritten=false;if(host===ph){S.stack=[];render(1)}tst(host,'✦ Gardée dans ton carnet secret');return}}
 function tst(host,t){if(host===ph){toast(t);return}const o=document.createElement('div');o.className='jr-toast';o.textContent=t;o.style.top=(host.scrollTop+host.clientHeight-130)+'px';host.appendChild(o);setTimeout(()=>o.remove(),2200)}
 const pageGroups=(k,host,first)=>{const x=day(k)||{};return[{title:first,items:[['choisir ses thèmes',()=>window.__mjRanger(host,k)],[x.fav?'en favori ♥':'mettre en favori ♡',()=>dayAct('fav',k,host)],['garder secrète',()=>dayAct('sec',k,host)]]},
@@ -8283,9 +8320,9 @@ window.__weDraw=draw;draw();
 const ph=document.getElementById('aide');if(!ph)return;const B=document.getElementById('aideb'),TT=ph.querySelector('.mvtt p');
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const FAQ=[
- ['MON CODE ET MON COMPTE','J’ai oublié mon code','Pas de panique : touche « code oublié » sur l’écran du code. Tu reçois un lien sur l’adresse de ton compte pour en choisir un nouveau. Tes pages restent intactes. En invitée, sans compte, le code ne peut pas être retrouvé.',1],
- ['MES PAGES','Mes pages sont-elles sauvegardées ?','Oui : tout est gardé sur ton téléphone, et tu peux en faire une sauvegarde dans Réglages, partie « mes données ». Garde-la dans un endroit sûr.',1],
- ['MON CODE ET MON COMPTE','Je change de téléphone','Avant de changer, fais une sauvegarde dans Réglages. Sur le nouveau téléphone, connecte-toi avec le même compte puis restaure ta sauvegarde : tout revient, pages, souvenirs et rendez-vous.',1],
+ ['MON CODE ET MON COMPTE','J’ai oublié mon code','Sur l’écran du code, touche « Code oublié ? » et utilise ton code de secours. Tu peux aussi reprendre une sauvegarde chiffrée avec le code qu’elle utilisait. Un mail de réinitialisation du compte ne déchiffre pas le carnet.',1],
+ ['MES PAGES','Mes pages sont-elles sauvegardées ?','Ton carnet est gardé dans un coffre chiffré sur cet appareil. En mode invité, il reste sur cet appareil. Dans Réglages → Mon journal → Sauvegarde, choisis « Mon carnet complet » pour créer une sauvegarde chiffrée avec tes vocaux.',1],
+ ['MON CODE ET MON COMPTE','Je change de téléphone','Crée une sauvegarde « Mon carnet complet » dans Réglages → Mon journal → Sauvegarde. Sur le nouvel appareil, reprends ce fichier et entre le code utilisé lors de la sauvegarde. L’archive en clair permet seulement d’importer les brouillons.',1],
  ['MES PAGES','Qui peut lire mon journal ?','Personne d’autre que toi. Tes pages restent sur ton téléphone, protégées par ton code. Même l’équipe ne peut pas les lire. Et quand tu partages avec ChatGPT ou Claude, c’est toi qui choisis ce qui part.',1],
  ['MES PAGES','Je peux modifier une page déjà écrite ?','Oui : dans Mon journal, ouvre la journée et touche le texte d’une heure pour l’écrire à nouveau.'],
  ['MES PAGES','Où retrouver mes pages favorites ?','Dans Mon journal, l’onglet « favoris », à côté de « par thème » et « par mois ».'],
