@@ -5185,7 +5185,7 @@ const PORTRAIT=`=== MON PORTRAIT ===
 - Projets :
 - Dates importantes :
 - Chapitre : un titre pour cette étape | mois et année | le récit | ce qu'il ou elle m'a dit | où | notre chanson | ce que je portais | ce qu'on a mangé ou bu | la météo, la saison | ce que j'ai ressenti | un détail que je veux garder (une ligne par grande étape, dans l'ordre)
-=== FIN ===`;
+=== FIN ===`;window.__enPortraitTpl=PORTRAIT;
 const CH={moi:`MOI AUJOURD'HUI
 - Chez toi : où tu vis (en ville, à la campagne, près de la mer, à la montagne), depuis quand, ce qui t'a fait venir (travail, études, amour, envie de changement), si tu t'y plais, ce que tu y aimes. Avec qui tu vis (en solo, en couple, en coloc, en famille, chez tes parents, avec tes animaux). En couple : son prénom, depuis combien de temps, comment vous vous êtes rencontrés. En solo : si ça te plaît, et côté cœur. En famille : prénoms et âges des enfants.
 - Travail ou études : ce que tu fais exactement, depuis quand, une journée type, si tu aimes ça (ce qui te plaît : les gens, ce que tu crées, l'équipe, te sentir utile ; ce qui pèse : l'ambiance, la charge, les horaires, le sens), si tu te vois y rester, et si tout était possible, ce que tu ferais. En études : quoi, quelle année, et après. En pause ou en recherche : comment tu le vis, ce qui t'attire.
@@ -5316,8 +5316,21 @@ document.addEventListener('selectionchange',()=>{const pg=document.getElementByI
 <script type="text/x-en">
 (function(){const ph=document.getElementById('mvai'),sh=document.getElementById('mvpsh'),dim=document.getElementById('mvpdim'),ta=document.getElementById('mvpta'),ok=document.getElementById('mvpok'),er=document.getElementById('mvperr'),ert=document.getElementById('mvperrt');
 const SEC={"MOI AUJOURD'HUI":'moi','MES PROCHES':'proches','MON PASSÉ':'passe','MON INTÉRIEUR':'int','NOTRE HISTOIRE':'histoire'};
-function parse(t){const out={};let cur=null;t.replace(/\r/g,'').split('\n').forEach(l=>{const m=l.match(/^\s*#{1,3}\s*(.+?)\s*$/);if(m){const k=m[1].toUpperCase().replace(/[’`]/g,"'");cur=SEC[k]||null;if(cur)out[cur]=out[cur]||[];return}
- const it=l.match(/^\s*[-•*]\s*(.+)$/);if(cur&&it){const v=it[1].trim();const kv=v.match(/^([^:]{2,40})\s*:\s*(.*)$/);const val=kv?kv[2].trim():v;if(val&&!/^[—–-]\s*$/.test(val)&&!/^\(.*\)$/.test(val))out[cur].push(kv?[kv[1].trim(),val]:[null,val])}});
+const NRM=x=>x.normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
+const SECN={};Object.keys(SEC).forEach(k=>{SECN[NRM(k)]=SEC[k]});
+const KEYSEC={};(function(){let c=null;(window.__enPortraitTpl||'').split('\n').forEach(l=>{const h=l.match(/^##\s*(.+)$/);if(h){c=SECN[NRM(h[1])]||null;return}const m=l.match(/^-\s*([^:]+?)\s*:/);if(c&&m&&!KEYSEC[NRM(m[1])])KEYSEC[NRM(m[1])]=[c,m[1].trim()]})})();
+function clean(l){return l.replace(/\*\*|__|`/g,'').replace(/^\s*>+\s*/,'').trim()}
+function parse(t){const out={};let cur=null,last=null,head=false;
+ t.replace(/\r/g,'').replace(/ /g,' ').split('\n').forEach(raw=>{let l=clean(raw);if(!l||/^=+.*=+$/.test(l)||/^[-=_*]{3,}$/.test(l))return;
+  // titre de partie : « ## MOI AUJOURD'HUI », « **MOI AUJOURD’HUI** », « 1. MOI AUJOURD'HUI », ou la ligne seule
+  const h=l.replace(/^#{1,6}\s*/,'').replace(/^\d+[.)]\s*/,'').replace(/[:：]\s*$/,'');const sk=SECN[NRM(h)];
+  if(sk&&h.length<40){head=true;cur=sk;out[cur]=out[cur]||[];last=null;return}
+  const bul=/^\s*([-•*–—▪◦·]|\d+[.)])\s+/.test(l);const v0=l.replace(/^\s*([-•*–—▪◦·]|\d+[.)])\s+/,'').trim();
+  const kv=v0.match(/^([^:|]{2,60}?)\s*[:：]\s*(.*)$/);let key=kv?kv[1].replace(/[*_]/g,'').trim():null;let val=kv?kv[2].trim():v0;
+  const ks=key&&KEYSEC[NRM(key)];if(ks){key=ks[1];if(!head){cur=ks[0];out[cur]=out[cur]||[]}}
+  if(!cur)return;
+  if(!kv&&!bul&&last&&last[1]&&/^[a-zàâäéèêëîïôöùûüç|(,;]/.test(v0)){last[1]+=' '+v0;return}
+  if(val&&!/^[—–-]+\s*$/.test(val)&&!/^\(.*\)$/.test(val)&&!/^(—\s*\|\s*)+—?\s*$/.test(val)){const row=key?[key,val]:[null,val];out[cur].push(row);last=row}else last=null});
  Object.keys(out).forEach(k=>{if(!out[k].length)delete out[k]});return out}
 function check(){const t=ta.value.trim();er.hidden=true;ok.textContent='';if(!t)return null;const r=parse(t);const n=Object.keys(r).length;
  if(n){ok.textContent='✓ portrait reconnu · '+n+(n>1?' chapitres':' chapitre')+' sur 5';return r}return false}
