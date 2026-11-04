@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="en-ready">
 <head>
 <meta charset="utf-8">
+<script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=302,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -127,6 +128,7 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 #onb .en-ind,#en-lock .en-ind{display:none!important}
 #souv .en-sv0{margin:18px 6px;text-align:center}
 #souv .en-sv0 p{font:italic 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted);margin:0 0 14px}
+html.en-nuit,html.en-nuit body{background:#2A1E26}
 
 </style>
 <script>
@@ -5585,7 +5587,7 @@ rend()})();</script>
 const $=id=>document.getElementById(id),G=[{"m": "CHAPITRE UN · AVRIL 2025", "t": "Le jour où tout a commencé", "x": "Un message un peu maladroit, un soir d’avril. Je ne savais pas encore que j’allais l’attendre chaque soir.", "c": [{"k": "ou", "v": "Sur une appli, chacun chez soi", "st": "ligne"}, {"k": "re", "v": "De la curiosité, et un peu de méfiance", "st": "ligne"}]}, {"m": "CHAPITRE DEUX · MAI 2025", "t": "Notre premier rendez-vous", "x": "Un café qui a duré quatre heures. J’avais préparé mille sujets, on n’en a utilisé aucun.", "ph": "illus/bandeau-elisa.jpg", "c": [{"k": "dit", "v": "« Tu ris comme une enfant. »", "st": "manuscrit"}, {"k": "ou", "v": "Un petit café à Lyon", "st": "ligne"}, {"k": "ch", "v": "La vie en rose", "st": "ligne"}, {"k": "po", "v": "Ma robe à fleurs", "st": "ligne"}, {"k": "ma", "v": "Deux chocolats chauds", "st": "ligne"}, {"k": "sa", "v": "Un samedi de mai, sous la pluie", "st": "ligne"}, {"k": "re", "v": "Des papillons, et l’impression de le connaître depuis toujours.", "st": "ligne"}, {"k": "de", "v": "Il a renversé son café en riant.", "st": "ligne"}]}, {"m": "CHAPITRE TROIS · ÉTÉ 2025", "t": "Notre premier voyage", "x": "Des valises trop pleines et des fous rires sur la route.", "c": []}, {"m": "CHAPITRE QUATRE · HIVER 2025", "t": "Le jour où j’ai su", "x": "Rien d’extraordinaire, juste lui, et l’envie que ça dure.", "c": []}, {"m": "CHAPITRE CINQ · AVRIL 2026", "t": "J’emménage à Toulouse", "x": "J’ai tout quitté pour le rejoindre. J’avais peur, et j’étais sûre.", "c": []}, {"m": "CHAPITRE SIX · AUJOURD’HUI", "t": "Et maintenant", "x": "On construit, doucement. La suite reste à écrire.", "c": []}],CAT={"dit": ["CE QU’IL M’A DIT", "manuscrit"], "ou": ["OÙ", "ligne"], "ch": ["NOTRE CHANSON", "ligne"], "po": ["CE QUE JE PORTAIS", "ligne"], "ma": ["CE QU’ON A MANGÉ / BU", "ligne"], "sa": ["LA MÉTÉO, LA SAISON", "ligne"], "re": ["CE QUE J’AI RESSENTI", "ligne"], "de": ["UN DÉTAIL QUE JE VEUX GARDER", "ligne"]},NUM=["UN", "DEUX", "TROIS", "QUATRE", "CINQ", "SIX", "SEPT", "HUIT", "NEUF", "DIX", "ONZE", "DOUZE"],P=$('fbpage'),BAR=$('fbbar');{const _s=window.__enLive&&window.__enLive('pfb',()=>G);G.splice(0,G.length,...(_s||[]))}let i=0,edit=false,sel=-1;
 function catHTML(c,j){const L=CAT[c.k][0];if(c.st==='ligne'){const inl=(L.length+(c.v||'').length)<=30&&c.k!=='re'&&c.k!=='de';return '<div data-j="'+j+'" class="c-ligne'+(inl?' inl':'')+'"><b>'+L+'</b><span>'+(c.v||'')+'</span></div>'}
  return '<div data-j="'+j+'" class="c-'+c.st+'"><b>'+L+'</b><span>'+(c.v||'')+'</span></div>'}
-function show(){const g=G[i];g.s=g.s||{};const EL={meta:'fbmeta',title:'fbt',text:'fbx',photo:'fbph'};Object.keys(EL).forEach(k=>{const e=$(EL[k]);[...e.classList].filter(c=>c.startsWith('s-')).forEach(c=>e.classList.remove(c));e.classList.add('s-'+(g.s[k]||DEF[k]))});$('fbmeta').textContent=g.m;$('fbt').textContent=g.t;$('fbx').textContent=g.x;const ph=$('fbph');ph.classList.toggle('has',!!g.ph);ph.hidden=!g.ph&&!edit;ph.style.backgroundImage=g.ph?'url('+g.ph+')':'';
+function show(){const g=G[i];if(!g)return;g.s=g.s||{};const EL={meta:'fbmeta',title:'fbt',text:'fbx',photo:'fbph'};Object.keys(EL).forEach(k=>{const e=$(EL[k]);[...e.classList].filter(c=>c.startsWith('s-')).forEach(c=>e.classList.remove(c));e.classList.add('s-'+(g.s[k]||DEF[k]))});$('fbmeta').textContent=g.m;$('fbt').textContent=g.t;$('fbx').textContent=g.x;const ph=$('fbph');ph.classList.toggle('has',!!g.ph);ph.hidden=!g.ph&&!edit;ph.style.backgroundImage=g.ph?'url('+g.ph+')':'';
  $('fbl').innerHTML=g.c.map(catHTML).join('');$('fbnum').textContent=(i+1)+' / '+G.length;$('fbprev').disabled=i===0;$('fbnext2').disabled=i===G.length-1;$('fbnext').hidden=i===G.length-1||edit;
  P.classList.toggle('edit',edit);[$('fbmeta'),$('fbt'),$('fbx'),...$('fbl').querySelectorAll('span')].forEach(e=>e.contentEditable=edit);
  $('fbadd').hidden=!edit;const used=g.c.map(c=>c.k);$('fbaddl').innerHTML=Object.keys(CAT).filter(k=>!used.includes(k)).map(k=>'<button type="button" class="fap" data-k="'+k+'">'+CAT[k][0].charAt(0)+CAT[k][0].slice(1).toLowerCase()+'</button>').join('');$('fbadd').hidden=!edit||!$('fbaddl').children.length;
@@ -5612,11 +5614,11 @@ $('fbfile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new File
 $('fbedit').onclick=()=>{edit=true;show()};$('fbdone').onclick=()=>{save();edit=false;show()};
 function go(d){if(edit)return;const j=i+d;if(j<0||j>=G.length)return;if(d>0){P.classList.add('turn');setTimeout(()=>{i=j;show();P.classList.remove('turn');P.classList.add('back');setTimeout(()=>P.classList.remove('back'),560)},540)}else{i=j;show();P.classList.add('back');setTimeout(()=>P.classList.remove('back'),560)}}
 function openBook(){$('fbook').classList.add('isopen');$('fbcov').classList.add('open');$('fbpages').hidden=false;$('fbhint').hidden=true}
-$('fbcov').onclick=()=>{openBook();i=0;edit=false;show()};
+$('fbcov').onclick=()=>{if(!G.length){window.__addChap();return}openBook();i=0;edit=false;show()};
 $('fbclose').onclick=()=>{$('fbcov').classList.remove('open');setTimeout(()=>{$('fbpages').hidden=true;$('fbook').classList.remove('isopen')},600);$('fbhint').hidden=false;$('fbctl').hidden=true;$('fbacts').hidden=true};
 $('fbnext').onclick=()=>go(1);$('fbnext2').onclick=()=>go(1);$('fbprev').onclick=()=>go(-1);
 let x0=null;P.addEventListener('pointerdown',e=>{x0=edit?null:e.clientX});P.addEventListener('pointerup',e=>{if(x0==null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>40)go(dx<0?1:-1)});
-window.__addChap=()=>{const n=G.length;G.push({m:'CHAPITRE '+(NUM[n]||n+1)+' · DATE',t:'',x:'',c:[]});openBook();i=n;edit=true;show();setTimeout(()=>{$('fbook').scrollIntoView({block:'start',behavior:'smooth'});$('fbt').focus({preventScroll:true})},120)}})();</script>
+window.__addChap=()=>{const n=G.length;G.push({m:'CHAPITRE '+(NUM[n]||n+1)+' · '+new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'}).toUpperCase(),t:'',x:'',c:[]});openBook();i=n;edit=true;show();setTimeout(()=>{$('fbook').scrollIntoView({block:'start',behavior:'smooth'});$('fbt').focus({preventScroll:true})},120)}})();</script>
 <script type="text/x-en">(()=>{const g=document.getElementById('ffgo');g.onclick=()=>{const t=document.getElementById('mv2');t&&t.scrollIntoView({behavior:'smooth',block:'center'})};
 document.querySelectorAll('#mvfiche .ffai button').forEach(b=>b.onclick=()=>window.__aiOpen&&window.__aiOpen(b.dataset.ai,null))})();</script>
 <script type="text/x-en">(()=>{const b=document.getElementById('mvcopy'),sp=b.querySelector('span');let t=null;
