@@ -2,6 +2,8 @@
 <html lang="fr" class="en-ready">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' https://aoafqsipzymeehcswzto.supabase.co https://noembed.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=302,viewport-fit=cover,user-scalable=no">
@@ -129,6 +131,14 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(script):not(style){display:n
 #souv .en-sv0{margin:18px 6px;text-align:center}
 #souv .en-sv0 p{font:italic 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted);margin:0 0 14px}
 html.en-nuit,html.en-nuit body{background:#2A1E26}
+.onb .o3a[hidden]{display:none!important}
+html.en-ready,html.en-ready body{height:100%;min-height:100lvh}
+#en-app{bottom:auto;height:100lvh}
+@supports not (height:100lvh){#en-app{height:100%;bottom:0}}
+.mv .mvmic.rec svg{stroke:#C9766E}
+/* iPhone : l'écran commence sous l'heure et la batterie, comme sur la planche ; le fond derrière prend la couleur de l'écran */
+#en-app{top:env(safe-area-inset-top,0px);height:calc(100lvh - env(safe-area-inset-top,0px))}
+@supports not (height:100lvh){#en-app{top:env(safe-area-inset-top,0px);bottom:0;height:auto}}
 
 </style>
 <script>
@@ -179,8 +189,8 @@ window.__enKeep=(k,o)=>{const sv=M.st[k];if(sv&&REEL())Object.assign(o,sv);LIVE[
 window.__enKeepArr=(k,a)=>{const sv=M.st[k];a.splice(0,a.length,...((sv&&REEL()&&Array.isArray(sv.a))?sv.a:[]));LIVE[k]={o:{get a(){return a}},fields:['a']};return a};
 window.__enGet=k=>LIVE[k]&&LIVE[k].o;
 window.__enLive=(k,fn)=>{const sv=REEL()&&M.st[k]?M.st[k].v:null;LIVE[k]={o:{get v(){return fn()}},fields:['v']};return sv};
-window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').trim()};
-window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).trim()};
+window.__P0=()=>{const r=LIVE.rg&&LIVE.rg.o;const x=document.getElementById('o2in');return ((r&&r.prenom)||(x&&x.value)||META.nm||'').replace(/[<>"&]/g,'').trim()};
+window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;return ((r&&r.petit)||window.__P0()).replace(/[<>"&]/g,'').trim()};
 window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis']){M.ls['en-depuis']=String(Date.now());touch()}};
 window.__enDepuis=()=>{const t=+M.ls['en-depuis']||Date.now();const d=new Date(t);return ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'][d.getMonth()]+' '+d.getFullYear()};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
@@ -279,7 +289,10 @@ function fit(){const z=innerWidth/BASE;document.documentElement.style.setPropert
 addEventListener('resize',fit);fit();
 function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock();return}if(ph.classList.contains('en-off'))return;
  document.querySelectorAll('#en-app .phone').forEach(p=>{const on=p===ph;p.classList.toggle('en-on',on);p.toggleAttribute('inert',!on);p.setAttribute('aria-hidden',on?'false':'true')});
- cur=ph;try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}}
+ cur=ph;try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
+ /* le fond derrière l'écran prend sa couleur : jamais de bande d'une autre couleur en haut ou en bas */
+ try{const bg=getComputedStyle(ph).backgroundColor;if(bg&&bg!=='rgba(0, 0, 0, 0)'){document.documentElement.style.background=bg;document.body.style.background=bg;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=bg}}catch(e){}
+ if(ph.id==='home'&&window.__enTourLater){const f=window.__enTourLater;window.__enTourLater=null;setTimeout(f,450)}}
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
 const SIV=Element.prototype.scrollIntoView;
 /* on ne change d'écran que si c'est toi qui l'as demandé (un toucher il y a peu), jamais tout seul */
@@ -296,10 +309,11 @@ function mount(first){
  document.querySelectorAll('.phone').forEach(p=>{app.appendChild(p);if(HIDE.has(p.id)){p.classList.add('en-off');p.setAttribute('inert','')}});
  document.documentElement.classList.add('en-ready');
  /* inscription : Face ID n'existe pas pour une web app */
- const fid=document.getElementById('o3on');if(fid){const b=fid.closest('.o3b');if(b){b.querySelectorAll('.o3fid,.o3t,.o3s,.o3on,.o3later').forEach(x=>x.style.display='none')}}
  /* fin de l'inscription → accueil */
- const sk=document.getElementById('o4skip');if(sk)sk.addEventListener('click',()=>show(document.getElementById('home')));
- const ts=window.__tourStart;if(ts)window.__tourStart=(...a)=>{show(document.getElementById('home'));setTimeout(()=>ts(...a),350)};
+ /* fin de l'inscription : « Faire connaissance » d'abord (première fois), puis l'accueil — et la visite si tu l'as demandée */
+ const intro=()=>show(document.getElementById('mvintro')||document.getElementById('home'));
+ const sk=document.getElementById('o4skip');if(sk)sk.addEventListener('click',intro);
+ const ts=window.__tourStart;if(ts)window.__tourStart=(...a)=>{if(cur&&cur.id==='onb'){window.__enTourLater=()=>ts(...a);intro();return}show(document.getElementById('home'));setTimeout(()=>ts(...a),350)};
  const nm=document.getElementById('o2in');if(nm)nm.addEventListener('input',()=>window.__vaultName(nm.value));
  const start=first?'onb':'home';
  show(document.getElementById(start)||document.getElementById('home'));
@@ -315,12 +329,12 @@ function lockUI(meta,onOk,onSec,onFid){
  el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
  <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);
- let code='',busy=false,fails=0,until=0;const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
+ let code='',busy=false,fails=0,until=0;dbGet('lockf').then(L=>{if(L&&L.until>Date.now())until=L.until}).catch(()=>{});const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
  const paint=()=>dots.forEach((x,i)=>x.classList.toggle('on',i<code.length));
  el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(Date.now()<until){sb.textContent='Patiente un petit moment…';return}
   if(b.classList.contains('fid')){busy=true;sb.textContent='…';const ok=await onFid();if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{sb.textContent='Face ID n’a pas marché : tape ton code';busy=false}return}
   if(b.classList.contains('del')){code=code.slice(0,-1);paint();return}if(code.length>=4)return;code+=b.textContent;paint();
-  if(code.length===4){busy=true;sb.textContent='…';const ok=await onOk(code);if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{fails++;if(fails>=5){until=Date.now()+30000;fails=0}
+  if(code.length===4){busy=true;sb.textContent='…';const ok=await onOk(code);if(ok){dbDel('lockf');el.classList.add('out');setTimeout(()=>el.remove(),450)}else{fails++;/* essais ratés gardés même si on ferme l'app : attente de plus en plus longue */const L=(await dbGet('lockf').catch(()=>null))||{n:0};L.n++;if(L.n%5===0){L.until=Date.now()+[30e3,300e3,1800e3,3600e3][Math.min(3,L.n/5-1)];until=L.until}dbPut('lockf',L).catch(()=>{});
    const dd=el.querySelector('#en-ld');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');code='';paint();sb.textContent='Pas tout à fait… on recommence doucement';busy=false},700)}}});
  const sh=el.querySelector('#en-sh');el.querySelector('#en-fg').onclick=()=>{sh.hidden=false};el.querySelector('#en-shx').onclick=()=>{sh.hidden=true};
  el.querySelector('#en-wipe').onclick=async e=>{const b=e.currentTarget;if(!b.dataset.c){b.dataset.c=1;b.textContent='TOUCHE ENCORE POUR TOUT EFFACER';return}await dbDel(KEY);location.reload()};
@@ -382,6 +396,34 @@ window.__enNextPsy=nextPsy;window.__enHH=hh;})();
   if(n&&n.i===1)return'Ta séance est demain. Tu as le droit d’y arriver sans tout savoir dire.';
   if(n)return'Prochaine séance dans '+n.i+' jours. Tu peux noter ici ce que tu veux lui dire.';
   return pick(['Tu peux noter ici ce que tu veux lui dire, avant que ça s’envole.','Ajoute ta prochaine séance au calendrier, je te la rappellerai.'])};
+})();
+/* sécurité : un nom, un titre, un lieu (champs d'une ligne) ne peuvent pas contenir de balises */
+document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT'||!/^(text|search|)$/.test(t.type==='text'||!t.getAttribute('type')?'':t.type))return;if(/[<>]/.test(t.value)){const p=t.selectionStart;t.value=t.value.replace(/[<>]/g,'');try{t.setSelectionRange(p-1,p-1)}catch(x){}}},true);
+/* données réelles pour Psy, réglages et Plume */
+(function(){const MOL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+ const esc=t=>String(t||'').replace(/[<>&"]/g,'');const p2=n=>String(n).padStart(2,'0');const iso=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+ function lastPsy(){const E=window.__calE||[];const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  for(let i=0;i<180;i++){const dt=new Date(t0);dt.setDate(t0.getDate()-i);for(const e of E){if(e.t!=='psy')continue;const s=new Date(e.y,e.m,e.d);let on=false;
+   if(e.rep){if(dt>=s){const k=Math.round((dt-s)/864e5);on=e.rep===1?k%7===0:e.rep===2?k%14===0:e.rep===3?dt.getDate()===e.d:false}}else on=+s===+dt;
+   if(on){const at=new Date(dt);at.setHours(e.h||0,e.mi||0);if(at>now)continue;return dt}}}return null}
+ window.__enPsyData=()=>{const now=new Date();const last=lastPsy();const from=last||new Date(now.getFullYear(),now.getMonth(),now.getDate()-7);
+  const days=((window.__MJ&&window.__MJ.days)||[]).filter(x=>x.d>=iso(from)&&x.d<=iso(now)).sort((a,b)=>a.d<b.d?-1:1);
+  const TH=window.__MJTH||[];const cnt={};days.forEach(x=>(x.th||[]).forEach(t=>cnt[t]=(cnt[t]||0)+1));
+  const revL=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>((TH.find(t=>t.id===k)||{}).n||k).toLowerCase());
+  const hum=days.map(x=>(x.em||[])[0]).filter(Boolean).slice(-7);
+  const low=days.filter(x=>x.v!=null&&x.v<40).sort((a,b)=>a.v-b.v)[0];const mar=low?(()=>{const d=new Date(low.d+'T12:00');return 'la journée du '+JL[d.getDay()]+' '+d.getDate()+' '+MOL[d.getMonth()]})():'';
+  const pp=(window.__PP&&window.__PP.items)||[];const done=pp.filter(p=>p.done).length;
+  const avg=days.length?days.reduce((a,x)=>a+(x.v??50),0)/days.length:50;
+  let txt=!days.length?'Tu n’as pas encore écrit depuis '+(last?'ta dernière séance':'une semaine')+'. Même trois mots, ça compte.':(days.length+' page'+(days.length>1?'s':'')+' depuis '+(last?'ta dernière séance':'une semaine')+'.');
+  if(revL.length)txt+=' '+revL.join(' et ').replace(/^./,c=>c.toUpperCase())+(revL.length>1?' reviennent':' revient')+' souvent.';
+  if(days.length)txt+=avg<40?' Des jours plus lourds que d’autres.':avg>62?' Plutôt de beaux jours.':'';
+  if(done)txt+=' Tu as pris soin de toi, '+(done===1?'une fois':done+' fois')+'.';
+  const range=(last?'du '+last.getDate()+' '+MOL[last.getMonth()]:'depuis 7 jours')+' au '+now.getDate()+' '+MOL[now.getMonth()];
+  return {range,txt,hum,rev:revL.join(', '),revL,mar,pas:done+' sur '+pp.length}};
+ window.__enNextPsyTxt=()=>{const n=window.__enNextPsy&&window.__enNextPsy();return n?JL[n.dt.getDay()]+' '+n.dt.getDate()+' '+MOL[n.dt.getMonth()]:'bientôt'};
+ window.__enAnnivs=()=>((window.__calE)||[]).filter(e=>e.t==='anniv'&&e.n).map(e=>[esc(e.n),e.d+' '+MOL[e.m],e.veille===0?0:1,e]);
+ window.__enIdeeProche=()=>{const P=(window.__enPfP&&window.__enPfP())||[];const n=(P.find(x=>x&&x.n)||{}).n;return n?'Envoyer un petit message à '+esc(n):'Envoyer un message à quelqu’un que j’aime'};
+ window.__enVie=()=>{const RG=window.__enGet&&window.__enGet('rg');if(!RG||!RG.naissOk||!RG.naiss)return '';const b=new Date(1950+RG.naiss[2],RG.naiss[1],RG.naiss[0]+1),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a>0&&a<120?'J’ai '+a+' ans.':''};
 })();
 
 </script>
@@ -4536,7 +4578,7 @@ o2in.oninput=()=>show();document.querySelectorAll('#onb .o2psy button').forEach(
 let c1='',cur='',st=0,o3done=false;const o3d=[...document.querySelectorAll('#o3d i')],o3t=document.getElementById('o3t'),o3s=document.getElementById('o3s');
 function o3dots(){o3d.forEach((d,i)=>d.classList.toggle('on',i<cur.length))}
 document.getElementById('o3p').onclick=e=>{const b=e.target.closest('b');if(!b)return;if(b.classList.contains('o3del')){cur=cur.slice(0,-1);o3dots();return}if(b.classList.contains('e')||cur.length>=4)return;cur+=b.textContent;o3dots();
- if(cur.length===4)setTimeout(()=>{if(st===0){c1=cur;cur='';st=1;o3t.textContent='Encore une fois';o3s.textContent='pour être sûre';o3dots()}else if(cur===c1){document.getElementById('o3a').hidden=true;document.getElementById('o3b').hidden=false;o3done=true;window.__vaultSetCode&&window.__vaultSetCode(c1);o3t.textContent='Ton code est choisi ✦';o3s.textContent='tu le taperas à chaque ouverture';show()}else{const dd=document.getElementById('o3d');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');cur='';c1='';st=0;o3t.textContent='Pas tout à fait…';o3s.textContent='on recommence doucement';o3dots()},900)}},250)};
+ if(cur.length===4)setTimeout(()=>{if(st===0){c1=cur;cur='';st=1;o3t.textContent='Encore une fois';o3s.textContent='pour être sûre';o3dots()}else if(cur===c1){document.getElementById('o3a').hidden=true;document.getElementById('o3b').hidden=false;o3done=true;window.__vaultSetCode&&window.__vaultSetCode(c1);show()}else{const dd=document.getElementById('o3d');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');cur='';c1='';st=0;o3t.textContent='Pas tout à fait…';o3s.textContent='on recommence doucement';o3dots()},900)}},250)};
 document.getElementById('o3a').hidden=false;
 document.getElementById('o3on').onclick=e=>{e.target.textContent='✓ Face ID activé';e.target.classList.add('done');k=3;setTimeout(show,700)};document.getElementById('o3later').onclick=()=>{k=3;show()};let sx=null;o.addEventListener('pointerdown',e=>{const r=o.getBoundingClientRect();sx=(e.clientX-r.left<28)?e.clientX:null});
 o.addEventListener('pointerup',e=>{if(sx!==null&&e.clientX-sx>50&&k>0){k--;show()}sx=null});show();})();
@@ -5746,9 +5788,9 @@ const VOICES=[['Amélie','douce, posée'],['Thomas','chaleureuse'],['Audrey','cl
 let sysV=[];const loadV=()=>{try{sysV=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang))}catch(e){}};if('speechSynthesis' in window){loadV();speechSynthesis.onvoiceschanged=loadV}
 function speak(txt,vi){if(!('speechSynthesis' in window))return false;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt);u.lang='fr-FR';const v=sysV[(vi??S.voix??0)%Math.max(sysV.length,1)];if(v)u.voice=v;u.rate=[.85,1,1.15][S.vit??1];u.pitch=[.8,1,1.2][S.hau??1];
  const w=document.querySelectorAll('.rgwave i');u.onstart=()=>{w.__t=setInterval(()=>w.forEach(i=>i.style.height=(4+Math.random()*10)+'px'),120)};u.onend=()=>{clearInterval(w.__t);w.forEach((i,j)=>i.style.height=[6,10,14,8,12,5,9,13,7][j%9]+'px')};speechSynthesis.speak(u);return true}catch(e){return false}}
-const PROCHES=[['Thomas','2 février',1],['Maman','18 juin',1],['Léa','30 novembre',0]];
-const CORB=[[("Page du "+__DF('2026-10-14','{d} {mo}','l','2026-10-28')),'encore 22 jours'],['Brouillon sans titre','encore 5 jours']];
-const CONVS=[['ChatGPT · Moi aujourd’hui',(__DF('2026-10-12','{d} {mo}','l','2026-10-28'))],['Claude · Mon passé',(__DF('2026-10-20','{d} {mo}','l','2026-10-28'))]];
+const PROCHES=[];const _proR=()=>{PROCHES.splice(0,PROCHES.length,...(window.__enAnnivs?window.__enAnnivs():[]));return PROCHES};
+const CORB=[];
+const CONVS=[];
 const QEX=['« Qu’est-ce qui t’a fait sourire aujourd’hui ? »','« Qu’est-ce qui a compté pour toi aujourd’hui ? »','« Qu’est-ce que tu n’oses pas encore te dire ? »'];
 
 const P={
@@ -5806,7 +5848,7 @@ confidentialite:{t:'confidentialité',ic:'confidentialite',r:()=>[
  {t:'sub',l:'ouvrir l’app'},
  {t:'x',k:'codex',l:'Code d’accès',kw:'verrouillage',v:()=>S.code===false?'désactivé':'activé',fill:(x,ph,paint)=>{render([{t:'toggle',k:'code',l:'Utiliser un code',v:true,on:()=>{paint();stateConf()}},{t:'x',k:'chg',l:'Changer le code',fill:(y,ph2)=>codeBox(y,ph2,'Le clavier du téléphone s’ouvre : tape ton nouveau code.')}],x,ph)}},
  {t:'toggle',k:'fid',l:'Face ID',v:false,on:()=>stateConf()},
- {t:'choice',k:'verr',l:'Verrouiller après',d:1,o:['immédiatement','1 minute','5 minutes','15 minutes']},
+ {t:'choice',k:'verr',l:'Verrouiller après',d:4,o:['immédiatement','1 minute','5 minutes','15 minutes','seulement si je ferme l’app']},
  {t:'sub',l:'mes écrits'},
  {t:'x',k:'secx',l:'Pages secrètes',v:()=>S.sec===false?'désactivées':'activées',fill:(x,ph,paint)=>{render([{t:'toggle',k:'sec',l:'Utiliser des pages secrètes',v:true,on:()=>paint()},{t:'x',k:'csec',l:'Code secret',v:'changer',fill:(y,ph2)=>codeBox(y,ph2,'Tape ton code secret, différent du code d’accès.')},{t:'h',l:'Pour rendre une page secrète : appui long sur la page dans ton journal → « garder secrète ».'}],x,ph)}},
  {t:'toggle',k:'discret',l:'Notifications discrètes',v:true},
@@ -5826,8 +5868,8 @@ notifications:{t:'notifications',ic:'notifications',r:()=>[
  {t:'toggle',k:'serie',l:'Série en cours',v:true},
  {t:'sub',l:'souvenirs'},
  {t:'toggle',k:'an',l:'Il y a un an',v:true},
- {t:'x',k:'annx',l:'Anniversaires',fill:(x,ph)=>{render([{t:'toggle',k:'mien',l:'Le mien',v:true},{t:'link',l:'Mes proches',v:String(PROCHES.length),go:p=>{const o=overlay(p,'<p class="t">ANNIVERSAIRES DE MES PROCHES</p>'+PROCHES.map((q,i)=>'<div class="rgl" data-i="'+i+'"><span class="rgll"><span class="rgarch"></span><span>'+q[0]+'<small>'+q[1]+'</small></span></span><span class="rgsw'+(q[2]?' on':'')+'"></span></div>').join(''),true);
-    o.querySelectorAll('.rgl').forEach(l=>l.onclick=()=>{const q=PROCHES[l.dataset.i];q[2]=!q[2];l.querySelector('.rgsw').classList.toggle('on',q[2])})}}],x,ph);
+ {t:'x',k:'annx',l:'Anniversaires',fill:(x,ph)=>{render([{t:'toggle',k:'mien',l:'Le mien',v:true},{t:'link',l:'Mes proches',v:String(_proR().length),go:p=>{const o=overlay(p,'<p class="t">ANNIVERSAIRES DE MES PROCHES</p>'+(_proR().length?'':'<p class="rgh">Ajoute les anniversaires de tes proches dans ton calendrier : ils apparaîtront ici.</p>')+_proR().map((q,i)=>'<div class="rgl" data-i="'+i+'"><span class="rgll"><span class="rgarch"></span><span>'+q[0]+'<small>'+q[1]+'</small></span></span><span class="rgsw'+(q[2]?' on':'')+'"></span></div>').join(''),true);
+    o.querySelectorAll('.rgl').forEach(l=>l.onclick=()=>{const q=PROCHES[l.dataset.i];q[2]=!q[2];if(q[3])q[3].veille=q[2]?1:0;l.querySelector('.rgsw').classList.toggle('on',q[2])})}}],x,ph);
    const l=document.createElement('div');l.className='rgl';l.style.position='relative';if(S.prev===undefined)S.prev=1;const O=['le jour même','la veille','une semaine avant'];
    const pt=()=>{l.innerHTML='<span class="rgll">Me prévenir</span><span class="rglr">'+O[S.prev]+' <i class="rgch">⌄</i></span>'};pt();x.appendChild(l);
    l.onclick=e=>{const dd=l.querySelector('.rgdd');if(dd){if(!e.target.closest('.rgdd'))dd.remove();return}l.insertAdjacentHTML('beforeend','<div class="rgdd">'+O.map((o,i)=>'<button type="button" data-i="'+i+'">'+o+'<span class="rgck">'+(i===S.prev?'✓':'')+'</span></button>').join('')+'</div>');
@@ -6002,7 +6044,7 @@ const col=e=>e.t==='anniv'?RC.joyeux:e.t==='moi'?RC.fierte:RC[e.res]||'#A9989C';
 const ico=e=>e.t==='anniv'?'illus/ajout2/anniv.webp':e.t==='moi'?'illus/ajout2/moi.webp':'illus/ressenti-'+(e.res||'neutre')+'.webp';
 const hh=e=>e.h==null?'':e.h+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
 const isT=dt=>same(dt,TODAY),past=dt=>dt<TODAY&&!isT(dt);
-const R=e=>'<div class="kr" data-id="'+e.id+'"><img alt="" src="'+ico(e)+'">'+e.n+'<em>'+hh(e)+'</em></div>';
+const R=e=>'<div class="kr" data-id="'+e.id+'"><img alt="" src="'+ico(e)+'">'+String(e.n||'').replace(/[<>&"]/g,'')+'<em>'+hh(e)+'</em></div>';
 const PGL=p=>'<div class="kr" data-page="1"><span class="kdt" style="box-shadow:inset 0 0 0 1.4px '+p[0]+'"></span><i>ma page du jour</i><em>›</em></div>';
 function toast(t){const el=document.createElement('span');el.className='ktoast';el.textContent=t;el.style.top=(ph.scrollTop+ph.clientHeight-60)+'px';ph.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function detail(dt){const r=evOn(dt),p=PG[key(dt)];let h='<p class="kcap">'+JN[dow(dt)]+' '+dt.getDate()+' '+MN[dt.getMonth()]+(isT(dt)?' · aujourd’hui':'')+'</p>'+r.map(R).join('');if(p)h+=PGL(p);if(!r.length&&!p)h+='<p class="kit" style="margin:6px 0">Rien ce jour-là.</p>';return h}
@@ -6460,7 +6502,7 @@ function reset(mode){S={mode,stack:[],tab:mode==='soir'?'apres':'avant',notes:mo
  sumAdd:{},paslink:0,prep:{step:1,ni:0,stars:new Set(),tab:'gen',start:'',gen:'',by:{},ia:'claude',quest:[],feel:{}},
  ms:{cur:null,open:{},ck:{},notes:{},dim:0,bye:0,qck:{}},msNotes:mode==='soir'?{n1:[['18:12','« Tu n\'as pas à tout porter seule. »']],me:[['18:31','appeler mon frère']]}:null,msCk:mode==='soir'?{n1:1}:{},
  pas:mode==='vide'||mode==='first'?[]:PAS0(),pasYay:null,veille:{},
- ap:{parts:{},vrac:'',from:{},saved:0,ressens:{sel:new Set(),star:null,mots:''},retiens:{a:'',b:'',c:'',k:0,keep:1},parler:{ck:{},txt:{},plus:'',extra:[]},paspro:[{t:'Envoyer un message à mon frère',add:0},{t:'Dire non une fois cette semaine',add:0}],pasAdded:[],vracOpen:0},
+ ap:{parts:{},vrac:'',from:{},saved:0,ressens:{sel:new Set(),star:null,mots:''},retiens:{a:'',b:'',c:'',k:0,keep:1},parler:{ck:{},txt:{},plus:'',extra:[]},paspro:[],pasAdded:[],vracOpen:0},
  sv:{tab:'suivi',mo:'',an:'',ry:'',why:'',dj:'',dm:'',ab:'',abPills:null,sv:'',out:'',aid:[],aidNew:null,sus:'',susL:null,ia:{},hint:{}},
  first:{p:{},done:{}},seSel:null,seTab:'apres',evSel:null,ph:0,filt:'toutes',q:'',iaPick:'claude'};
  if(mode==='first')S.stack=[{v:'intro'}];
@@ -6542,7 +6584,7 @@ function vCopy(o){const sv=S.sv;return`<div class="ps-k" style="margin-top:18px"
 const ck2=(k,t,def)=>{if(S.cp==null)S.cp={};if(S.cp[k]==null)S.cp[k]=def?1:0;return`<button class="ps-li" data-a="cp" data-k="${k}"><span class="ck${S.cp[k]?' on':''}"></span><span class="tx" style="text-align:left">${t}</span></button>`};
 function vBack(o){const k=o.k;const lab={prep:'PLUME LIT',suivi:'REMPLIR MON SUIVI',apres:'REMPLIR MES CARTES'}[k];
  return`<div class="ps-k" style="margin-top:18px">J'EN REVIENS</div><p class="ps-t">Colle ici le récapitulatif</p><div class="ps-paste"><textarea data-f="paste" placeholder="✦ MES SUJETS…">${esc(S.paste||'')}</textarea></div>
- <button class="ps-lk" data-a="demo"><u>coller un exemple</u></button>
+ 
  <p class="ps-s" style="margin-top:12px">Tu peux aussi coller toute la conversation, pour la relire plus tard.</p><button class="ps-lk" style="margin-top:4px" data-a="conv"><u>${S.conv?'conversation gardée ✓':'coller la conversation (facultatif)'}</u></button>
  <button class="ps-btn" data-a="iaread" data-k="${k}">${lab}</button>`}
 function vRead(){const r=S.rd;let h=`<div class="ps-k" style="margin-top:16px">CE QUE PLUME A LU</div>`;
@@ -6800,7 +6842,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'ia':S.stack.push({v:'ia',k:d.k});render(1);break;
  case'demo':S.paste=DEMO[(cur().k)||'prep'];render();break;
  case'conv':S.conv=1;render();break;
- case'iaread':{const k=d.k;if(!S.paste)S.paste=DEMO[k];
+ case'iaread':{const k=d.k;if(!S.paste||!enIA(k)){if(!S.paste)(window.__enToast||alert)('Colle d’abord ce que l’IA t’a rendu.');break}
   if(k==='prep'){S.rd={step:'suj',i:0,edit:0,suj:[{t:'Thomas et son départ',on:1},{t:'Mon sommeil',on:1},{t:'Ma place au travail',on:0,w:1}],dire:[{k:'start',t:'Cette semaine a été plus lourde que je pensais, et j\'ai envie qu\'on en parle.'},{k:'Thomas',t:'Quand il est parti sans rien dire, j\'ai eu l\'impression de ne pas compter.',feel:['blessée','incomprise']},{k:'Mon sommeil',t:'Je me réveille à 4 h presque chaque nuit et je rumine.',feel:['fatiguée']}]};S.prep.quest=['Est-ce normal de régresser parfois ?','Comment arrêter de ruminer la nuit ?'];S.stack.pop();go('read')}
   if(k==='suivi'){Object.assign(S.sv,{mo:'mars',an:'2025',ry:'toutes les deux semaines',why:'Après ma rupture, je ne dormais plus et j\'avais l\'impression de me perdre.',ab:'Ma mère, mon travail, et la confiance en moi.',sv:'Elle m\'a dit que j\'avais le droit d\'être fatiguée.',sus:'Je n\'ai pas fini de parler de mon frère, et du déménagement.',dj:'20',dm:'octobre'});S.sv.ia={mo:1,ry:1,why:1,ab:1,sv:1,sus:1,dj:1};S.sv.abPills=[{t:'ma mère',on:1},{t:'le travail',on:1},{t:'la confiance',on:1}];S.stack=S.stack.filter(x=>x.v!=='ia'&&x.v!=='iaback'&&x.v!=='copy');go('suivi');toast('Plume a rangé ton résumé · relis et modifie')}
   if(k==='apres'){fillVrac();S.stack=S.stack.filter(x=>!['ia','iaback','copy','vrac','part'].includes(x.v));if(cur().v!=='parts')go('parts');else render(1);toast('Tes quatre cartes sont remplies')}
@@ -6823,7 +6865,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'papro':{const p=ap.paspro[d.i];p.add=1;ap.pasAdded.push({t:p.t,rep:'une fois',r:''});render();break}
  case'parep':ap.pasAdded[d.i].rep=d.k;render();break;
  case'relance':toast(d.t.replace('si tu bloques : ',''));break;
- case'range':fillVrac();S.stack=S.stack.filter(x=>x.v!=='vrac');go('parts');toast('Plume a rangé ton vrac dans tes quatre cartes');break;
+ case'range':if(!enVrac())break;S.stack=S.stack.filter(x=>x.v!=='vrac');go('parts');toast('Plume a rangé ton vrac dans tes quatre cartes');break;
  case'apsave':ap.saved=1;try{window.__enPsySeance&&window.__enPsySeance(SEANCES,ap)}catch(_){};S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
  /* petits pas */
  case'pasck':{const p=S.pas.find(x=>x.id===d.i);if(S.pasYay===p.id){S.pasYay=null}else S.pasYay=p.id;render();break}
@@ -6890,20 +6932,48 @@ function psyShare(k){const iaN=S.iaPick==='claude'?'Claude':'ChatGPT';const P=[]
   build:sel=>{S.sel=sel;const m=MSG(k);S.sel=null;return m},
   back:{label:'J’en reviens : coller ce que l’IA m’a rendu',fn:()=>{S.stack.pop();go('iaback',{k})}}})}
 /* ---------- messages ---------- */
-const PRENOM='Elisa';
-function MSG(k){const on=id=>!S.sel||S.sel.has(id);const iaN=S.iaPick==='claude'?'Claude':'ChatGPT';const nm=on('prenom')?` Je m'appelle ${PRENOM}.`:'';const vie=on('vie')?'J\'ai 28 ans, je vis à Toulouse avec Thomas, je travaille dans la communication.':'';
- const suivi=['depuis mars 2025, toutes les deux semaines','déjà abordé : ma mère, le travail, la confiance','en suspens : mon frère, le déménagement'].filter((x,i)=>on('cs'+i)).join(' ; ');
+let PRENOM='';
+function MSG(k){PRENOM=window.__P0();const on=id=>!S.sel||S.sel.has(id);const iaN=S.iaPick==='claude'?'Claude':'ChatGPT';const nm=on('prenom')?` Je m'appelle ${PRENOM}.`:'';const vie=on('vie')?(window.__enVie?window.__enVie():''):'';
+ const suivi=[(S.sv.mo||S.sv.an)?('depuis '+[S.sv.mo,S.sv.an].filter(Boolean).join(' ')+(S.sv.ry?', '+S.sv.ry:'')):'',S.sv.ab?'déjà abordé : '+S.sv.ab:'',S.sv.sus?'en suspens : '+S.sv.sus:''].filter((x,i)=>x&&on('cs'+i)).join(' ; ');
  const ctx=[vie?`Pour que tu me connaisses un peu : ${vie}`:'',suivi?`Et mon suivi : ${suivi}`:''].filter(Boolean).join('\n');
  const notes=S.notes.map(n=>'– '+n.t).join('\n')||'–';
  const ROLE='Agis comme une psychologue bienveillante et une amie proche, chaleureuse et à l\'écoute. Ton objectif est de m\'aider dans ce que je te demande ci-dessous, sans jamais remplacer ma psy.\n\n';
  const regles='\n\nApplique STRICTEMENT ce format à chacun de tes messages, sans exception :\n1. À partir de ta deuxième question, commence par valider ma réponse précédente en une ou deux phrases, avec l\'empathie d\'une amie et la finesse d\'une psy. Pas de résumé, pas de répétition de mes mots.\n2. Pose-moi UNE SEULE question, simple, directe et précise. Jamais deux questions dans le même message.\n3. Présente cette question sous la forme d\'un QCM : 3 à 5 choix, un par ligne, chacun précédé d\'une lettre (A, B, C…), pour que je puisse répondre en tapant juste la lettre. Si ton interface permet des boutons de choix cliquables, utilise-les.\n4. Termine toujours tes choix par « ✎ Je préfère écrire ». Si je le choisis, ou si je réponds sans utiliser les choix, invite-moi à écrire librement et laisse-moi la place de le faire.\n5. Arrête ton message juste après les choix et attends que je réponde avant de passer à la question suivante.\n\nExemple de message (après ma première réponse) :\n« Ça demande du courage, de mettre des mots là-dessus.\nCe qui te pèse le plus en ce moment, c\'est plutôt…\nA) le travail\nB) une relation proche\nC) la fatigue\nD) ✎ Je préfère écrire »\n\nCe qui compte aussi :\n– commence directement par ta première question, déjà au format QCM ;\n– quand ma réponse est vague, demande-moi un exemple concret : un moment, une phrase, ce que j\'ai ressenti ;\n– creuse ce qui compte vraiment, et passe vite sur ce qui ne m\'apporte rien ;\n– si je bloque sur ce que je ressens, propose-moi des mots dans tes choix ;\n– ne rajoute rien que je n\'ai pas dit, et garde mes mots à moi ;\n– douceur, pas de jugement ;\n– pas d\'interprétation ni de diagnostic : tu ne remplaces pas ma psy ;\n– si je parle de me faire du mal ou de ne plus vouloir vivre, sors du QCM, réponds avec calme et donne le 3114 ;';
- if(k==='prep')return ROLE+`Coucou !${nm} Je vais te demander un coup de main un peu particulier : préparer ma prochaine séance chez ma psy, ${__DF('2026-10-29','{wd} {d} {mo}','l','2026-10-28')}. J'ai des choses en tête mais j'ai du mal à les mettre en ordre. J'aimerais que ce soit vraiment complet, pas juste quelques mots en surface.`+(on('notes')?`\n\nPour que tu partes de là où j'en suis, voici mes notes :\n${notes}`:'')+(on('dep')?`\n\nDepuis la dernière séance : une semaine en dents de scie, Thomas revient souvent dans mes pages, mes nuits sont courtes.`:'')+(ctx?`\n\n${ctx}`:'')+`\n\nJe préfère qu'on avance doucement, en partant de mes notes. Quelques règles pour toi :${regles}\n– trier l'important et le secondaire ;\n– avant de conclure, vérifie qu'on a bien parlé de tout ;\n– me dire quand c'est assez.\n\nQuand on aura fini, écris-moi un récapitulatif avec ces cinq parties, dans cet ordre et avec ces titres. Sois précise et concrète, avec des phrases complètes plutôt que des mots-clés. Laisse vide ce qu'on n'a pas trouvé.\n\n✦ MES SUJETS (du plus au moins important)\n– sujet · ce que je ressens · ce que j'aimerais dire\n✦ MA PHRASE POUR COMMENCER\n✦ MES QUESTIONS À MA PSY\n✦ CE QUE J'ATTENDS DE LA SÉANCE\n✦ CE QUI PEUT ATTENDRE`;
+ if(k==='prep')return ROLE+`Coucou !${nm} Je vais te demander un coup de main un peu particulier : préparer ma prochaine séance chez ma psy, ${window.__enNextPsyTxt?window.__enNextPsyTxt():'bientôt'}. J'ai des choses en tête mais j'ai du mal à les mettre en ordre. J'aimerais que ce soit vraiment complet, pas juste quelques mots en surface.`+(on('notes')?`\n\nPour que tu partes de là où j'en suis, voici mes notes :\n${notes}`:'')+(on('dep')&&window.__enPsyData?`\n\nDepuis la dernière séance : ${window.__enPsyData().txt}`:'')+(ctx?`\n\n${ctx}`:'')+`\n\nJe préfère qu'on avance doucement, en partant de mes notes. Quelques règles pour toi :${regles}\n– trier l'important et le secondaire ;\n– avant de conclure, vérifie qu'on a bien parlé de tout ;\n– me dire quand c'est assez.\n\nQuand on aura fini, écris-moi un récapitulatif avec ces cinq parties, dans cet ordre et avec ces titres. Sois précise et concrète, avec des phrases complètes plutôt que des mots-clés. Laisse vide ce qu'on n'a pas trouvé.\n\n✦ MES SUJETS (du plus au moins important)\n– sujet · ce que je ressens · ce que j'aimerais dire\n✦ MA PHRASE POUR COMMENCER\n✦ MES QUESTIONS À MA PSY\n✦ CE QUE J'ATTENDS DE LA SÉANCE\n✦ CE QUI PEUT ATTENDRE`;
  if(k==='suivi')return ROLE+`Coucou !${nm} Je vois une psy depuis un moment et je voudrais raconter mon suivi à mon journal, mais j'ai du mal à me souvenir de tout et à le mettre en ordre. Tu peux m'aider ? J'aimerais que ce soit vraiment complet, pas juste quelques mots en surface.`+(vie?`\n\nPour que tu me connaisses un peu : ${vie}`:'')+`\n\nJe préfère qu'on avance doucement. Quelques règles pour toi :${regles}\n– si je ne me souviens plus, ce n'est pas grave, on passe ;\n– avant de conclure, vérifie qu'on a bien parlé des huit parties ;\n– me dire quand c'est assez.\n\nQuand on aura fini, écris-moi un récapitulatif avec ces huit parties, dans cet ordre et avec ces titres. Sois précise et concrète, avec des phrases complètes plutôt que des mots-clés. Laisse vide ce qu'on n'a pas trouvé.\n\n✦ DEPUIS QUAND JE LA VOIS (mois et année)\n✦ À QUEL RYTHME\n✦ POURQUOI J'AI COMMENCÉ\n✦ MA DERNIÈRE SÉANCE (jour et mois)\n✦ CE QU'ON A DÉJÀ ABORDÉ (un sujet par ligne, avec une phrase pour chacun)\n✦ CE DONT JE ME SOUVIENS DE LA DERNIÈRE FOIS\n✦ CE QUI M'A AIDÉE (une ligne par élément : phrase, exercice, déclic ou autre)\n✦ CE QUI RESTE EN SUSPENS (un sujet par ligne)`;
  const nts=allNotes().map(n=>'– '+n[0].toLowerCase()+' : '+n[2]).join('\n')||'–';
- return ROLE+`Coucou !${nm} J'ai eu ma séance chez ma psy ${__DF('2026-10-29','{wd} {d} {mo}','l','2026-10-28')}. J'aimerais en parler avec toi, à mon rythme : peut-être ce soir, peut-être dans quelques jours. J'aimerais que ce soit vraiment complet, pas juste quelques mots en surface.`+(on('notes')?`\n\nCe que j'avais prévu :\n${notes}`:'')+(on('msn')?`\n\nMes notes pendant la séance :\n${nts}`:'')+(on('vrac')?`\n\nCe que j'ai écrit depuis :\n${S.ap.vrac||'—'}`:'')+(ctx?`\n\n${ctx}`:'')+`\n\nJ'aimerais que tu m'aides à :\n– comprendre une phrase qu'elle m'a dite, sans lui faire dire ce qu'elle n'a pas dit ;\n– mettre en mots ce que je ressens, même si c'est un mélange ;\n– trouver un ou deux petits pas réalistes, si j'en ai envie ;\n– choisir avec moi ce que je veux reprendre la prochaine fois, et le classer du plus au moins important.\n\nJe préfère qu'on avance doucement. Quelques règles pour toi :${regles}\n– si quelque chose m'a bouleversée, prends le temps avant d'aller plus loin ;\n– si je reviens plus tard, reprends là où on s'était arrêtées ;\n– avant de conclure, vérifie qu'on a parlé de toutes les parties ;\n– me dire quand c'est assez.\n\nQuand on aura fini, écris-moi un récapitulatif avec ces cinq parties, dans cet ordre et avec ces titres. Sois précise et concrète, avec des phrases complètes plutôt que des mots-clés. Laisse vide ce qu'on n'a pas trouvé.\n\n✦ DE QUOI ON A PARLÉ (un sujet par ligne, avec ce qu'on en a dit)\n✦ CE QUE J'EN RETIENS\n– une phrase qu'elle m'a dite\n– ce que j'ai compris sur moi\n– ce que je veux garder en tête\n– ma phrase de la séance\n✦ CE QUE JE RESSENS (mes émotions, la plus forte en premier)\n✦ MES PETITS PAS (un par ligne)\n✦ POUR LA PROCHAINE FOIS (un sujet par ligne, du plus au moins important)`}
+ return ROLE+`Coucou !${nm} J'ai eu ma séance chez ma psy aujourd'hui. J'aimerais en parler avec toi, à mon rythme : peut-être ce soir, peut-être dans quelques jours. J'aimerais que ce soit vraiment complet, pas juste quelques mots en surface.`+(on('notes')?`\n\nCe que j'avais prévu :\n${notes}`:'')+(on('msn')?`\n\nMes notes pendant la séance :\n${nts}`:'')+(on('vrac')?`\n\nCe que j'ai écrit depuis :\n${S.ap.vrac||'—'}`:'')+(ctx?`\n\n${ctx}`:'')+`\n\nJ'aimerais que tu m'aides à :\n– comprendre une phrase qu'elle m'a dite, sans lui faire dire ce qu'elle n'a pas dit ;\n– mettre en mots ce que je ressens, même si c'est un mélange ;\n– trouver un ou deux petits pas réalistes, si j'en ai envie ;\n– choisir avec moi ce que je veux reprendre la prochaine fois, et le classer du plus au moins important.\n\nJe préfère qu'on avance doucement. Quelques règles pour toi :${regles}\n– si quelque chose m'a bouleversée, prends le temps avant d'aller plus loin ;\n– si je reviens plus tard, reprends là où on s'était arrêtées ;\n– avant de conclure, vérifie qu'on a parlé de toutes les parties ;\n– me dire quand c'est assez.\n\nQuand on aura fini, écris-moi un récapitulatif avec ces cinq parties, dans cet ordre et avec ces titres. Sois précise et concrète, avec des phrases complètes plutôt que des mots-clés. Laisse vide ce qu'on n'a pas trouvé.\n\n✦ DE QUOI ON A PARLÉ (un sujet par ligne, avec ce qu'on en a dit)\n✦ CE QUE J'EN RETIENS\n– une phrase qu'elle m'a dite\n– ce que j'ai compris sur moi\n– ce que je veux garder en tête\n– ma phrase de la séance\n✦ CE QUE JE RESSENS (mes émotions, la plus forte en premier)\n✦ MES PETITS PAS (un par ligne)\n✦ POUR LA PROCHAINE FOIS (un sujet par ligne, du plus au moins important)`}
 const DEMO={prep:'✦ MES SUJETS\n– Thomas et son départ · blessée, incomprise · Quand il est parti sans rien dire, j\'ai eu l\'impression de ne pas compter.\n– Mon sommeil · fatiguée · Je me réveille à 4 h presque chaque nuit et je rumine.\n✦ MA PHRASE POUR COMMENCER\nCette semaine a été plus lourde que je pensais, et j\'ai envie qu\'on en parle.\n✦ MES QUESTIONS À MA PSY\n– Est-ce normal de régresser parfois ?\n✦ CE QUE J\'ATTENDS DE LA SÉANCE\nComprendre pourquoi je me tais.\n✦ CE QUI PEUT ATTENDRE\n– Ma place au travail',
  suivi:("✦ DEPUIS QUAND JE LA VOIS\nmars 2025\n✦ À QUEL RYTHME\ntoutes les deux semaines\n✦ POURQUOI J'AI COMMENCÉ\nAprès ma rupture, je ne dormais plus…\n✦ MA DERNIÈRE SÉANCE\n"+__DF('2026-10-20','{d} {mo}','l','2026-10-28')+"\n✦ CE QU'ON A DÉJÀ ABORDÉ\n– ma mère\n– le travail\n– la confiance\n…"),
  apres:'✦ DE QUOI ON A PARLÉ\n– Thomas : son départ, et ce que ça réveille chez moi.\n✦ CE QUE J\'EN RETIENS\n– « Tu n\'as pas à tout porter seule. »\n– J\'ai compris que je me tais pour ne pas déranger.\n✦ CE QUE JE RESSENS\nlégère, remuée, pensive\n✦ MES PETITS PAS\n– Envoyer un message à mon frère\n✦ POUR LA PROCHAINE FOIS\n– Mon sommeil'};
+
+/* lecture de ce que l'IA a rendu : on range les vraies parties du récapitulatif, sans rien inventer */
+function enSecs(t){const R={};let cur=null;String(t||'').split(/\r?\n/).forEach(l=>{const m=l.match(/^\s*[✦*#]+\s*(.+?)\s*$/);if(m&&/^[A-ZÀ-ÜŒ' ’()]{4,}/.test(m[1].toUpperCase())&&m[1]===m[1].toUpperCase()){cur=m[1].replace(/\s*\(.*\)\s*$/,'').replace(/’/g,"'").trim();R[cur]=[];return}if(cur&&l.trim())R[cur].push(l.replace(/^\s*[–\-•·]\s*/,'').trim())});return R}
+function enIA(k){const T=enSecs(S.paste);const g=n=>T[n]||[];const has=Object.keys(T).length;
+ if(!has){(window.__enToast||alert)('Je n’ai pas reconnu le récapitulatif : colle tout le message de l’IA, avec ses titres ✦.');return false}
+ if(k==='prep'){const suj=[],dire=[];const st=g('MA PHRASE POUR COMMENCER').join(' ');if(st)dire.push({k:'start',t:st});
+  g('MES SUJETS').forEach(l=>{const p=l.split(/\s+·\s+/);const t=p[0];if(!t)return;suj.push({t,on:1});dire.push({k:t,t:p.length>2?p.slice(2).join(' · '):(p[1]||''),feel:p.length>2?p[1].split(/,\s*/):[]})});
+  g('CE QUI PEUT ATTENDRE').forEach(t=>suj.push({t,on:0,w:1}));
+  S.rd={step:'suj',i:0,edit:0,suj,dire:dire.length?dire:[{k:'start',t:''}]};S.prep.quest=g('MES QUESTIONS À MA PSY');return true}
+ if(k==='suivi'){const dq=g('DEPUIS QUAND JE LA VOIS').join(' ');const mo=(dq.match(/janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre/i)||[''])[0].toLowerCase(),an=(dq.match(/\d{4}/)||[''])[0];
+  const ds=g('MA DERNIÈRE SÉANCE').join(' ');const dj=(ds.match(/\b(\d{1,2})\b/)||['',''])[1],dm=(ds.match(/janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre/i)||[''])[0].toLowerCase();
+  const ab=g("CE QU'ON A DÉJÀ ABORDÉ");
+  Object.assign(S.sv,{mo,an,ry:g('À QUEL RYTHME').join(' '),why:g("POURQUOI J'AI COMMENCÉ").join(' '),ab:ab.join(', '),sv:(g("CE QUI M'A AIDÉE").concat(g('CE DONT JE ME SOUVIENS DE LA DERNIÈRE FOIS'))).join(' '),sus:g('CE QUI RESTE EN SUSPENS').join(', '),dj,dm});
+  S.sv.ia={mo:+!!mo,ry:+!!S.sv.ry,why:+!!S.sv.why,ab:+!!ab.length,sv:+!!S.sv.sv,sus:+!!S.sv.sus,dj:+!!dj};S.sv.abPills=ab.map(t=>({t:t.split(/\s*[:·—-]\s*/)[0].toLowerCase(),on:1}));return true}
+ if(k==='apres'){const a=S.ap;a.parts.parler=1;a.parts.retiens=1;a.from={parler:1,retiens:1,ressens:1,pas:1};
+  g('DE QUOI ON A PARLÉ').forEach(l=>{const i=l.indexOf(':');const t=(i>0?l.slice(0,i):l).trim(),x=(i>0?l.slice(i+1):'').trim();let n=S.notes.find(q=>q.t.toLowerCase()===t.toLowerCase());if(!n){n={id:'n'+Date.now()+Math.random().toString(36).slice(2,5),k:'SÉANCE',t,o:'SÉANCE',pg:'SÉANCE',txt:t,ck:0};S.notes.push(n)}a.parler.ck[n.id]=1;if(x)a.parler.txt[n.id]=x});
+  const rt=g("CE QUE J'EN RETIENS");a.retiens.a=rt[0]||a.retiens.a;a.retiens.b=rt[1]||a.retiens.b;a.retiens.c=rt[2]||a.retiens.c;a.retiens.k=0;
+  const em=g('CE QUE JE RESSENS').join(',').split(/\s*,\s*/).map(x=>x.replace(/[★*]/g,'').trim().toLowerCase()).filter(Boolean);if(em.length){a.ressens.sel=new Set(em);a.ressens.star=em[0]}
+  g('MES PETITS PAS').forEach(t=>{if(!a.pasAdded.some(p=>p.t===t))a.pasAdded.push({t,rep:'une fois',r:''})});
+  const nx=g('POUR LA PROCHAINE FOIS');nx.forEach(t=>{if(!S.notes.some(q=>q.t===t))S.notes.push({id:'n'+Date.now()+Math.random().toString(36).slice(2,5),k:'PROCHAINE FOIS',t,o:'SÉANCE',pg:'POUR LA PROCHAINE FOIS',txt:t,ck:0})});return true}
+ return false}
+/* ranger mon vrac : seulement ce que tu as vraiment écrit */
+function enVrac(){const a=S.ap,v=String(a.vrac||'').trim();if(!v){(window.__enToast||alert)('Écris d’abord quelques mots.');return false}
+ const ph=v.split(/(?<=[.!?…])\s+|\n+/).map(x=>x.trim()).filter(Boolean);a.parts.parler=1;a.parts.retiens=1;a.from={parler:1,retiens:1,ressens:1,pas:1};
+ S.notes.forEach(n=>{const k=n.t.toLowerCase().split(/\s+/).filter(w=>w.length>3);const s=ph.find(p=>k.some(w=>p.toLowerCase().includes(w)));if(s){a.parler.ck[n.id]=1;a.parler.txt[n.id]=a.parler.txt[n.id]||s}});
+ if(!Object.keys(a.parler.ck).length)a.parler.plus=a.parler.plus||ph.slice(0,2).join(' ');
+ a.retiens.a=a.retiens.a||ph[ph.length-1]||'';a.retiens.k=0;
+ const em=Object.keys(E).filter(e=>new RegExp('\\b'+e.split(' ')[0].slice(0,-1),'i').test(v));if(em.length&&!a.ressens.sel.size){a.ressens.sel=new Set(em);a.ressens.star=em[0]}return true}
 
 /* ---------- démos ---------- */
 window.__psyAbord=(t,pg,txt)=>{S.notes.push({id:'n'+Date.now(),k:'JOURNAL',t,o:'PAGE',pg,txt:String(txt||t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),ck:0});render()};
@@ -6974,7 +7044,7 @@ let ED=null,EDID=null;
 function sheet(p,isNew){ED=Object.assign({t:'',f:'soin',why:'',r:'',rep:'une fois'},p||{});EDID=isNew?null:p.id;
  const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];
  const html=`<div class="ps-grab" data-a="close"></div><div class="ps-k">${isNew?'UN PETIT PAS':'MON PETIT PAS'}</div>
- ${isNew?`<div class="ps-h">DES IDÉES DE PLUME</div>${[['Écrire 3 gratitudes ce soir','soin'],['Proposer un café à Léa','proches']].map(x=>`<button class="ps-sug" data-a="idea" data-t="${esc(x[0])}" data-k="${x[1]}">${x[0]}<b>CHOISIR</b></button>`).join('')}`:''}
+ ${isNew?`<div class="ps-h">DES IDÉES DE PLUME</div>${[['Écrire 3 gratitudes ce soir','soin'],[(window.__enIdeeProche?window.__enIdeeProche():'Envoyer un message à quelqu’un que j’aime'),'proches']].map(x=>`<button class="ps-sug" data-a="idea" data-t="${esc(x[0])}" data-k="${x[1]}">${x[0]}<b>CHOISIR</b></button>`).join('')}`:''}
  <div class="ps-f" style="margin-top:10px"><textarea rows="1" data-f="t" placeholder="${isNew?'ou écris le tien…':''}" style="font-size:17px">${esc(ED.t)}</textarea>${MIC}</div>
  <div class="ps-h">FAMILLE</div><div class="pp-fams">${Object.keys(FAM).map(k=>`<button data-a="fam" data-k="${k}" class="${ED.f===k?'on':''}">${tag(k,ph)}</button>`).join('')}</div>
  <div class="ps-h">POURQUOI</div><div class="ps-f"><input data-f="why" placeholder="pour…" value="${esc(ED.why)}"></div>
@@ -7323,7 +7393,7 @@ const mins=h=>{const m=String(h).match(/(\d+)\s*h\s*(\d*)/i);return m?(+m[1])*60
 function vDay(o){const x=day(o.i),d=dt(x.d);const ps=x.parts.map((p,i)=>({p,i})).sort((a,b)=>mins(a.p.h)-mins(b.p.h));
  if(o.sel==null)o.sel=ps.length?String(ps[0].i):'une';
  let h=`<p class="mj-dt">${JL[d.getDay()].toUpperCase()} ${d.getDate()} ${MOIS[d.getMonth()].toUpperCase()}${d.getFullYear()<new Date().getFullYear()?' '+d.getFullYear():''}</p>`;
- h+=`<div class="mj-hub" style="--mc:${C(x.v)}"><p class="mj-hu">${W(x.v).toUpperCase()}</p><p class="mj-em">${(x.em||[]).join(', ')}</p></div>`;
+ h+=`<div class="mj-hub" style="--mc:${C(x.v)}"><p class="mj-hu">${W(x.v).toUpperCase()}</p><p class="mj-em">${esc((x.em||[]).join(', '))}</p></div>`;
  h+=`<div class="mj-pas">${ps.map(e=>`<button type="button" class="${o.sel===String(e.i)?'on':''}" data-a="pas" data-k="${e.i}">${esc(e.p.h.toUpperCase())}</button>`).join('')}<button type="button" class="une${o.sel==='une'?' on':''}" data-a="pas" data-k="une">en une page</button></div>`;
  if(o.sel==='une'){
   if(x.recit)h+=`<p class="mj-fk">MA JOURNÉE EN UNE PAGE</p><div class="mj-x" contenteditable="true" spellcheck="true" data-ed="recit" aria-label="Ma journée en une page">${cjHTML(x.recit)}</div>`;
@@ -8195,7 +8265,7 @@ const FAQ=[
 const S={v:'home',open:null,q:'',ut:{}};
 const row=(f,i)=>{const o=S.open===i;return `<button class="ad-r${o?' op':''}" data-a="q" data-i="${i}">${esc(f[1]).replace(/ \?$/,'&nbsp;?')}<b>›</b></button>`+(o?`<div class="ad-a"><p>${esc(f[2])}</p><p class="ad-ut">C’ÉTAIT UTILE&nbsp;? · <button data-a="ut" data-v="o" data-i="${i}" class="${S.ut[i]==='o'?'on':''}">OUI</button> · <button data-a="ut" data-v="n" data-i="${i}" class="${S.ut[i]==='n'?'on':''}">NON</button>${S.ut[i]?(S.ut[i]==='o'?' · MERCI ✦':' · <button data-a="w">ÉCRIS-NOUS</button>'):''}</p></div>`:'')};
 function vHome(){let h=`<p class="ad-k">QUESTIONS FRÉQUENTES</p>`+FAQ.map((f,i)=>f[3]?row(f,i):'').join('')+`<button class="ad-r more" data-a="all">toutes les questions<b>›</b></button>`;
- 
+ h+=`<p class="ad-k">NOUS ÉCRIRE</p><button class="ad-r" data-a="w">Écrire à l’équipe<b>›</b></button><button class="ad-r" data-a="pb">Signaler un problème<b>›</b></button>`;
  h+=`<p class="ad-k">BESOIN DE PARLER</p><button class="ad-card" data-a="talk"><span class="h">♡</span><span><span class="t">Besoin de parler à quelqu’un&nbsp;?</span><span class="s">des personnes t’écoutent, jour et nuit</span></span><b>›</b></button>`;return h}
 function vAll(){const q=S.q.trim().toLowerCase();const L=FAQ.map((f,i)=>[f,i]).filter(([f])=>!q||(f[1]+' '+f[2]).toLowerCase().includes(q));const GO=['MON CODE ET MON COMPTE','MES PAGES','PLUME','PSY','WIDGETS'];L.sort((a,b)=>GO.indexOf(a[0][0])-GO.indexOf(b[0][0])||a[1]-b[1]);let h=`<label class="ad-srch">⌕<input id="adq" placeholder="chercher une question…" value="${esc(S.q)}"></label>`;
  if(!L.length)return h+`<p class="ad-none">Pas de réponse à ça pour l’instant.<br><button data-a="w" style="text-decoration:underline;text-decoration-color:var(--sline)">Écris-nous, on te répond.</button></p>`;
@@ -8216,7 +8286,7 @@ function wire(s){const ta=s.querySelector('textarea'),ok=s.querySelector('.ok'),
  if(at){at.onclick=()=>f.click();f.onchange=()=>{const x=f.files[0];if(!x)return;const r=new FileReader();r.onload=()=>{const i=at.querySelector('i');i.textContent='';i.style.backgroundImage='url('+r.result+')';at.querySelector('span').textContent='capture ajoutée ✓'};r.readAsDataURL(x)}}
  ok.onclick=()=>{if(ok.getAttribute('aria-disabled')==='true'){ta.focus();return}const k=s.querySelector('.k').textContent,sel=[...s.querySelectorAll('.pl button.on')].map(b=>b.textContent).join(', '),ck=s.querySelector('.ck.on');
   const body=(sel?'('+sel+')\n\n':'')+ta.value.trim()+(ck?'\n\n—\nTéléphone : '+(navigator.userAgent||'')+'\nVersion de l’app : 1.0':'');
-  const a=document.createElement('a');a.href='mailto:'+(window.__SUPPORT||'contact@entre-nous.app')+'?subject='+encodeURIComponent('Entre nous · '+k.toLowerCase())+'&body='+encodeURIComponent(body);a.click();
+  const a=document.createElement('a');a.href='mailto:?subject='+encodeURIComponent('Entre nous · '+k.toLowerCase())+'&body='+encodeURIComponent(body);a.click();
   closeSh();setTimeout(()=>toast('✦ Ton message est prêt dans ton appli mail'),320)};setTimeout(()=>ta.focus({preventScroll:true}),320)}
 function sTalk(){const pet=(document.querySelector('#aide .sbplume img')||{}).src||'illus/eveil-chat.webp';
  sheet(`<p class="k">BESOIN DE PARLER</p><div class="bub"><img src="${pet}" alt=""><p>Tu as bien fait de venir ici. Parler à quelqu’un, ça peut aider.</p></div>
@@ -8370,8 +8440,8 @@ run();window.__lisible=run;
 (()=>{/* Entre nous · web app : ce qui ne peut pas marcher dans une web app est masqué ; le reste est branché */
 const $=s=>document.querySelector(s);
 /* 1 · masquer : widgets, apps du téléphone, « noter l'app », conversation à la voix, verrouillage différé */
-const HIDE_L=['Utiliser un code','Widgets','Calendrier','Photos','Musique','Verrouiller après','Façon de parler','Afficher le texte','Garder mes vocaux'];
-const HIDE_SUB=/^(mon téléphone|quand on se parle)$/i;
+const HIDE_L=['Utiliser un code','Widgets'];
+const HIDE_SUB=/^$/;
 function tidy(root){
  root.querySelectorAll('.rgl[data-l]').forEach(r=>{if(HIDE_L.includes(r.dataset.l))r.style.display='none'});
  root.querySelectorAll('.rgl[data-p="widgets"]').forEach(r=>r.style.display='none');
@@ -8445,7 +8515,7 @@ if(g2){const orig=g2.onclick;const hint=document.getElementById('ohint'),em=docu
     else{PEND.m=mail;PEND.p=pass;PEND.at=Date.now();window.__enPendShow=1}
     orig&&orig.call(g2,e);
     if(!logged)setTimeout(()=>toast('Je t’ai envoyé un mail : touche le lien quand tu veux. Ton compte s’activera tout seul.'),900)}
-   else{await C.signIn(mail,pass);const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
+   else{try{await C.signIn(mail,pass)}catch(x){if(/confirmée/.test(x.message)){PEND.m=mail;PEND.p=pass;PEND.at=Date.now();try{await C.resend(mail)}catch(y){}throw new Error('Ton adresse n’est pas encore confirmée : je viens de te renvoyer le mail. Touche le lien, puis reviens ici, je me connecte toute seule.')}if(/incorrect/.test(x.message))throw new Error('E-mail ou mot de passe incorrect. Touche « mot de passe oublié ? » pour en choisir un nouveau.');throw x}const rec=await C.pull();if(rec&&rec.box){orig&&orig.call(g2,e);setTimeout(()=>window.__vaultAdopt(rec),1500)}else{say('Aucun carnet en ligne pour ce compte : on en commence un nouveau.');setTimeout(()=>{const t=document.querySelector('#onb .otabs button[data-m="new"]');t&&t.click();orig&&orig.call(g2,e)},1600)}}}
   catch(x){say(x.message,1)}finally{busy=false;g2.textContent='Continuer'}};
  const fg=document.getElementById('oforgot');if(fg)fg.onclick=async()=>{const mail=(em.value||'').trim();if(!mail){say('Entre d’abord ton e-mail.',1);return}try{await C.recover(mail);say('Je t’ai envoyé un mail pour choisir un nouveau mot de passe.')}catch(x){say(x.message,1)}};
 }
@@ -8466,6 +8536,7 @@ async function compte(root){const b=root.querySelector('.rgl[data-l="Adresse mai
  const ck=box.querySelector('#en-ck');if(ck)ck.onclick=async()=>{ck.textContent='…';await tryPend();if(PEND.m){ck.textContent='J’AI TOUCHÉ LE LIEN';toast('Pas encore confirmé de mon côté. Réessaie dans un instant.')}};
  const ch=box.querySelector('#en-ch');if(ch)ch.onclick=()=>{delete PEND.m;delete PEND.p;accSheet(()=>refreshCompte());refreshCompte()}}
 function refreshCompte(){const r=document.getElementById('rgp');if(!r)return;r.querySelectorAll('.en-acc').forEach(x=>x.remove());r.querySelectorAll('[data-en]').forEach(x=>delete x.dataset.en);if(r.querySelector('.rgl[data-l="Adresse mail"]'))compte(r)}
+window.__enToast=m=>toast(m);
 function toast(m){const t=document.createElement('div');t.className='en-toast';t.textContent=m;document.body.appendChild(t);requestAnimationFrame(()=>t.classList.add('on'));setTimeout(()=>{t.classList.remove('on');setTimeout(()=>t.remove(),300)},3200)}
 function accSheet(done){const el=document.createElement('div');el.className='en-sh';el.id='en-accs';
  el.innerHTML=`<div class="in"><p class="k">MON COMPTE</p><div class="tb"><button type="button" class="on" data-m="new">Créer mon compte</button><button type="button" data-m="back">J’ai déjà un compte</button></div><input type="email" id="en-am" placeholder="ton@email.fr" autocomplete="email"><input type="password" id="en-ap" placeholder="mot de passe · 8 caractères minimum" autocomplete="new-password"><p class="s" id="en-amsg"></p><button type="button" class="b" id="en-ago">CONTINUER</button><button type="button" class="lk" id="en-afg" hidden>mot de passe oublié ?</button><button type="button" class="lk" id="en-ax">plus tard</button></div>`;
@@ -8479,7 +8550,7 @@ function accSheet(done){const el=document.createElement('div');el.className='en-
   try{if(m==='new'){let r;try{r=await C.signUp(mail,pass)}catch(x){if(!/déjà un carnet/.test(x.message))throw x;r={exists:true}}
     try{await C.signIn(mail,pass)}catch(x){if(r.exists)throw new Error('Un compte existe déjà avec cet e-mail : choisis « J’ai déjà un compte ».');if(!/confirmée/.test(x.message)&&!r.confirm)throw x;
      PEND.m=mail;PEND.p=pass;PEND.at=Date.now();close();toast('Je t’ai envoyé un mail : touche le lien, ton compte s’activera tout seul.');done&&done();return}}
-   else await C.signIn(mail,pass);
+   else{try{await C.signIn(mail,pass)}catch(x){if(/confirmée/.test(x.message)){PEND.m=mail;PEND.p=pass;PEND.at=Date.now();try{await C.resend(mail)}catch(y){}close();toast('Ton adresse n’est pas encore confirmée : je t’ai renvoyé le mail. Touche le lien, je me connecte toute seule.');done&&done();return}throw x}}
    window.__enMail=mail;
    const rec=await C.pull();
    if(rec&&rec.box){el.querySelector('.in').innerHTML=`<p class="k">DEUX JOURNAUX</p><p class="t">Un journal existe déjà en ligne pour ce compte.</p><p class="s">Lequel veux-tu garder ? L’autre sera remplacé.</p><button type="button" class="b" id="en-kl">GARDER CELUI DE CE TÉLÉPHONE</button><button type="button" class="b ol" id="en-kr">REPRENDRE CELUI EN LIGNE (${new Date(rec.at).toLocaleDateString('fr-FR')})</button>`;
@@ -8700,7 +8771,6 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
  if($('rmic'))recorder($('rmic'),$('rbar'),$('rin'),v=>{if(window.__rins)window.__rins(v);else rp.appendChild(v);fire(rp)});
  if($('vmic'))recorder($('vmic'),$('vbar'),$('vin'),v=>{vp.appendChild(v);v.scrollIntoView({block:'nearest'});fire(vp)});
  if($('gmic'))recorder($('gmic'),$('gmic').closest('.ginput'),$('gin'),v=>{v.classList.add('gme-v');gc.appendChild(v);gc.scrollTop=gc.scrollHeight;fire(gc)});
- document.querySelectorAll('.mvmic').forEach(b=>b.style.display='none');
  /* musique : un bouton de plus dans « + » */
  function musSheet(onOk){const el=document.createElement('div');el.className='en-sh';el.innerHTML='<div class="in"><p class="k">UNE MUSIQUE</p><p class="t">Colle le lien du morceau</p><p class="s">Depuis Apple Music, Spotify, Deezer ou YouTube : « Partager › Copier le lien ».</p><input type="url" inputmode="url" placeholder="https://…" autocomplete="off"><button type="button" class="b">AJOUTER</button><button type="button" class="lk">annuler</button></div>';
   document.body.appendChild(el);requestAnimationFrame(()=>el.classList.add('on'));const i=el.querySelector('input');setTimeout(()=>i.focus(),250);
@@ -8750,7 +8820,10 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 
 /* 16 · à l'inscription : proposer Face ID si l'iPhone sait le faire */
 (function(){const on=document.getElementById('o3on');if(!on)return;const b=on.closest('.o3b');
- window.__fidOk&&window.__fidOk().then(ok=>{if(!ok||!b)return;b.querySelectorAll('.o3fid,.o3t,.o3s,.o3on,.o3later').forEach(x=>x.style.display='')});
+ /* Face ID a sa propre page après le code ; si l'iPhone ne le permet pas ici, on passe directement à la suite */
+ let fidOk=null;window.__fidOk&&window.__fidOk().then(ok=>{fidOk=ok});
+ if(b)new MutationObserver(()=>{if(b.hidden)return;const a=document.getElementById('o3a');if(a)a.hidden=true;const skip=()=>{const l=document.getElementById('o3later');l&&l.click()};
+  if(fidOk===false)setTimeout(skip,900);else if(fidOk===null&&window.__fidOk)window.__fidOk().then(ok=>{if(!ok)setTimeout(skip,900)})}).observe(b,{attributes:true,attributeFilter:['hidden']});
  on.addEventListener('click',async e=>{e.stopImmediatePropagation();e.preventDefault();if(on.dataset.busy)return;on.dataset.busy=1;
   try{await window.__fidEnroll();on.textContent='✓ Face ID activé';on.classList.add('done')}catch(x){toast(x&&x.message==='noprf'?'Il faut iOS 18.4 ou plus récent pour Face ID. Ton code suffit.':'Pas de Face ID pour l’instant : tu pourras l’activer dans Réglages.')}
   setTimeout(()=>{const l=document.getElementById('o3later');l&&l.click();delete on.dataset.busy},700)},true);
@@ -8758,6 +8831,21 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 
 /* 17 · le portrait collé depuis ChatGPT / Claude est gardé */
 (function(){let P=window.__portrait||null;const sv=window.__enLive&&window.__enLive('portrait',()=>window.__portrait||null);if(sv&&!window.__portrait)window.__portrait=sv})();
+
+/* 18 · « Plus tard » après le choix du compagnon : retour à l'accueil (plus d'impasse) */
+(function(){const ok=document.getElementById('mvok');if(ok)ok.addEventListener('click',()=>{if(window.__mvLater)setTimeout(()=>window.__enShow('home'),3200)})})();
+/* 19 · Verrouiller après : vraiment, quand l'app passe en arrière-plan */
+(function(){const RG=window.__enGet&&window.__enGet('rg');let t0=0;const MS=[0,60e3,300e3,900e3,Infinity];
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){t0=Date.now();return}if(!t0)return;const i=RG&&RG.verr!=null?RG.verr:4;if(Date.now()-t0>=MS[i]&&window.__vaultLock&&!document.getElementById('en-lock'))window.__vaultLock();t0=0})})();
+/* 20 · micro dans « Faire connaissance » : tu parles, ça s'écrit (dictée de l'iPhone) */
+(function(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;document.querySelectorAll('.mvmic').forEach(m=>{const inp=m.closest('.mvin')?.querySelector('textarea,input')||document.getElementById('mvin');
+ m.onclick=e=>{e.stopImmediatePropagation();if(!SR){toast('Touche le micro du clavier de ton iPhone pour dicter ta réponse.');inp&&inp.focus();return}
+  if(m.__r){m.__r.stop();return}const r=new SR();r.lang='fr-FR';r.interimResults=true;r.continuous=true;const base=inp?inp.value:'';m.__r=r;m.classList.add('rec');
+  r.onresult=ev=>{let t='';for(let i=0;i<ev.results.length;i++)t+=ev.results[i][0].transcript;if(inp){inp.value=(base?base+' ':'')+t;inp.dispatchEvent(new Event('input',{bubbles:true}))}};
+  r.onend=r.onerror=()=>{m.classList.remove('rec');m.__r=null};try{r.start()}catch(x){m.__r=null;m.classList.remove('rec');toast('La dictée n’a pas démarré.')}}})})();
+
+/* 21 · fin de l'inscription → « Faire connaissance » d'abord, puis la visite de l'accueil si tu l'as demandée */
+(function(){const ts=window.__tourStart;if(!ts)return;window.__tourStart=(...a)=>{const on=document.querySelector('.phone.en-on');if(on&&on.id==='onb'&&document.getElementById('mvintro')){window.__enTourLater=()=>ts(...a);window.__enShow('mvintro');return}window.__enShow('home');setTimeout(()=>ts(...a),350)}})();
 })();</script>
 
 </body>
