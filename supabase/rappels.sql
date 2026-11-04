@@ -7,6 +7,16 @@ create table if not exists public.rappels_secrets (
 );
 alter table public.rappels_secrets enable row level security;  -- aucune règle : personne ne la lit, sauf le serveur
 
+-- chaque téléphone n'a qu'un abonnement, et chacune ne touche qu'aux siens
+create unique index if not exists abonnements_endpoint_unique on public.abonnements (endpoint);
+alter table public.abonnements enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'abonnements' and policyname = 'abonnements_les_miens') then
+    create policy abonnements_les_miens on public.abonnements for all to authenticated
+      using (user_id = auth.uid()) with check (user_id = auth.uid());
+  end if;
+end $$;
+
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
