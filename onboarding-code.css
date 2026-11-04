@@ -1,5 +1,5 @@
 /* Même fond et mêmes couleurs que le parcours, clavier ample et sceau discret. */
-#en-app #onb .o3{--code-accent:#7C536A;padding:clamp(28px,8vh,70px) 22px 24px;justify-content:flex-start;overflow-y:auto}
+#en-app #onb .o3{--code-accent:#7C536A;padding:clamp(70px,16vh,150px) 22px 24px;justify-content:flex-start;overflow-y:auto}
 #en-app #onb.nuit .o3{--code-accent:#C6A0B1}
 #onb .o3a,#onb .o3success{width:100%;max-width:460px;flex:none;display:flex;flex-direction:column;align-items:center}
 #onb .o3 [hidden]{display:none!important}
