@@ -8,6 +8,7 @@
 <script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>/* téléphone : l’app garde les proportions exactes de la planche (dessinée sur 302 px de large) ; tablette et ordinateur gardent leur affichage */(function(){if(Math.min(screen.width,screen.height)<=500){var m=document.querySelector('meta[name=viewport]');m.setAttribute('content','width=302,viewport-fit=cover,user-scalable=no')}})()</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre nous">
@@ -86,7 +87,7 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-
 .en-sh .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566;text-align:center}
 .en-sh .t{margin:2px 0 0;font:italic 500 20px/1.2 'Cormorant Garamond',serif;text-align:center}
 .en-sh .s{margin:0;font:500 15px/1.35 'Cormorant Garamond',serif;color:#7A5566;text-align:center}
-.en-sh .cd{margin:6px 0;padding:14px 8px;border:1px dashed #B97E8E;border-radius:14px;text-align:center;font:500 19px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.14em;user-select:all;-webkit-user-select:all}
+.en-sh .cd{width:auto;flex:none;align-self:stretch;margin:6px 0;padding:14px 6px;border:1px dashed #B97E8E;border-radius:14px;text-align:center;font:500 17px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.06em;white-space:nowrap;user-select:all;-webkit-user-select:all}
 .en-sh .b{all:unset;box-sizing:border-box;text-align:center;padding:13px;border-radius:26px;background:#6B3F55;color:#F7E6DC;font:500 13px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
 .en-sh .b.ol{background:transparent;color:#6B3F55;border:1px solid #6B3F55}
 .en-sh .lk{all:unset;text-align:center;padding:6px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
