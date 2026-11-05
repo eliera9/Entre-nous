@@ -6,9 +6,17 @@
 @font-face{font-family:'Entre nous Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/newsreader-400-normal.ttf') format('truetype')}
 /* Écriture droite et bulle veloutée validées pour les conversations. */
 #en-app :is(.mvbub,.gb.gai,.ps-bub p,.ps-yay p,.sbpbub p,.ad-sh .bub p,.rgcard p,.rgov .b,.acps .pl p){font-family:'Entre nous Newsreader',Georgia,serif!important;font-style:normal!important;font-weight:400!important;line-height:1.4}
-#en-app #mv2 .mvtalk{align-items:flex-end;gap:12px}
-#en-app #mv2 .mvbubs{min-height:0;flex:1;margin-bottom:0}
-#en-app #mv2 .mvbub{padding:15px 17px;border-radius:22px 22px 22px 5px;font-size:20px;background:color-mix(in srgb,var(--sacc) 13%,var(--sbg))!important;color:var(--sink)!important}
+#en-app #mv2 .mvhd .mvtt p{font-size:17px;line-height:1.3;letter-spacing:.13em}
+#en-app #mv2 .mvtalk{align-items:flex-end;justify-content:center;gap:12px;min-height:78px;margin:8px 0 12px}
+#en-app #mv2 .mvtalk>.mvring{width:54px;height:54px;margin:0}
+#en-app #mv2 .mvbubs{min-height:0;flex:0 1 250px;margin-bottom:0;align-items:stretch}
+#en-app #mv2 .mvbub{--en-greeting-fill:color-mix(in srgb,var(--sacc) 6%,var(--sbg));position:relative;padding:11px 16px;border-radius:19px;font-size:16px;line-height:1.4;background:var(--en-greeting-fill)!important;color:var(--sink)!important;animation:none}
+#en-app #mv2 .mvbub:before{content:'';position:absolute;left:-6px;bottom:13px;width:13px;height:13px;border-radius:0 0 0 4px;background:var(--en-greeting-fill);transform:rotate(45deg)}
+#en-app #mv2 .en-greeting-message{display:block;position:relative}
+#en-app #mv2 .en-greeting-full{visibility:hidden;white-space:pre-line}
+#en-app #mv2 .en-greeting-visible{position:absolute;inset:0;white-space:pre-line}
+#en-app #mv2 .en-greeting-accessible{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #en-app #mv2 .mvgorow .mvgo{display:none!important}
+@media(max-width:360px){#en-app #mv2 .mvhd .mvtt p{font-size:16px;letter-spacing:.1em}#en-app #mv2 .mvbub{padding:11px 13px}}
 
 #en-app .sbplume>.en-bubble-avatar{position:static!important;left:auto!important;top:auto!important;pointer-events:none}

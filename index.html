@@ -4975,14 +4975,38 @@ document.querySelector('#mv2 .mvbk').onclick=()=>document.getElementById('mv').s
 })();
 </script>
 <script type="text/x-en">
-(function(){const box=document.getElementById('mvbubs'),ph=document.getElementById('mv2');let T=[];
-const first=()=>window.__P();
-function bub(t){const b=document.createElement('p');b.className='mvbub';b.textContent=t;box.appendChild(b);return b}
-function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';box.appendChild(b);return b}
-function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';let w=wait();
- T.push(setTimeout(()=>{w.remove();bub('On y va doucement, à ton rythme.')},900))}
-new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting){play();ob.disconnect()}},{threshold:.5}).observe(ph);
-window.__mvsay=t=>{T.forEach(clearTimeout);T=[];box.innerHTML='';const w=wait();T.push(setTimeout(()=>{w.remove();bub(t)},800))};})();
+/* Accueil de Faire connaissance : Confidence et phrase dévoilée validées. */
+(function(){
+ const box=document.getElementById('mvbubs'),ph=document.getElementById('mv2');
+ if(!box||!ph)return;
+ const greeting='On y va doucement,\nà ton rythme.';
+ const motion=window.matchMedia('(prefers-reduced-motion: reduce)');
+ let timer=null,visible=null,current='',wasActive=false;
+ function finish(){if(timer!==null){clearInterval(timer);timer=null;}if(visible)visible.textContent=current;}
+ function play(text){
+  finish();current=String(text);box.replaceChildren();
+  const bubble=document.createElement('p');bubble.className='mvbub';
+  const message=document.createElement('span');message.className='en-greeting-message';
+  const full=document.createElement('span');full.className='en-greeting-full';full.setAttribute('aria-hidden','true');full.textContent=current;
+  visible=document.createElement('span');visible.className='en-greeting-visible';visible.setAttribute('aria-hidden','true');
+  const accessible=document.createElement('span');accessible.className='en-greeting-accessible';accessible.textContent=current;
+  message.append(full,visible,accessible);bubble.appendChild(message);box.appendChild(bubble);
+  if(motion.matches||document.hidden||!ph.classList.contains('en-on')){finish();return;}
+  const characters=Array.from(current);let count=0;
+  timer=setInterval(()=>{
+   if(!ph.classList.contains('en-on')||document.hidden||motion.matches){finish();return;}
+   count++;visible.textContent=characters.slice(0,count).join('');
+   if(count>=characters.length){clearInterval(timer);timer=null;}
+  },32);
+ }
+ function sync(){const active=ph.classList.contains('en-on');if(active===wasActive)return;wasActive=active;if(active)play(greeting);else finish();}
+ box.setAttribute('aria-atomic','true');
+ new MutationObserver(sync).observe(ph,{attributes:true,attributeFilter:['class']});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)finish();});
+ if(motion.addEventListener)motion.addEventListener('change',()=>{if(motion.matches)finish();});
+ window.__mvsay=play;
+ sync();
+})();
 </script>
 <script type="text/x-en">
 (function(){const chat=document.getElementById('mvchat'),inp=document.getElementById('mvin'),qb=document.getElementById('mvqbar');
