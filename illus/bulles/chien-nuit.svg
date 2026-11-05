@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Portrait du chien, version nuit">
+ <defs><radialGradient id="disc" cx=".4" cy=".3" r=".95"><stop offset="0" stop-color="#594655"/><stop offset="1" stop-color="#8B7186"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#412F3A" flood-opacity=".32"/></filter></defs>
+ <circle cx="64" cy="58" r="43.5" fill="url(#disc)" stroke="#D5B6CA" stroke-width="2.6"/>
+ <g fill="#E5C7A1" opacity=".85"><path d="M28 42l1.4 4.5 4.6 1.5-4.6 1.4L28 54l-1.4-4.6L22 48l4.6-1.5z"/><circle cx="97" cy="35" r="1.6"/><circle cx="102" cy="66" r="1.2"/></g><g filter="url(#shadow)">
+ <path d="M36 49Q16 17 28 23Q46 24 53 42Z" fill="#505060" stroke="#6B505D" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M80 41Q100 12 105 31L95 60Z" fill="#505060" stroke="#6B505D" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <ellipse cx="64" cy="95" rx="31" ry="22" fill="#505060" stroke="#6B505D" stroke-width="1.7"/>
+ <path d="M47 80Q64 70 82 80L78 108L51 108Z" fill="#F3E9E4"/>
+ <ellipse cx="64" cy="62" rx="36" ry="34" fill="#F3E9E4" stroke="#6B505D" stroke-width="2.1"/>
+ <path d="M33 49Q42 25 62 30L61 77Q52 83 39 79Q28 72 33 49Z" fill="#505060"/>
+ <path d="M62 31Q67 43 68 54L60 76Q56 48 62 31Z" fill="#F3E9E4"/>
+ <ellipse cx="45" cy="66" rx="7" ry="9" fill="#302E38"/><ellipse cx="79" cy="66" rx="7" ry="9" fill="#302936"/>
+ <ellipse cx="42.5" cy="62.8" rx="2.7" ry="3.5" fill="#FFFAF5"/><ellipse cx="76.5" cy="62.8" rx="2.7" ry="3.5" fill="#FFFAF5"/>
+ <ellipse cx="38" cy="79" rx="4.5" ry="2.7" fill="#D99BB0"/><ellipse cx="90" cy="79" rx="4.5" ry="2.7" fill="#D99BB0"/>
+ <ellipse cx="64" cy="83" rx="8" ry="5" fill="#505060"/>
+ <path d="M64 86v4 M64 90q-5 4-9 0 M64 90q5 4 9 0" fill="none" stroke="#6B505D" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+ </g><g filter="url(#shadow)">
+ <ellipse cx="42" cy="100" rx="13" ry="9" fill="#F3E9E4" stroke="#6B505D" stroke-width="1.6"/>
+ <ellipse cx="85" cy="100" rx="13" ry="9" fill="#F3E9E4" stroke="#6B505D" stroke-width="1.6"/>
+ <g fill="#D7B8B5" opacity=".86"><ellipse cx="38" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="46" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="81" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="89" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/></g>
+ </g>
+ </svg>
