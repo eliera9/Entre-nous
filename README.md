@@ -95,3 +95,11 @@ Le parcours de vérification est conservé dans le coffre avec un ordre stable, 
 La relecture qui précède l’import conserve son plan, les remplacements sélectionnés, le fournisseur, le chapitre et les volets ouverts. Revenir au texte sans le modifier conserve ces choix. Un texte modifié démarre une nouvelle comparaison. La validation d’une réponse attend la sauvegarde effective ; en cas d’échec, elle reste affichée et propose un réessai.
 
 Les 100 tests passent, dont une sauvegarde chiffrée puis relue du parcours de vérification. Les essais en navigateur isolé couvrent le retour et le rechargement avant l’import, la conservation des remplacements, une correction interrompue, le retour aux réponses validées, les changements de chapitre, la relecture après la fin et un échec de sauvegarde suivi d’un réessai.
+
+### Fond continu en haut des pages — 5 novembre 2026
+
+La couleur de la zone haute suit désormais la page active sur le document, le corps, le cadre de l’app et la couleur système. La synchronisation tient compte des changements de thème sur la racine, du chargement des styles, de la navigation et du retour au premier plan. Les mises à jour sont regroupées par image pour éviter les boucles d’observation. Le décor existant du code s’étend dans la zone haute en conservant la place du clavier.
+
+L’accueil du code garde « Bonjour / Bonsoir » suivi de l’appellation du carnet. Une appellation explicitement vérifiée dans le formulaire est reprise pour cet accueil lors de la sauvegarde du carnet.
+
+Les 107 tests passent et la construction réussit. Le fond a été contrôlé en navigateur sur le formulaire et Faire connaissance, en jour et en nuit, avec une zone système simulée. Le rendu de la barre native de Safari ou de la PWA reste à confirmer sur un iPhone réel.

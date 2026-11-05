@@ -154,6 +154,8 @@ html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:100dvh}
 #en-app #onb .obar{flex:none;padding:12px max(26px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
 #en-app #onb .obar button{min-height:44px;box-sizing:border-box;display:flex;align-items:center;font-size:16px}
 #en-lock{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
+/* Le décor couvre aussi la zone système, sans déplacer le clavier. */
+#en-lock .sc{flex-basis:calc(24% + env(safe-area-inset-top,0px));margin-top:calc(-1 * env(safe-area-inset-top,0px))}
 .mv .mvmic.rec svg{stroke:#C9766E}
 
 .mv .frd .frv{display:block;max-width:92px;margin:3px auto 0;font:italic 13.5px/1.2 'Cormorant Garamond',Georgia,serif;color:var(--sink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;letter-spacing:0;text-transform:none}
@@ -233,7 +235,9 @@ let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
 function save(force){
  const perform=async()=>{if(!DEK||!W.code||globalThis.__enWiping)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;
-  const rec={v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:META.nm||''};
+  const chosenName=st['lifeform-approved-v1']?.answers?.surnom;
+  const greetingName=chosenName?.state==='answered'&&chosenName.verified===true&&chosenName.rows?.[0]?.name?String(chosenName.rows[0].name).replace(/[<>\"&]/g,'').trim().slice(0,24):META.nm||'';
+  const rec={v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:greetingName};
   await dbPut(KEY,rec);last=s;M.st=st;dirty=JSON.stringify({ls:M.ls,st:snapshot()})!==s;CLOUD.push(rec)};
  saving=(saving||Promise.resolve()).catch(()=>{}).then(perform);
  saving.catch(()=>{dirty=true;const t=document.createElement('div');t.className='en-toast on';t.setAttribute('role','alert');t.textContent='La sauvegarde a échoué. Garde cette page ouverte et réessaie.';document.body.appendChild(t);setTimeout(()=>t.remove(),6000)});
@@ -341,18 +345,28 @@ window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.
 window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;await dbPut(KEY,rec);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
 
-/* Fond commun, resynchronisé à la navigation et aux changements de thème. */
+/* Le fond de la zone système suit la page réellement affichée. */
 window.__enSyncChrome=function(){
  const ph=document.querySelector('#en-app .phone.en-on'),lock=document.getElementById('en-lock');
  const el=lock&&!lock.classList.contains('out')?lock:ph;if(!el)return;
- const css=getComputedStyle(el),bg=css.backgroundColor;
- if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')return;
- for(const node of [document.documentElement,document.body])if(node.style.background!==bg)node.style.background=bg;
+ let bg=getComputedStyle(el).backgroundColor;
+ if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent'){
+  bg=el.classList.contains('nuit')||document.documentElement.classList.contains('en-nuit')?'rgb(42, 30, 38)':'rgb(245, 224, 211)';
+ }
+ for(const node of [document.documentElement,document.body,document.getElementById('en-app')])if(node&&node.style.backgroundColor!==bg)node.style.backgroundColor=bg;
  const meta=document.querySelector('meta[name="theme-color"]');if(meta&&meta.content!==bg)meta.content=bg;
 };
+let chromeFrame=null;
+function scheduleChrome(){if(chromeFrame!==null)return;chromeFrame=requestAnimationFrame(()=>{chromeFrame=null;window.__enSyncChrome();});}
+function chromeSurface(node){return !!node&&node.nodeType===1&&(node===document.documentElement||node===document.body||node.matches('#en-app,.phone,#en-lock,style,link[rel="stylesheet"]'));}
 new MutationObserver(ms=>{
- if(ms.some(m=>m.target.matches&&m.target.matches('#en-app .phone.en-on,#en-lock')))window.__enSyncChrome();
-}).observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class','style','data-en-step']});
+ if(ms.some(m=>chromeSurface(m.target)||(m.type==='childList'&&[...m.addedNodes,...m.removedNodes].some(chromeSurface))))scheduleChrome();
+}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','data-en-step']});
+document.addEventListener('load',event=>{if(event.target.matches?.('link[rel="stylesheet"]'))scheduleChrome();},true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)scheduleChrome();});
+addEventListener('pageshow',scheduleChrome);
+scheduleChrome();
+
 function viewportBounds(){
  const v=window.visualViewport;if(!v)return;
  const root=document.documentElement;
@@ -406,7 +420,7 @@ function lockUI(meta,onOk,onSec,onFid){
  const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
  const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=nuit?'nuit':'';
- el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
+ el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm?', '+nm.trim():''}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
  <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><p class="s" style="font-size:13px;opacity:.8">Efface le journal de ce téléphone et te déconnecte. Ce qui est gardé dans ton compte en ligne n’est pas touché : pour le supprimer, ouvre l’app puis Réglages › Mon compte › supprimer mon compte.</p><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);window.__enSyncChrome();
  let code='',busy=false,fails=0,until=0;dbGet('lockf').then(L=>{if(L&&L.until>Date.now())until=L.until}).catch(()=>{});const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
@@ -9205,3 +9219,4 @@ new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getEleme
 <script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();</script>
 </body>
 </html>
+
