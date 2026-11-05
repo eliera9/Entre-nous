@@ -31,15 +31,33 @@ window.__enInitCompanions=()=>{
  Object.defineProperty(window,'__pet',{configurable:true,get:()=>state.selected,set:key=>{if(SPECIES.includes(key)){state.selected=key;syncAvatars();flush().catch(()=>{});}}});
  Object.defineProperty(window,'__petName',{configurable:true,get:()=>state.bySpecies[state.selected].name,set:name=>{state.bySpecies[state.selected].name=String(name||'').replace(/[<>]/g,'').slice(0,30);syncAvatars();flush().catch(()=>{});}});
  window.__getCompanionTraits=()=>state.bySpecies[state.selected].traits.map(i=>info[state.selected].facets[i][0]);
+// Les huit portraits jour/nuit sont réservés aux bulles de dialogue :
+ // ne pas toucher aux illustrations de la page de choix du compagnon (#mv).
  function syncAvatars(){
   const avatar=document.getElementById('vpet');if(avatar)avatar.src='illus/dort-'+state.selected+'.webp';
   const small=document.getElementById('mvsm');if(small)small.src='illus/eveil-'+state.selected+'.webp';
   document.querySelectorAll('button.sbplume').forEach(button=>{
    button.setAttribute('aria-label','Parler à '+(state.bySpecies[state.selected].name||'ton compagnon'));
-   const image=button.querySelector('img');if(image)image.src='illus/eveil-'+state.selected+(image.closest('.nuit')?'-nuit':'')+'.webp';
+   if(button.closest('#mv'))return;
+   const image=button.querySelector('img');if(!image)return;
+   const isNight=document.documentElement.classList.contains('en-nuit')||!!button.closest('.nuit');
+   const wanted='illus/bulles/'+state.selected+'-'+(isNight?'nuit':'jour')+'.svg';
+   if(image.getAttribute('src')!==wanted)image.setAttribute('src',wanted);
   });
  }
  syncAvatars();document.addEventListener('DOMContentLoaded',syncAvatars);
+ // Certaines bulles sont créées seulement à l'ouverture de leur page.
+ const app=document.getElementById('en-app');
+ if(app){
+  new MutationObserver(records=>{
+   if(records.some(record=>Array.from(record.addedNodes).some(node=>
+    node.nodeType===1&&(node.matches?.('button.sbplume')||node.querySelector?.('button.sbplume'))
+   )))syncAvatars();
+  }).observe(app,{childList:true,subtree:true});
+ }
+ // La sélection du thème met à jour les bulles déjà visibles.
+ new MutationObserver(syncAvatars).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+
  root.querySelectorAll('.cf-page').forEach((page,index)=>{
   const portrait=page.querySelector('.cf-portrait'),scene=page.querySelector('.cf-scene');
   const video=page.querySelector('.cf-film'),poster=page.querySelector('.cf-poster'),facets=page.querySelector('.cf-facets'),words=page.querySelector('.cf-words'),error=page.querySelector('.cf-error');
