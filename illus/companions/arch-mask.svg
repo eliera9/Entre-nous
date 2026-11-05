@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <!-- Même silhouette pour l'image et le réveil : le décor intérieur reste visible. -->
+  <path fill="white" d="M80 458 Q80 455 84 454 L84 267 C84 145 176 48 294 48 C413 48 507 144 507 267 L507 454 Q511 455 511 460 L511 467 L507 470 L507 477 Q300 481 85 478 L84 470 L80 468 Z"/>
+</svg>
