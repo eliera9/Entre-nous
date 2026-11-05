@@ -536,6 +536,8 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <link rel="stylesheet" href="code-placement.css">
 <link rel="stylesheet" href="onboarding-valide.css">
 <link rel="stylesheet" href="compagnons.css">
+<link rel="stylesheet" href="avatars-bulles.css">
+<script src="avatars-bulles.js" defer></script>
 <script src="compagnons.js" defer></script>
 <link rel="stylesheet" href="recovery-sheet.css">
 <script src="recovery-sheet.js" defer></script>
@@ -4978,8 +4980,7 @@ const first=()=>window.__P();
 function bub(t){const b=document.createElement('p');b.className='mvbub';b.textContent=t;box.appendChild(b);return b}
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';box.appendChild(b);return b}
 function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';let w=wait();
- T.push(setTimeout(()=>{w.remove();bub('Coucou '+first()+'.');w=wait()},900));
- T.push(setTimeout(()=>{w.remove();bub('On prend un moment pour toi ?')},2400))}
+ T.push(setTimeout(()=>{w.remove();bub('On y va doucement, à ton rythme.')},900))}
 new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting){play();ob.disconnect()}},{threshold:.5}).observe(ph);
 window.__mvsay=t=>{T.forEach(clearTimeout);T=[];box.innerHTML='';const w=wait();T.push(setTimeout(()=>{w.remove();bub(t)},800))};})();
 </script>

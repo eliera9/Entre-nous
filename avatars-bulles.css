@@ -1,0 +1,14 @@
+/* Le cercle et les pattes font partie de l'illustration : pas de second masque. */
+#en-app .en-bubble-avatar{display:block;object-fit:contain!important;object-position:center!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;margin:0!important;transform:none!important}
+#en-app .en-avatar-frame{overflow:visible!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#en-app .en-avatar-frame>.en-bubble-avatar{width:100%!important;height:100%!important;max-width:none!important;margin:0!important}
+
+@font-face{font-family:'Entre nous Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/newsreader-400-normal.ttf') format('truetype')}
+/* Écriture droite et bulle veloutée validées pour les conversations. */
+#en-app :is(.mvbub,.gb.gai,.ps-bub p,.ps-yay p,.sbpbub p,.ad-sh .bub p,.rgcard p,.rgov .b,.acps .pl p){font-family:'Entre nous Newsreader',Georgia,serif!important;font-style:normal!important;font-weight:400!important;line-height:1.4}
+#en-app #mv2 .mvtalk{align-items:flex-end;gap:12px}
+#en-app #mv2 .mvbubs{min-height:0;flex:1;margin-bottom:0}
+#en-app #mv2 .mvbub{padding:15px 17px;border-radius:22px 22px 22px 5px;font-size:20px;background:color-mix(in srgb,var(--sacc) 13%,var(--sbg))!important;color:var(--sink)!important}
+#en-app #mv2 .mvgorow .mvgo{display:none!important}
+
+#en-app .sbplume>.en-bubble-avatar{position:static!important;left:auto!important;top:auto!important;pointer-events:none}

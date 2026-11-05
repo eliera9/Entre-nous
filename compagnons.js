@@ -41,7 +41,7 @@ window.__enInitCompanions=()=>{
    if(button.closest('#mv'))return;
    const image=button.querySelector('img');if(!image)return;
    const isNight=document.documentElement.classList.contains('en-nuit')||!!button.closest('.nuit');
-   const wanted='illus/bulles/'+state.selected+'-'+(isNight?'nuit':'jour')+'.svg';
+   const wanted='illus/avatars-compagnons/'+state.selected+'-'+(isNight?'nuit':'jour')+'.svg';
    if(image.getAttribute('src')!==wanted)image.setAttribute('src',wanted);
   });
  }
