@@ -64,3 +64,18 @@ Les corrections couvrent les dates du calendrier (sans décalage des rendez-vous
 La vérification en navigateur du coffre, des téléchargements chiffrés et de la restauration n’a pas pu être menée dans l’aperçu HTTP, qui ne fournit pas Web Crypto. Les fonctions de chiffrement et les transformations des sauvegardes ont été testées sous Node. L’accès à la production est resté protégé : le compte du navigateur de test n’est pas autorisé à ouvrir le site. Aucun accès n’a été élargi.
 
 Restent à terminer ou à vérifier séparément : remplissage automatique de la fiche depuis le portrait et le questionnaire, conservation de certaines personnalisations du profil, cohérence des petits pas entre Psy et Mon espace, conservation de la forme choisie pour le bilan guidé, rappels automatiques, parcours avec un vrai compte et plusieurs appareils, médias, Face ID et installation sur iPhone. Les éléments de la maquette encore présents dans le code ne constituent pas des intégrations natives actives.
+
+
+### Faire connaissance, formulaires et retour IA — 5 novembre 2026
+
+Le parcours utilise les 199 questions existantes et conserve leurs embranchements. La nouvelle présentation affiche une question ou un petit groupe de champs cohérents, des idées en lignes douces et une zone d’écriture repliable. Les brouillons, les choix et les reprises sont enregistrés dans le coffre existant, séparément par chapitre ; les anciennes sessions restent conservées. Les prénoms ne sont plus déduits des majuscules. Les réponses travail/études et les loisirs multiples gardent toutes leurs branches, et les animaux peuvent être renseignés sur plusieurs fiches actuelles ou anciennes.
+
+Les avatars et la page des compagnons déjà intégrés sont conservés. Faire connaissance reprend les cartes avec progression, « Je reviendrai plus tard » et l’accès repliable aux IA. Les retours des nouveaux parcours rejoignent cette page.
+
+« Préparer mon échange » ouvre le message IA complet dans un volet bas. Ses règles limitent les relances inutiles, respectent les informations connues, les refus et les inconnues ; la structure du portrait et les thèmes d’origine sont conservés. Le prénom est retiré du message préparé par défaut.
+
+« J’en reviens » accepte un portrait collé ou un fichier texte, avec une discussion facultative distincte. Une relecture précède la sauvegarde réelle ; un portrait partiel ou libre reste accepté. Les textes originaux sont conservés. Une ancienne ligne du portrait est gardée par défaut ; son remplacement demande une sélection explicite. Le remplissage de la fiche conserve la protection existante des champs déjà renseignés manuellement.
+
+La visite est accessible depuis l’accueil. Elle montre l’écriture, le Journal, Mon espace, Psy lorsqu’il est visible, puis le compagnon. Retour, fermeture, touche Échap et relance restent disponibles.
+
+Vérification de cette livraison : contrôle syntaxique des scripts intégrés et des nouveaux modules, tests de lecture/fusion de portraits et de sélection, contrôle des branches et des actifs référencés. L’environnement local et le navigateur de vérification n’étant pas disponibles lors de cette intégration via l’API GitHub, la suite Node complète, le rendu mobile et les interactions réelles avec le coffre n’ont pas été exécutés dans cette session. Les nouveaux tests peuvent être lancés avec la suite habituelle.

@@ -1,7 +1,7 @@
 /* Les avatars des conversations ; le choix du compagnon conserve ses scènes. */
 (()=>{
 // Début du modèle des avatars.
-const BUBBLE_CONTEXTS='.mvring,.gring,.sbplume,.ps-bub,.ps-yay,.bub,.rgov .a,.rgcard,.acps .pl';
+const BUBBLE_CONTEXTS='.lv-question,.lv-bubbleline,.mvring,.gring,.sbplume,.ps-bub,.ps-yay,.bub,.rgov .a,.rgcard,.acps .pl';
 function avatarAsset(source,night){
  const match=String(source||'').match(/(?:^|\/)illus\/(?:eveil-(chat|panda|lapin|chien)(?:-nuit)?\.webp|avatars-compagnons\/(chat|panda|lapin|chien)-(?:jour|nuit)\.svg)(?:[?#].*)?$/);
  return match?'illus/avatars-compagnons/'+(match[1]||match[2])+'-'+(night?'nuit':'jour')+'.svg':null;

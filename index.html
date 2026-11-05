@@ -543,6 +543,8 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="recovery-sheet.js" defer></script>
 <script src="onboarding-code-recovery.js" defer></script>
 <script src="auth-connexion.js" defer></script>
+<link rel="stylesheet" href="ma-vie-validee.css">
+<script src="ma-vie-validee.js" defer></script>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -5020,8 +5022,9 @@ const joinNat=a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' et '+a[a.lengt
 const UNSURE=/^(je (ne )?sais pas|j.?sais pas|aucune idée|bof|euh|rien|pas d.idée|je ne vois pas)\b/i;
 const ALREADY=/déjà (répondu|dit)|je (te )?l.?ai (déjà )?dit|comme je (t.?ai|l.?ai) dit/i;
 const STOP=new Set(['Et','Je','Il','Elle','Oui','Non','Mais','Le','La','Les','Un','Une','Mon','Ma','Mes','Ça','Ca','On','Avec','Quand','Dans','Pour','Moi','Toi','Lui','Ils','Il','Oh','Ah','Bon','Alors','Sinon','Puis','Enfin','Merci']);
-const nameOf=t=>{const c=t.trim().replace(/^(il|elle|ils|elles)\s+/i,'').replace(/^(s'appelle|s’appelle|s'appellent|s’appellent|c'est|c’est|on l'appelle|on l’appelle)\s+/i,'');const m=c.split(/[\s,.!]+/)[0]||c;return cap(m)};
-const capsIn=t=>{const out=[];const re=/(^|[\s,(«"'’])([A-ZÉÈÀÂÎÔÛÇ][a-zéèêëàâîïôöûüç-]{1,})/g;let m;while((m=re.exec(t))){const w=m[2];if(STOP.has(w))continue;if(m.index===0&&!/,/.test(t.slice(0,w.length+2))&&t.trim().indexOf(w)===0)continue;if(P.partenaire&&w===P.partenaire)continue;if(P.villeNom&&w===P.villeNom)continue;out.push(w)}return out};
+const nameOf=t=>String(t||'').trim();
+/* Les noms sont renseignés explicitement dans les champs dédiés. */
+const capsIn=()=>[];
 const PARTW=[[/\b(copain|mec|mari|chéri|compagnon|fiancé|petit ami|conjoint)\b/i,'il'],[/\b(copine|femme|chérie|compagne|fiancée|petite amie|conjointe)\b/i,'elle']];
 const PETS=/\b(chat|chatte|chaton|chien|chienne|chiot|lapin|hamster|cochon d'inde|perroquet|oiseau|tortue|poisson|furet|cheval|rat)s?\b/i;
 const HOB=[[/\blire|lecture|livres?\b|bouquin/i,'la lecture',['lire_genre','lire_pref']],[/\bsport|course|yoga|danse|foot|muscu|salle\b|natation|vélo/i,'le sport',['sport_quel']],[/musique|chanter|chant\b|piano|guitare/i,'la musique',['mus']],[/dessin|dessiner|peindre|peinture|aquarelle/i,'le dessin',['dessin']],[/cuisin|pâtiss/i,'la cuisine',['cuisine']],[/jeux? vid[ée]o|gaming|console|switch|\bjouer\b/i,'les jeux vidéo',['jeux']],[/séries?\b|netflix/i,'les séries',['serie']],[/photo/i,'la photo',['photo']],[/balad|marche|randon/i,'les balades',['balade']],[/jardin/i,'le jardinage',['jardin']],[/créer|création|contenu|créati|instagram|tiktok|montage/i,'la création',['crea']],[/\bécri(re|s|ture)\b/i,'l’écriture',['ecrit']]];
@@ -5094,7 +5097,7 @@ an_eu_nom:{q:'Il s’appelait comment ?',name:'animal_eu',skip:()=>P.animal_eu}
 an_eu_souv:{q:()=>'Tu as un souvenir avec '+(P.animal_eu||'lui')+' que tu aimes bien ?',c:['nos câlins','ses bêtises','nos siestes','le jour où il est arrivé'],r:()=>'Merci de me l’avoir raconté. Il vit un peu ici, maintenant.'},
 an_reve:{q:'Et si un jour tu en avais un, ce serait lequel ?',c:['un chat','un chien','autre'],r:()=>'Un jour, peut-être !'},
 /* 5 · Ce que tu aimes */
-loisirs:{q:()=>P.hobbies&&P.hobbies.length?'Tu m’as parlé '+joinNat(P.hobbies.map(deArt))+'. Il y a autre chose que tu aimes faire, rien que pour toi ?':'Et quand tu as du temps rien qu’à toi, tu aimes faire quoi ?',c:()=>{const all=['lire','dessiner','le sport','la musique','cuisiner','me balader','les jeux vidéo','la photo','jardiner','les séries'];const k=(P.hobbies||[]);const pool=all.filter(x=>!hobbiesIn(x).some(h=>k.includes(h[1])));return k.length?['non, c’est déjà pas mal',...pool]:pool},then:a=>{const known=P.hobbiesQ||[];P.hobbiesQ=null;const fresh=has(a,/^non|c.?est tout|déjà pas mal|rien d.autre/i)?[]:hobbiesIn(a).filter(h=>!(P.hobbies||[]).includes(h[1]));fresh.forEach(h=>(P.hobbies=P.hobbies||[]).push(h[1]));const ids=[...known,...[].concat(...fresh.map(h=>h[2]))];return ids.slice(0,4)},r:a=>has(a,/^non|c.?est tout|déjà pas mal/i)?'Déjà de quoi bien remplir tes journées !':null},
+loisirs:{q:()=>P.hobbies&&P.hobbies.length?'Tu m’as parlé '+joinNat(P.hobbies.map(deArt))+'. Il y a autre chose que tu aimes faire, rien que pour toi ?':'Et quand tu as du temps rien qu’à toi, tu aimes faire quoi ?',c:()=>{const all=['lire','dessiner','le sport','la musique','cuisiner','me balader','les jeux vidéo','la photo','jardiner','les séries'];const k=(P.hobbies||[]);const pool=all.filter(x=>!hobbiesIn(x).some(h=>k.includes(h[1])));return k.length?['non, c’est déjà pas mal',...pool]:pool},then:a=>{const known=P.hobbiesQ||[];P.hobbiesQ=null;const fresh=has(a,/^non|c.?est tout|déjà pas mal|rien d.autre/i)?[]:hobbiesIn(a).filter(h=>!(P.hobbies||[]).includes(h[1]));fresh.forEach(h=>(P.hobbies=P.hobbies||[]).push(h[1]));const ids=[...known,...[].concat(...fresh.map(h=>h[2]))];return ids},r:a=>has(a,/^non|c.?est tout|déjà pas mal/i)?'Déjà de quoi bien remplir tes journées !':null},
 lire_genre:{q:'Tu lis quoi, plutôt ?',c:['des romans','de la fantasy','de la romance','du développement perso','des BD','des thrillers']},
 lire_pref:{q:'Et un livre que tu as adoré ?',r:a=>has(a,/plein|beaucoup|tellement|trop|plusieurs|tous/i)?'Ah, '+A('un vrai lecteur','une vraie lectrice')+NB+'! Tu me les feras découvrir, un jour.':pickR(['Je le note dans un coin.','Il faudra que tu me le racontes un jour.'])},
 sport_quel:{q:'Quel sport, toi ?',c:['la course','le yoga','la danse','la salle','la natation']},
@@ -5225,6 +5228,7 @@ document.getElementById('mvrestart').onclick=()=>openChapter(chapter);
 document.querySelector('#mv3 .mvbk').onclick=leave;
 window.__mvstart=()=>openChapter(chapter);window.__mvopen=openChapter;window.__mvselected=()=>LIFE.selected||'moi';window.__mvchapter=()=>chapter;
 document.addEventListener('visibilitychange',remember);window.addEventListener('pagehide',remember);
+window.__enLifeModel={nodes:N,chapters:CHAPTERS,state:LIFE,profile:P,addStory,hobbiesIn};
 if(/^oui/i.test(P.part_hist||''))addStory();progress();
 })();;;
 </script>
@@ -5378,10 +5382,21 @@ D) en famille
 E) ✎ Je préfère écrire »
 
 Ce qui compte aussi :
-- Rebondis sur ce que je dis : creuse les détails et les émotions, relie mes réponses entre elles et souviens-toi des prénoms. Tes choix de QCM peuvent reprendre ce que je t'ai déjà dit.
+- Rebondis avec mesure sur ce que je dis, relie mes réponses entre elles et souviens-toi des prénoms. Tes choix de QCM peuvent reprendre ce que je t'ai déjà dit.
 - Si je ne veux pas répondre, passe sans insister. Si je dis « on s'arrête », arrête-toi.
 - Pour les sujets sensibles (enfance difficile, épreuves, deuils, corps), demande d'abord si j'ai envie d'en parler, avec un QCM « oui, on peut / pas maintenant / ✎ Je préfère écrire ». Ne pose jamais de question sur le poids ou les chiffres.
 - Si je parle de me faire du mal ou de ne plus vouloir vivre, sors du QCM, réponds avec calme et donne le 3114.
+
+- Appuie-toi sur les informations déjà accessibles dans cet échange et les réponses précédentes. Ne me redemande pas un fait que tu connais. Si une information n'est pas accessible, ne prétends pas la connaître.
+- Chaque question doit apporter une information encore manquante et utile au formulaire, éclaircir une ambiguïté importante ou approfondir un sujet que j'ai moi-même envie d'explorer. Sinon, passe au point suivant.
+- Relie mes réponses avec délicatesse. Les pistes entre parenthèses ne sont pas des questions obligatoires et ne doivent pas devenir une série d'approfondissements.
+- En général, fais au maximum une relance utile sur un point, exceptionnellement deux si elles sont nécessaires. Ne transforme pas chaque détail de ma réponse en un nouveau sujet.
+- Une réponse courte, « je ne sais pas », « je t'en ai déjà parlé » ou une absence de précision ne sont pas des invitations à insister. Accepte ce que je donne et continue.
+- Si je préfère passer ou reporter un sujet, laisse-le de côté jusqu'à ce que je choisisse de le reprendre. Ne le réintroduis pas sous une autre formulation.
+- Pour un sujet sensible, une permission initiale ne vaut pas permission d'approfondir sans fin. Reste dans ce que je souhaite raconter, sans chercher une explication psychologique à chaque objet, habitude ou événement.
+- Conserve les nuances et les évolutions de mes réponses. Une information directement corrigée ou actualisée par moi prime sur une synthèse plus ancienne. N'invente jamais de prénom, date, décès, intention ou lien de cause à effet.
+- Un animal disparu n'est pas nécessairement décédé ; un objet peut compter par habitude sans avoir un rôle émotionnel particulier ; une envie récente ne doit pas être replacée dans mon enfance.
+- Arrête lorsque les informations utiles sont couvertes ou lorsque je demande mon portrait, même si celui-ci est partiel. N'ajoute pas de questions pour atteindre une longueur ou un nombre d'échanges. Les informations inconnues restent « — ».
 
 Ce qu'on explore${keys.length>1?', dans l\'ordre que tu sens':''} (les idées entre parenthèses sont des pistes à me proposer quand je sèche, pas une liste à lire) :
 
@@ -5461,46 +5476,7 @@ document.getElementById('mvpgo').onclick=()=>{const r=check();er.querySelector('
  if(r===null){er.hidden=false;ert.textContent='Colle d’abord ce qu’il t’a donné, et je m’occupe du reste.';return}
  if(r===false){er.hidden=false;ert.textContent='Je n’arrive pas à tout lire. Retourne là-bas, écris « mon portrait », et recopie tout ce qu’il te donne, du début à la fin.';return}
  window.__portrait=r;if(window.__convo&&window.__enConvAdd){window.__enConvAdd({w:'Ma vie · faire connaissance',src:(window.__mvAI&&window.__mvAI())==='claude'?'claude':'gpt',txt:window.__convo});window.__convo=null;const ct=document.getElementById('mvcta');if(ct){ct.value='';ct.dispatchEvent(new Event('input'))}}close();document.getElementById('mvnote4').textContent='Portrait gardé. Ce que le compagnon en a retenu : c’est la zone 4, juste après.'};
-const SAMPLE=`=== MON PORTRAIT ===
-## MOI AUJOURD'HUI
-- Ville : Toulouse
-- Depuis : mai
-- Vit avec : son copain Thomas
-- Travail ou études : conseillère commerciale par téléphone chez Orange
-- Ressenti sur le travail : s'ennuie, n'aime pas, salaire trop bas
-- Journées, rituels et sommeil : tranquilles, sport après le travail ; sommeil variable
-- Animaux : Réglisse, chat birman, câlin et jaloux
-- Loisirs et passion : lecture, jeux vidéo, création de contenu, salle de sport
-- Livres, films, musique : romance, fantasy, manga ; Vampire Diaries, Les Frères Scott
-- Endroits refuges : dans les bras de Thomas, chez elle, la nature
-- Petits bonheurs : un message de Thomas, un câlin de Réglisse
-- Se décrit comme : créative, généreuse, curieuse, calme, têtue ; parfois froide et renfermée
-- Fierté : avoir osé déménager
-- Ce qui prend de l'énergie : le travail, les autres
-- Ce qui aide : écrire, parler à Thomas, un câlin de Réglisse
-- Envies pour cette année : voyager, changer de travail, se sentir mieux, un projet perso
-- Façon de lui parler : un peu de tout
-## MES PROCHES
-- Thomas — compagnon — son refuge
-- Vers qui elle se tourne : Thomas
-- Ce qui est compliqué : —
-## MON PASSÉ
-- A grandi à : —
-- Enfance : —
-- Grands moments : le déménagement à Toulouse
-- Épreuves : la perte de Soho, son ancien chat
-- Ce qui l'a construite : —
-## MON INTÉRIEUR
-- Météo intérieure : éclaircies
-- Ce qui pèse : le travail
-- Peurs : —
-- Rêves : un métier créatif, travailler à son compte
-- Valeurs : —
-## NOTRE HISTOIRE
-- Partenaire : Thomas
-- Rencontre : sur une appli
-- Ensemble depuis : 1 an et demi
-=== FIN ===`;
+const SAMPLE=window.__enPortraitTpl||'';
 document.getElementById('aisample').onclick=()=>{ph.scrollIntoView({behavior:'smooth',block:'center'});open();ta.value=SAMPLE;check()};
 })();
 </script>
@@ -8807,7 +8783,7 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
 (function(){const chat=document.getElementById('mvchat'),body=document.getElementById('dbody');if(!body)return;
  let LOG=[];const sv=window.__enLive&&window.__enLive('mvlog',()=>LOG);if(sv)LOG=sv;
  let CV=[];const sv2=window.__enLive&&window.__enLive('convs',()=>CV);if(Array.isArray(sv2))CV=sv2;
- window.__enConvs=()=>CV;window.__enConvAdd=o=>{if(!o||!o.txt)return;CV.push({w:o.w||'Ma vie',src:o.src==='claude'?'claude':'gpt',txt:String(o.txt).slice(0,200000),at:Date.now()});draw();try{window.__vaultPushNow&&window.__vaultPushNow()}catch(e){}};window.__enConvDel=i=>{if(i==null)CV.length=0;else CV.splice(i,1);draw()};window.__enConvDraw=()=>draw();
+ window.__enConvs=()=>CV;window.__enConvAdd=o=>{if(!o||!o.txt)return;CV.push({w:o.w||'Ma vie',src:o.src==='claude'?'claude':'gpt',txt:String(o.txt),at:Date.now()});draw();try{window.__vaultPushNow&&window.__vaultPushNow()}catch(e){}};window.__enConvDel=i=>{if(i==null)CV.length=0;else CV.splice(i,1);draw()};window.__enConvDraw=()=>draw();
  const CH={'MOI AUJOURD’HUI':'moi',"MOI AUJOURD'HUI":'moi','MES PROCHES':'proches','MON PASSÉ':'passe','MON INTÉRIEUR':'int','NOTRE HISTOIRE':'histoire'};
  const MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
  const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -8817,6 +8793,7 @@ window.__enPsyCard=psyCard;psyCard();setInterval(psyCard,60000);document.addEven
   body.innerHTML=Object.entries(by).map(([c,L])=>{const t=L[0].ct||c;const days={};L.forEach(x=>{const d=new Date(x.at);const k=d.getDate()+' '+MOC[d.getMonth()];(days[k]=days[k]||[]).push(x)});
    return `<section class="dch" data-c="${c}"><p class="dcht">${esc(t)}</p><div class="dth">${Object.entries(days).map(([k,X])=>`<div class="dblk" data-s="form"><span class="dtag">AVEC PLUME · ${k}</span>${X.map(x=>(x.q?`<p class="dq">${esc(x.q)}</p>`:'')+`<p class="da">${esc(x.a)}</p>`).join('')}</div>`).join('')}</div></section>`}).join('')+convHTML()}
  draw();
+ window.__enLifeLog=entry=>{if(!entry||!entry.id||!entry.a)return;const old=[...LOG].reverse().find(x=>x.c===entry.c&&x.id===entry.id);if(old)Object.assign(old,entry);else LOG.push({...entry,at:Date.now()});draw();};
  document.addEventListener('en-vie-edit',e=>{const d=e.detail;const x=[...LOG].reverse().find(x=>x.c===d.chapter&&(x.id===d.id||x.a===d.old));if(x){x.a=d.value;draw()}});
  if(chat)new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1||!n.classList.contains('mvme')||n.classList.contains('sk')||n.dataset.restore==='1')return;
   let q='',p=n.previousElementSibling;while(p&&!q){if(!p.classList.contains('mvme')&&p.textContent.trim())q=p.textContent.trim();p=p.previousElementSibling}
@@ -9225,5 +9202,6 @@ new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getEleme
 /* revenue de Google à la première ouverture : on passe directement à « Comment t'appelles-tu ? » */
 /* Le retour OAuth est vérifié par auth-connexion.js avant de poursuivre. */
 })();</script>
+<script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();</script>
 </body>
 </html>

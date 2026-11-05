@@ -1,0 +1,103 @@
+/* Mise en page validée : Faire connaissance, formulaires, IA et visite. */
+#en-app .phone.en-life-page{--lv-ink:#704C60;--lv-soft:#876879;--lv-fill:color-mix(in srgb,var(--sbg) 72%,#E8C8CF);--lv-line:color-mix(in srgb,var(--sline) 80%,var(--sbg));padding:0 22px calc(22px + env(safe-area-inset-bottom));color:var(--lv-ink)}
+#en-app .phone.en-life-page.nuit,html.en-nuit #en-app .phone.en-life-page{--lv-ink:#E7CAD6;--lv-soft:#C5A4B6;--lv-fill:color-mix(in srgb,var(--sbg) 76%,#785466)}
+#en-app .en-life-page [hidden],#en-app .en-life-page .lv-modal[hidden]{display:none!important}
+#en-app .en-life-page .lv-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;align-items:center;width:100%;flex:none;margin:calc(18px + env(safe-area-inset-top)) 0 15px}
+#en-app .en-life-page .lv-header p{font:400 13px/1.3 'Cormorant SC',Georgia,serif;letter-spacing:.12em;text-align:center;margin:0}
+#en-app .lv-back,#en-app .lv-close{all:unset;box-sizing:border-box;cursor:pointer;display:grid;place-items:center;width:44px;height:44px;flex:none;color:var(--lv-ink,var(--sink))}
+#en-app .lv-back span{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--lv-line,var(--sline))}
+#en-app .lv-back svg,#en-app .lv-close svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#en-app .en-life-page button:focus-visible,#en-app .lv-guide button:focus-visible{outline:2px solid var(--sacc);outline-offset:3px}
+#en-app #mv2 .mvc{background:color-mix(in srgb,var(--sbg) 70%,var(--scard));border:0;border-bottom:1px solid var(--lv-line);border-radius:14px;padding:15px 17px;gap:5px}
+#en-app #mv2 .mvres{display:none}
+#en-app #mv2 .mvcnt{font:400 11px 'Cormorant SC',Georgia,serif}
+#en-app #mv2 .mvbub,#en-app .en-life-page .lv-bubble,#en-app .en-life-page .mvbub{font-family:'Entre nous Newsreader',Georgia,serif!important;font-size:16px!important;font-weight:400!important;font-style:normal!important;line-height:1.4!important;color:var(--lv-ink)!important}
+#en-app #mv2 .mvgorow{flex:none;margin:10px auto}
+#en-app #mv2 .mvlat2{border:1px solid var(--lv-line);border-radius:24px;min-height:42px;padding:10px 18px;box-sizing:border-box;font:400 15px 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-access{width:100%;flex:none;border-top:1px solid var(--lv-line);padding-top:8px;margin:10px 0}
+#en-app .lv-access summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:44px;cursor:pointer;font:400 italic 16px 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-access summary::-webkit-details-marker,#en-app .lv-fold summary::-webkit-details-marker{display:none}
+#en-app .lv-access summary:after,#en-app .lv-fold summary:after{content:'';width:7px;height:7px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;rotate:45deg;flex:none;margin:0 5px 4px 12px}
+#en-app .lv-access[open] summary:after,#en-app .lv-fold[open] summary:after{rotate:225deg;margin-bottom:-3px}
+#en-app .lv-access .mvai{margin:4px 0 9px;text-align:center}
+#en-app #mv3.en-life-page{align-items:stretch;overflow:hidden}
+#en-app .lv-progress{height:3px;flex:none;background:color-mix(in srgb,var(--sline) 40%,transparent);border-radius:4px;overflow:hidden}
+#en-app .lv-progress i{display:block;height:100%;background:var(--sacc);transition:width .2s}
+#en-app .lv-scroll{width:100%;min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;padding:18px 0 12px;scrollbar-width:thin}
+#en-app .lv-theme{margin:0 0 20px;font:400 12px 'Cormorant SC',Georgia,serif;letter-spacing:.1em;color:var(--lv-soft);text-align:center}
+#en-app .lv-question{display:flex;align-items:flex-end;gap:10px;margin:0 0 25px}
+#en-app .lv-avatar{width:54px;height:54px;object-fit:contain;flex:none}
+#en-app .lv-bubble{position:relative;flex:1;background:var(--lv-fill);border-radius:22px 22px 22px 5px;padding:18px 17px;margin:0}
+#en-app .lv-fold{background:var(--lv-fill);border:0;border-radius:17px;padding:0 15px;margin:0 0 15px}
+#en-app .lv-fold summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:5px;cursor:pointer;min-height:57px;padding:12px 0;font:400 italic 18px/1.25 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-options{padding:0 0 10px}
+#en-app .lv-option{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:11px 0;width:100%;border-bottom:1px solid var(--lv-line);cursor:pointer;font:400 18px/1.25 'Cormorant Garamond',Georgia,serif;color:var(--lv-ink)}
+#en-app .lv-option:last-child{border-bottom:0}
+#en-app .lv-dot{width:16px;height:16px;border:1px solid var(--lv-soft);border-radius:50%;display:grid;place-items:center;flex:none}
+#en-app .lv-option[aria-pressed=true] .lv-dot:after{content:'';width:8px;height:8px;border-radius:50%;background:var(--sacc)}
+#en-app .lv-option[aria-pressed=true]{color:var(--sacc)}
+#en-app .lv-editor{padding:0 0 14px}
+#en-app .lv-editor textarea,#en-app .lv-field input,#en-app .lv-field textarea,#en-app .lv-field select,#en-app .lv-sheet textarea{display:block;box-sizing:border-box;resize:vertical;width:100%;min-width:0;background:transparent;color:var(--lv-ink);border:1px solid var(--lv-line);border-radius:14px;padding:13px 14px;font:400 16px/1.45 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-editor textarea{min-height:155px}
+#en-app .lv-response:has(.lv-ideas:not([open])) .lv-editor textarea{min-height:240px}
+#en-app .lv-fields{display:grid;gap:13px;margin:0 0 18px}
+#en-app .lv-field{display:block;font:400 italic 16px 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-field input,#en-app .lv-field textarea,#en-app .lv-field select{margin-top:7px;font-style:normal;min-height:46px}
+#en-app .lv-field textarea{min-height:90px}
+#en-app .lv-field small{display:block;font:400 13px/1.35 'Cormorant Garamond',Georgia,serif;color:var(--lv-soft);margin-top:5px}
+#en-app .lv-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;flex:none;border-top:1px solid var(--lv-line);padding-top:12px}
+#en-app .lv-primary{all:unset;box-sizing:border-box;cursor:pointer;display:block;text-align:center;min-height:44px;padding:12px 22px;border-radius:28px;background:var(--sacc);color:var(--sbg);font:400 16px/1.25 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-primary:disabled{opacity:.45;cursor:default}
+#en-app .lv-link{all:unset;cursor:pointer;box-sizing:border-box;min-height:44px;padding:10px 5px;font:400 italic 15px/1.3 'Cormorant Garamond',Georgia,serif;color:var(--lv-soft)}
+#en-app .lv-status{font:400 14px/1.35 'Cormorant Garamond',Georgia,serif;margin:10px 0;color:var(--lv-soft)}
+#en-app .lv-animal{padding:14px 0;border-bottom:1px solid var(--lv-line)}
+#en-app .lv-animal legend{font:400 18px 'Cormorant Garamond',Georgia,serif;margin-bottom:10px}
+#en-app fieldset.lv-animal{border:0;border-bottom:1px solid var(--lv-line);margin:0 0 15px;min-width:0}
+#en-app #mvai.en-life-page{align-items:stretch;overflow:hidden}
+#en-app .lv-ai-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:19px;padding:17px 0}
+#en-app .lv-ai-body .lv-question{margin:15px 0 0}
+#en-app .lv-ai-body>p{margin:0;font:400 17px/1.45 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-ai-actions{margin-top:auto;padding-top:15px;display:grid;gap:8px}
+#en-app .lv-modal{position:absolute;inset:0;z-index:80;background:rgba(36,22,32,.38);display:flex;align-items:flex-end}
+#en-app .lv-sheet{box-sizing:border-box;position:relative;background:var(--sbg);color:var(--lv-ink);border-radius:25px 25px 0 0;width:100%;max-height:calc(100% - 35px - env(safe-area-inset-top));display:flex;flex-direction:column;padding:11px 20px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(40,20,32,.12)}
+#en-app .lv-grab{display:block;width:32px;height:3px;border-radius:3px;background:var(--lv-line);margin:0 auto 3px;flex:none}
+#en-app .lv-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none;margin-bottom:5px}
+#en-app .lv-sheet-head h2{margin:0;font:400 23px 'Cormorant Garamond',Georgia,serif}
+#en-app .lv-sheet-body{overflow:auto;min-height:0;flex:1;padding:4px 0 8px}
+#en-app .lv-sheet-body>p{font:400 16px/1.4 'Cormorant Garamond',Georgia,serif;margin:0 0 16px}
+#en-app .lv-sheet .lv-field{margin-bottom:12px}
+#en-app .lv-sheet textarea{min-height:140px;resize:vertical}
+#en-app .lv-sheet .lv-prompt{min-height:220px;font:400 15px/1.45 'Cormorant Garamond',Georgia,serif;resize:vertical}
+#en-app .lv-file{display:inline-block;margin:5px 0 12px;font:400 italic 14px 'Cormorant Garamond',Georgia,serif;min-height:38px;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+#en-app .lv-sheet .lv-file input{position:absolute;opacity:0;width:1px;height:1px}
+#en-app .lv-file:focus-within{outline:2px solid var(--sacc)}
+#en-app .lv-sheet .lv-fold{padding-inline:0;background:transparent;margin:0}
+#en-app .lv-sheet-foot{display:grid;gap:8px;flex:none;padding-top:10px}
+#en-app .lv-sheet a.lv-primary{text-decoration:none}
+#en-app .lv-review h2{font:400 26px 'Cormorant Garamond',Georgia,serif;margin:5px 0 12px}
+#en-app .lv-facts{padding-bottom:10px}
+#en-app .lv-facts p{margin:0;padding:10px 0;border-bottom:1px solid var(--lv-line);white-space:pre-wrap;overflow-wrap:anywhere}
+#en-app .lv-facts b{display:block;font:400 12px 'Cormorant SC',Georgia,serif;letter-spacing:.06em;color:var(--lv-soft);margin-bottom:4px}
+#en-app .lv-facts label{display:flex;gap:9px;align-items:flex-start;font:400 14px/1.4 'Cormorant Garamond',Georgia,serif;padding:8px 0}
+#en-app .lv-facts input{accent-color:var(--sacc);margin-top:4px}
+#en-app .lv-tour-launch{all:unset;box-sizing:border-box;cursor:pointer;display:block;margin:4px auto 14px;min-height:44px;padding:10px 16px;text-align:center;font:400 italic 14px 'Cormorant Garamond',Georgia,serif;color:var(--smuted)}
+#en-app #home .lv-guide{position:absolute;inset:0;z-index:90;overflow:hidden}
+#en-app .lv-guide .lv-spot{position:absolute;border-radius:16px;box-shadow:0 0 0 4px var(--sbg),0 0 0 9999px rgba(42,30,38,.55);pointer-events:none}
+#en-app .lv-guide .lv-tip{position:absolute;left:15px;right:15px;box-sizing:border-box;padding:13px 17px 16px;border:1px solid var(--sline);border-radius:23px;background:var(--sbg);color:var(--sink);box-shadow:0 8px 26px rgba(30,15,25,.15);max-height:calc(100% - 24px);overflow:auto}
+#en-app .lv-guide .lv-tip-head{display:flex;justify-content:space-between;align-items:center;margin:-5px -8px 0 0}
+#en-app .lv-guide .lv-counter{font:400 12px 'Cormorant SC',Georgia,serif;letter-spacing:.08em;color:var(--smuted)}
+#en-app .lv-guide .lv-bubbleline{display:flex;gap:10px;align-items:flex-start}
+#en-app .lv-guide .lv-bubbleline img{width:54px;height:54px;object-fit:contain;flex:none}
+#en-app .lv-guide h2{font:400 23px/1.15 'Cormorant Garamond',Georgia,serif;margin:3px 0 9px}
+#en-app .lv-guide .lv-tip p{font:400 16px/1.4 'Entre nous Newsreader',Georgia,serif;margin:0;color:var(--sink)}
+#en-app .lv-guide .lv-guide-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px}
+@media(max-width:360px){#en-app .phone.en-life-page{padding-inline:15px}#en-app .lv-question{gap:7px}#en-app .lv-avatar{width:43px;height:43px}#en-app .lv-bubble{padding:15px 14px}#en-app .lv-fold summary{font-size:17px}#en-app .lv-guide .lv-bubbleline img{width:42px;height:42px}}
+@media(prefers-reduced-motion:reduce){#en-app .lv-progress i{transition:none}}
+
+#en-app #mv2.en-life-page .mvhd{grid-template-columns:44px minmax(0,1fr) 44px}
+#en-app #mv3 .lv-header>.lv-link{padding:10px 0;text-align:center}
+
+#en-app .lv-guide{--lv-ink:#704C60;--lv-line:var(--sline)}
+#en-app #home.nuit .lv-guide,html.en-nuit #en-app .lv-guide{--lv-ink:#E7CAD6}
+#en-app .lv-guide .lv-tip p{color:var(--lv-ink)}
+#en-app .lv-guide [hidden]{display:none!important}
