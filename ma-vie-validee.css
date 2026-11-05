@@ -195,6 +195,12 @@
 #en-app #mv3 .en-end p{font:400 18px/1.5 'Cormorant Garamond',Georgia,serif}
 #en-app #mv3 .en-end button{margin:15px 0}
 #en-app #mv3 .en-gate{padding:8px 0 16px}
+#en-app #mv2 .lv-life-resume{padding:14px 16px;margin:18px 0;border-radius:18px;background:color-mix(in srgb,var(--sacc,#C18BA0) 10%,transparent)}
+#en-app #mv2 .lv-life-resume p{margin:0 0 10px;font:400 16px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted,#806B75)}
+#en-app #mv2 .lv-life-resume button{width:100%}
+#en-app #mv2.en-life-page{overflow-y:auto;overflow-x:hidden}
+#en-app #mv2.en-life-page>*{flex-shrink:0}
+#en-app #mv2.en-life-page #mvcards{flex:none;min-height:auto;overflow:visible}
 #en-app #mv3 :is(button,input,textarea,select):focus-visible{outline:2px solid var(--en-action);outline-offset:3px}
 @media(max-width:360px){#en-app #mv3.en-life-page{padding:18px 14px calc(20px + env(safe-area-inset-bottom))}#en-app #mv3 .en-question{font-size:16px;padding:15px 12px}#en-app #mv3 .en-question-text{inset:15px 12px}}
 @media(prefers-reduced-motion:reduce){#en-app #mv3 .en-fold-tail svg{transition:none}}

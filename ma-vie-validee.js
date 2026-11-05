@@ -387,11 +387,36 @@ function createApprovedImport(model, rawPortrait, discussion, portraitParser, po
  return {proposals,portraitText,count:Object.keys(proposals).length,warnings:[...new Set(warnings)],unmatched,pairs:pairs.length};
 }
 
+function createLifeReviewState(model,stored){
+ stored.lastQuestion=stored.lastQuestion||{};
+ stored.review=stored.review||{order:[],cursor:null,active:false};
+ const review=stored.review,locations=new Map(),ordered=[];
+ for(const chapter of model.chapters){const seen=new Set();function visit(id,theme){if(seen.has(id)||!model.steps[id])return;seen.add(id);if(!locations.has(id)){locations.set(id,{chapter:chapter.id,theme});ordered.push(id);}for(const rule of model.route[id]||[])for(const next of rule.then)visit(next,theme);}chapter.themes.forEach((t,i)=>t.roots.forEach(id=>visit(id,i)));}
+ function sync(){const ids=new Set([...(review.order||[]),...Object.keys(stored.answers||{}).filter(id=>stored.answers[id]?.imported)]);review.order=ordered.filter(id=>ids.has(id));return review.order;}
+ const pending=()=>sync().filter(id=>stored.answers[id]?.verified===false||stored.drafts[id]?.edited===true);
+ function remember(chapter,id,inReview=false){stored.lastQuestion[chapter]=id;if(inReview){sync();if(review.order.includes(id)){review.cursor=id;review.active=true;}}}
+ function resume(){const order=sync();return review.active&&order.includes(review.cursor)?review.cursor:pending()[0]||order[0]||null;}
+ function next(id){const order=sync(),index=order.indexOf(id);return order[index+1]||pending().find(other=>other!==id)||null;}
+ const previous=id=>{const order=sync();return order[order.indexOf(id)-1]||null;};
+ const location=id=>locations.get(id);
+ const path=chapter=>sync().filter(id=>location(id)?.chapter===chapter).map(id=>({id,theme:location(id).theme}));
+ function normalPosition(chapter,active,fallback=0){const index=active.findIndex(item=>item.id===stored.lastQuestion[chapter]);return index>=0?index:fallback;}
+ function finish(){review.active=false;}
+ sync();return{sync,pending,remember,resume,next,previous,location,path,normalPosition,finish,review};
+}
+
+function prepareImportReviewDraft(state,{plan,incoming,provider,scope}){
+ const previous=state.review;if(previous?.stage==='preview'&&previous.revision===(state.revision||0)){Object.assign(previous,{plan,incoming,provider,scope});return previous;}
+ state.review={stage:'preview',revision:state.revision||0,plan,incoming,provider,scope,replaceQuestions:[],replaceKeys:[],openSections:null};
+ return state.review;
+}
+
 function mountApprovedForm(root,config){
  const model=APPROVED_MODEL,logic=createLifeLogic(model);
  const stored=config.keep('lifeform-approved-v1',{version:1,answers:{},drafts:{},lastPosition:{},selected:'moi',migrated:false,imports:[]});
  if(!stored.migrated){const migrated=migrateApprovedAnswers(model,config.previous,config.profile);Object.assign(stored.answers,migrated.answers);Object.assign(stored.drafts,migrated.drafts);stored.migrationArchive=JSON.parse(JSON.stringify(config.previous||{}));stored.migrated=true;}
  const answers=stored.answers,drafts=stored.drafts,lastPosition=stored.lastPosition;
+ const reviewState=createLifeReviewState(model,stored);
  let reviewingImports=false;
  const chapterSteps=new Map();
  for(const ch of model.chapters){const steps=[],seen=new Set();function visit(id,theme){if(seen.has(id)||!model.steps[id])return;seen.add(id);steps.push({id,theme});for(const rule of model.route[id]||[])for(const child of rule.then)visit(child,theme);}ch.themes.forEach((t,theme)=>t.roots.forEach(id=>visit(id,theme)));chapterSteps.set(ch.id,steps);}
@@ -400,7 +425,7 @@ function mountApprovedForm(root,config){
  root.innerHTML=APPROVED_MARKUP;
  const form=$('form'),field=$('[data-free]'),options=$('[data-options]'),fold=$('[data-fold]'),records=$('[data-records]'),gate=$('[data-gate]'),writing=$('[data-writing]'),writeBody=$('[data-writing-body]'),writeFold=$('[data-write-fold]'),next=$('[data-next]');
  const complete=a=>a&&(a.state==='paused'||(a.state==='answered'&&a.verified!==false));
- function persist(){stored.selected=chapterId;config.save();}
+ function persist(){stored.selected=chapterId;return Promise.resolve().then(()=>config.save()).then(()=>true,()=>{const status=$('[data-status]');if(status)status.textContent='L’enregistrement n’a pas abouti. Tes réponses restent affichées. Réessaie l’enregistrement avant de quitter cette page.';return false;});}
  function serialize(step,answer){
   const lines=[...answer.selected];
   answer.rows.forEach((row,i)=>{const values=step.fields.filter(f=>String(row[f.key]||'').trim()).map(f=>f.label+' : '+row[f.key]);if(values.length)lines.push((step.repeat?'Repère '+(i+1)+' — ':'')+values.join(' | '));});
@@ -439,6 +464,11 @@ function mountApprovedForm(root,config){
   if(logic.storyAvailable(answers))config.addStory();
   const checked={};for(const[id,a]of Object.entries(answers))if(a.verified!==false)checked[id]=a;
   config.overview.querySelectorAll('.mvc').forEach(card=>{const id=card.dataset.c;if(!model.chapters.some(c=>c.id===id))return;card.hidden=id==='histoire'&&!logic.storyAvailable(answers);const p=logic.progress(id,checked);const fill=card.querySelector('.mvpg i'),count=card.querySelector('.mvcnt');if(fill)fill.style.width=Math.round(p.filled/p.total*100)+'%';if(count)count.textContent=p.filled+' / '+p.total;});
+  let resume=config.overview.querySelector('[data-life-resume]');if(!resume){resume=document.createElement('div');resume.className='lv-life-resume';resume.dataset.lifeResume='';resume.innerHTML='<p></p><button type="button" class="lv-primary"></button>';config.overview.querySelector('#mvcards').before(resume);}
+  const preview=config.hasImportPreview?.(),pending=reviewState.pending().length,hasImports=reviewState.sync().length;
+  resume.hidden=!preview&&!hasImports;
+  const verified=hasImports-pending;resume.querySelector('p').textContent=preview?'Ta relecture du texte est conservée.':pending?verified+' réponse'+(verified>1?'s':'')+' vérifiée'+(verified>1?'s':'')+' sur '+hasImports+'. Tes corrections sont conservées.':hasImports+' réponse'+(hasImports>1?'s':'')+' vérifiée'+(hasImports>1?'s':'')+' et enregistrée'+(hasImports>1?'s':'')+'. Tu peux les relire.';
+  const button=resume.querySelector('button');button.textContent=preview?'Reprendre la relecture du texte':pending?'Reprendre la vérification':'Relire mes réponses importées';button.onclick=()=>preview?config.openImportPreview():openImportReview();
  }
  function showImportSource(answer){
   const box=$('[data-import-source]');box.hidden=!answer.imported;box.querySelector('p').textContent=(answer.sources||[]).map(s=>s.text).join('\n\n');
@@ -454,26 +484,25 @@ function mountApprovedForm(root,config){
    if(old)(stored.previousAnswers||(stored.previousAnswers=[])).push({id,answer:copy(old),committed:answers[id]?copy(answers[id]):null,at:timestamp});
    answers[id]=copy(value);drafts[id]=copy(value);applied++;
   }
-  stored.imports.push({at:timestamp,count:applied});updateCards();persist();return applied;
+  reviewState.sync();stored.imports.push({at:timestamp,count:applied});updateCards();persist();return applied;
  }
  function firstImported(){
   for(const ch of model.chapters)if(chapterSteps.get(ch.id).some(x=>answers[x.id]?.verified===false))return ch.id;
   return 'moi';
  }
- function openImportReview(){
-  const id=firstImported();
-  if(chapterSteps.get(id).some(x=>answers[x.id]?.verified===false)){openChapter(id,true,true);return;}
-  if(current){reviewingImports=false;refreshPath();finish();$('[data-end-message]').textContent='Tes réponses préparées ont été vérifiées. Tu peux compléter les autres questions à ton rythme.';}
-  else openChapter('moi');
- }
+ function openReviewAt(id){const location=reviewState.location(id);if(!location)return;reviewState.remember(location.chapter,id,true);openChapter(location.chapter,true,true);}
+ function openImportReview(){const id=reviewState.resume();if(id)openReviewAt(id);else openChapter('moi');}
+ function continueImportReview(id){const nextId=reviewState.next(id);if(nextId){openReviewAt(nextId);return;}reviewState.finish();reviewingImports=false;refreshPath();finish();$('[data-end-message]').textContent='Tes réponses préparées ont été vérifiées et enregistrées. Tu peux compléter les autres questions à ton rythme.';updateCards();persist();}
+ function previousImportReview(){const id=reviewState.previous(current.id);if(id)openReviewAt(id);}
+ function rememberPosition(){if(current)reviewState.remember(chapterId,current.id,reviewingImports);}
 function copy(v){return JSON.parse(JSON.stringify(v));}
 function empty(){return {selected:[],detail:'',rows:[],state:'draft',open:false,ideasOpen:false};}
 function record(){if(!drafts[current.id])drafts[current.id]=copy(answers[current.id]||empty());const answer=drafts[current.id];if(typeof answer.writingOpen!=='boolean')answer.writingOpen=!!answer.detail||(!current.ideas.length&&!current.fields.length);return answer;}
 function announce(text){$('[data-status]').textContent=text;}
-function refreshPath(){active=reviewingImports?chapterSteps.get(chapterId).filter(x=>answers[x.id]?.verified===false):logic.path(chapterId,answers);}
+function refreshPath(){active=reviewingImports?reviewState.path(chapterId):logic.path(chapterId,answers);}
 function icons(){if(globalThis.lucide)lucide.createIcons({attrs:{width:16,height:16}});}
 function resizeWriting(){if(writing.hidden||writeBody.hidden||form.hidden)return;field.style.height='auto';const minimum=current.ideas.length?(record().ideasOpen?130:330):170;field.style.minHeight=minimum+'px';field.style.height=Math.max(minimum,field.scrollHeight+2)+'px';}
-function sync(){
+function sync(edited=false){if(edited===true||edited?.type==='input')record().edited=true;
  const answer=record();answer.detail=field.value;
  next.disabled=!logic.meaningful(answer);
  const selected=answer.selected.length;const summary=$('[data-choice-summary]');summary.textContent=selected===1?'1 idée choisie':selected+' idées choisies';summary.hidden=answer.ideasOpen||selected===0;
@@ -482,7 +511,7 @@ function sync(){
 }
 function renderIdeas(){
  const answer=record();$('[data-ideas]').hidden=!current.ideas.length;options.replaceChildren();
- current.ideas.forEach(idea=>{const label=document.createElement('label');label.className='en-choice cursor-interaction';const input=document.createElement('input');input.type='checkbox';input.value=idea;input.checked=answer.selected.includes(idea);input.setAttribute('aria-label',idea);input.addEventListener('change',()=>{answer.selected=logic.toggle(current,answer.selected,idea);renderIdeas();sync();});const text=document.createElement('span');text.textContent=idea;label.append(text,input);options.append(label);});
+ current.ideas.forEach(idea=>{const label=document.createElement('label');label.className='en-choice cursor-interaction';const input=document.createElement('input');input.type='checkbox';input.value=idea;input.checked=answer.selected.includes(idea);input.setAttribute('aria-label',idea);input.addEventListener('change',()=>{answer.selected=logic.toggle(current,answer.selected,idea);renderIdeas();sync(true);});const text=document.createElement('span');text.textContent=idea;label.append(text,input);options.append(label);});
  options.hidden=!answer.ideasOpen;fold.setAttribute('aria-expanded',String(answer.ideasOpen));fold.setAttribute('aria-label',answer.ideasOpen?'Réduire les idées de réponses':'Afficher les idées de réponses');
  $('[data-ideas-caption]').textContent=current.mode==='single'?'Choisis l’idée qui te ressemble, si tu en as envie.':'Choisis ce qui te ressemble, une ou plusieurs idées.';
 }
@@ -502,7 +531,7 @@ function makeField(def,row,index){
   if(def.key==='precision'){
    row._dates=row._dates||{};row._dates[row.precision||'']=row.when||'';row.precision=input.value;row.when=row._dates[row.precision]||'';renderRecords();
   }else row[def.key]=input.value;if(input.tagName==='TEXTAREA'){input.style.height='auto';input.style.height=Math.max(92,input.scrollHeight+2)+'px';}
-  sync();
+  sync(true);
  };
  input.addEventListener(def.kind==='select'?'change':'input',update);
  const wrap=document.createElement('div');wrap.append(label,input);return wrap;
@@ -513,7 +542,7 @@ function renderRecords(){
  const answer=record();if(!answer.rows.length)answer.rows.push({});
  answer.rows.forEach((row,index)=>{
   const group=document.createElement('fieldset');group.className='en-record';
-  if(current.repeat){const head=document.createElement('div');head.className='en-record-heading';const legend=document.createElement('legend');legend.textContent='Repère '+(index+1);head.append(legend);if(answer.rows.length>1){const remove=document.createElement('button');remove.type='button';remove.className='en-quiet cursor-interaction';remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer le repère '+(index+1));remove.addEventListener('click',()=>{answer.rows.splice(index,1);renderRecords();sync();});head.append(remove);}group.append(head);}
+  if(current.repeat){const head=document.createElement('div');head.className='en-record-heading';const legend=document.createElement('legend');legend.textContent='Repère '+(index+1);head.append(legend);if(answer.rows.length>1){const remove=document.createElement('button');remove.type='button';remove.className='en-quiet cursor-interaction';remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer le repère '+(index+1));remove.addEventListener('click',()=>{answer.rows.splice(index,1);renderRecords();sync(true);});head.append(remove);}group.append(head);}
   current.fields.forEach(def=>group.append(makeField(def,row,index)));records.append(group);
  });
  $('[data-add]').hidden=!current.repeat;requestAnimationFrame(()=>records.querySelectorAll('textarea').forEach(input=>{input.style.height='auto';input.style.height=Math.max(92,input.scrollHeight+2)+'px';}));
@@ -526,56 +555,65 @@ function revealQuestion(text){
 function render(){
  root.scrollTop=0;
  if(!active.length){showMenu();return;}
- position=Math.min(Math.max(position,0),active.length-1);const item=active[position];current=model.steps[item.id];root.dataset.questionId=current.id;lastPosition[chapterId]=position;
+ position=Math.min(Math.max(position,0),active.length-1);const item=active[position];current=model.steps[item.id];root.dataset.questionId=current.id;lastPosition[chapterId]=position;rememberPosition();
  const chapter=model.chapters.find(c=>c.id===chapterId),answer=record();$('[data-avatar]').src=config.pet();showImportSource(answer);
  root.hidden=false;$('[data-screen]').hidden=false;$('[data-end]').hidden=true;form.hidden=false;
  $('[data-chapter]').textContent=chapter.title;$('[data-theme]').textContent=chapter.themes[item.theme].name;$('[data-position]').textContent='Thème '+(item.theme+1)+' / '+chapter.themes.length;
  announce('');
  field.value=answer.detail;field.placeholder=current.placeholder;
- $('[data-known]').hidden=!(answer.imported||answers[current.id]?.state==='answered');$('[data-known]').textContent=answer.imported&&answer.verified!==true?'Réponse préparée à vérifier : tu peux tout corriger.':'Tu peux relire ou ajuster ta réponse.';
+ $('[data-known]').hidden=!(answer.imported||answers[current.id]?.state==='answered');$('[data-known]').textContent=answer.edited?'Modifications conservées, à confirmer.':answer.imported?(answer.verified===true?'Réponse vérifiée et enregistrée.':'Réponse préparée à vérifier : tu peux tout corriger.'):'Tu peux relire ou ajuster ta réponse.';
  const blocked=current.gate&&!answer.open;gate.hidden=!blocked;$('[data-answer-area]').hidden=blocked;
  revealQuestion(answer.open&&current.openQuestion?current.openQuestion:current.q);
- $('[data-prev]').hidden=position===0;
+ $('[data-prev]').hidden=reviewingImports?!reviewState.previous(current.id):position===0;
  renderIdeas();renderRecords();sync();icons();
  if(blocked){next.disabled=false;next.textContent='Garder ce sujet pour plus tard';}else next.textContent='Continuer';
 }
 function openChapter(id,resume=true,review=false){reviewingImports=review;
  if(!model.chapters.some(c=>c.id===id))return;chapterId=id;stored.selected=id;config.onOpen(id);refreshPath();
  const firstUnanswered=active.findIndex(x=>!complete(answers[x.id]));
- position=resume?(firstUnanswered>=0?firstUnanswered:(lastPosition[id]||0)):0;render();config.show('mv3');requestAnimationFrame(resizeWriting);
+ const fallback=firstUnanswered>=0?firstUnanswered:(lastPosition[id]||0);position=resume?(reviewingImports?Math.max(0,active.findIndex(x=>x.id===reviewState.review.cursor)):reviewState.normalPosition(id,active,fallback)):0;render();config.show('mv3');requestAnimationFrame(resizeWriting);
 }
 function finish(){
  clearInterval(revealTimer);form.hidden=true;$('[data-dialogue]').hidden=true;$('[data-end]').hidden=false;
  root.scrollTop=0;const p=progress();$('[data-end-message]').textContent=p.paused?'Tu as parcouru ce chapitre à ton rythme. Les sujets laissés de côté restent en pause.':'Merci pour ce que tu as choisi de raconter. Tu peux revenir compléter ce chapitre quand tu veux.';
 }
-function advance(paused=false){
+let savingAnswer=false;
+async function advance(paused=false){
+ if(savingAnswer)return;
  const answer=record();answer.detail=field.value;
  if(current.gate&&!answer.open)paused=true;
  if(!paused&&!logic.meaningful(answer))return;
- answers[current.id]=copy({...answer,state:paused?'paused':'answered',verified:true});updateProfile(current,answers[current.id]);updateCards();persist();drafts[current.id]=copy(answers[current.id]);
- if(reviewingImports){openImportReview();return;}const previousId=current.id;refreshPath();const index=active.findIndex(x=>x.id===previousId);
+ const id=current.id;
+ savingAnswer=true;next.disabled=true;next.textContent='Enregistrement…';
+ answers[id]=copy({...answer,state:paused?'paused':'answered',verified:true,edited:false});drafts[id]=copy(answers[id]);
+ updateProfile(current,answers[id]);rememberPosition();
+ const saved=await persist();savingAnswer=false;
+ if(!saved){answers[id].verified=false;drafts[id].verified=false;drafts[id].edited=true;next.disabled=false;next.textContent='Réessayer l’enregistrement';updateCards();return;}
+ updateCards();
+ if(reviewingImports){continueImportReview(id);return;}
+ refreshPath();const index=active.findIndex(x=>x.id===id);
  const following=active.findIndex((x,i)=>i>index&&!complete(answers[x.id]));
  if(following<0){finish();return;}position=following;render();
 }
 fold.addEventListener('click',()=>{record().ideasOpen=!record().ideasOpen;renderIdeas();sync();});
 writeFold.addEventListener('click',()=>{record().writingOpen=!record().writingOpen;sync();});
 field.addEventListener('input',sync);
-$('[data-add]').addEventListener('click',()=>{record().rows.push({});renderRecords();sync();});
+$('[data-add]').addEventListener('click',()=>{record().rows.push({});renderRecords();sync(true);});
 $('[data-open-gate]').addEventListener('click',()=>{record().open=true;render();});
 form.addEventListener('submit',event=>event.preventDefault());
 next.addEventListener('click',()=>advance());
 $('[data-skip]').addEventListener('click',()=>advance(true));
-$('[data-prev]').addEventListener('click',()=>{if(position>0){position--;render();}});
+$('[data-prev]').addEventListener('click',()=>{if(reviewingImports){previousImportReview();return;}if(position>0){position--;render();}});
 $('[data-back]').addEventListener('click',()=>showMenu());$('[data-later]').addEventListener('click',()=>showMenu());$('[data-finish-menu]').addEventListener('click',()=>showMenu());
-$('[data-review]').addEventListener('click',()=>{position=0;$('[data-dialogue]').hidden=false;render();});
+$('[data-review]').addEventListener('click',()=>{const first=reviewState.sync()[0];if(first){openReviewAt(first);return;}position=0;$('[data-dialogue]').hidden=false;render();});
 window.addEventListener('resize',resizeWriting);new ResizeObserver(resizeWriting).observe(root);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(revealTimer);});
 const originalRender=render;render=function(){ $('[data-dialogue]').hidden=false;originalRender(); };
 showMenu(false);
-return {openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,describeAnswer,describeExisting:id=>describeAnswer(id,existingAnswer(id)),selected:()=>stored.selected,saveDraft:persist};
+return {openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,describeAnswer,describeExisting:id=>describeAnswer(id,existingAnswer(id)),selected:()=>stored.selected,saveDraft:persist,refreshResume:updateCards};
 
 }
 
-window.__enApprovedLifeTools={model:APPROVED_MODEL,createLifeLogic,migrateApprovedAnswers,createApprovedImport};
+window.__enApprovedLifeTools={model:APPROVED_MODEL,createLifeLogic,migrateApprovedAnswers,createApprovedImport,createLifeReviewState,prepareImportReviewDraft};
 
 const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z]/g,'');
@@ -651,7 +689,7 @@ window.__enInitLifeV3=function(){
  const aiLinks=overview.querySelector('.mvai');aiLinks.replaceChildren();
  ['chatgpt','claude'].forEach((who,i)=>{if(i)aiLinks.append(document.createTextNode(' · '));const b=document.createElement('button');b.type='button';b.dataset.ai=who;b.textContent=who==='chatgpt'?'ChatGPT':'Claude';b.onclick=()=>openAI(who,null);aiLinks.append(b);});
  aiLinks.before(access);access.append(aiLinks);
- const approvedForm=mountApprovedForm(form,{keep,profile:P,previous:S,overview,pet,show:go,save:safeSave,addStory:model.addStory,onOpen:id=>{chapter=id;session={};},onLeave:()=>{session=null;}});
+ const approvedForm=mountApprovedForm(form,{keep,profile:P,previous:S,overview,pet,show:go,save,hasImportPreview:()=>['preview','editing'].includes(importState.review?.stage),openImportPreview:()=>openAI(importState.review?.provider||'chatgpt',importState.review?.scope),addStory:model.addStory,onOpen:id=>{chapter=id;session={};},onLeave:()=>{session=null;}});
  const openChapter=(id)=>approvedForm.openChapter(id);
  window.__mvopen=openChapter;window.__mvstart=()=>openChapter(chapter);window.__mvselected=()=>chapter;window.__mvchapter=()=>chapter;
  overview.querySelector('#mvcards').onclick=e=>{const card=e.target.closest('.mvc');if(card)openChapter(card.dataset.c);};
@@ -675,8 +713,9 @@ window.__enInitLifeV3=function(){
  function openAI(provider,chapterScope){
   closeModal(false);who=provider==='claude'?'claude':'chatgpt';scope=chapterScope||null;
   window.__aiScope=scope;window.__aiWho=who;
+  if(importState.review?.stage==='preview'&&importState.review.plan){importPlan=importState.review.plan;incoming=importState.review.incoming;who=importState.review.provider||who;scope=importState.review.scope||null;reviewPortrait();go('mvai');return;}
   aiPage.innerHTML=aiHeader()+'<div class="lv-ai-body lv-ai-content"><p class="lv-theme">Faire connaissance</p><div class="lv-question"><img class="lv-avatar" src="'+pet()+'" alt="Ton compagnon"><p class="lv-bubble">Je te prépare un message pour continuer cet échange dans '+names[who]+', à ton rythme.</p></div><p>Quand tu souhaites revenir, demande « mon portrait » dans la discussion, puis copie le texte obtenu.</p><p>Tu pourras le rapporter ici. La conversation complète reste facultative.</p><div class="lv-ai-actions"><button type="button" class="lv-primary" data-prepare>Préparer mon échange</button><button type="button" class="lv-link" data-return>J’en reviens : coller mon portrait</button></div></div>';
-  bindAIBack();aiPage.querySelector('[data-prepare]').onclick=openPrep;aiPage.querySelector('[data-return]').onclick=openReturn;go('mvai');
+  bindAIBack();aiPage.querySelector('[data-prepare]').onclick=openPrep;aiPage.querySelector('[data-return]').onclick=openReturn;go('mvai');if(importState.review?.stage==='editing')openReturn();
  }
  function closeModal(restore=true){
   if(!modal)return;
@@ -716,7 +755,7 @@ window.__enInitLifeV3=function(){
  }
  function openReturn(){
   const m=openModal('J’en reviens','<p>Rapporte ce que tu souhaites garder. Tu pourras le relire juste après.</p><label class="lv-field">Ton portrait ou ton échange<textarea data-import="portrait" placeholder="Colle ton portrait, ton échange ou le texte de retour donné par ton IA…">'+esc(importState.portrait)+'</textarea></label><label class="lv-file">Choisir un fichier .txt<input type="file" accept=".txt,.text,text/plain" data-file="portrait" aria-label="Choisir le fichier texte du portrait"></label><details class="lv-fold"><summary>Garder aussi la discussion — facultatif</summary><label class="lv-field">La discussion<textarea data-import="discussion" placeholder="Colle la discussion, si tu souhaites la garder…">'+esc(importState.discussion)+'</textarea></label><label class="lv-file">Choisir un fichier .txt<input type="file" accept=".txt,.text,text/plain" data-file="discussion" aria-label="Choisir le fichier texte de la discussion"></label></details>','<button type="button" class="lv-primary" data-review'+(importState.portrait.trim()||importState.discussion.trim()?'':' disabled')+'>Préparer mes réponses</button>');
-  const changedImport=()=>{m.querySelector('[data-review]').disabled=!(importState.portrait.trim()||importState.discussion.trim());safeSave();};
+  const changedImport=()=>{importState.revision=(importState.revision||0)+1;importState.review={stage:'editing',revision:importState.revision,provider:who,scope};approvedForm.refreshResume();m.querySelector('[data-review]').disabled=!(importState.portrait.trim()||importState.discussion.trim());safeSave();};
   m.querySelectorAll('[data-import]').forEach(ta=>ta.addEventListener('input',()=>{importState[ta.dataset.import]=ta.value;changedImport();}));
   m.querySelectorAll('[data-file]').forEach(input=>input.addEventListener('change',async()=>{
    const f=input.files?.[0];if(!f)return;
@@ -727,10 +766,10 @@ window.__enInitLifeV3=function(){
    catch(e){status.textContent='Le fichier n’a pas pu être lu. Ton texte précédent est conservé.';}
    input.value='';
   }));
-  m.querySelector('[data-review]').onclick=()=>{importPlan=approvedForm.prepareImport(importState.portrait,importState.discussion);incoming=parsePortrait(importPlan.portraitText,window.__enPortraitTpl);closeModal(false);reviewPortrait();};
+  m.querySelector('[data-review]').onclick=()=>{importPlan=approvedForm.prepareImport(importState.portrait,importState.discussion);incoming=parsePortrait(importPlan.portraitText,window.__enPortraitTpl);prepareImportReviewDraft(importState,{plan:importPlan,incoming,provider:who,scope});safeSave();approvedForm.refreshResume();closeModal(false);reviewPortrait();};
  }
  function reviewPortrait(){
-  const replaceKeys=new Set(),replaceQuestions=new Set(),existing=window.__portrait||{};const conflicts=importPlan?approvedForm.importConflicts(importPlan):[];
+  const replaceKeys=new Set(importState.review?.replaceKeys||[]),replaceQuestions=new Set(importState.review?.replaceQuestions||[]),existing=window.__portrait||{};const conflicts=importPlan?approvedForm.importConflicts(importPlan):[];
   const groups=Object.entries(incoming||{}).filter(([,rows])=>rows.length);
   aiPage.innerHTML=aiHeader()+'<div class="lv-ai-body lv-review"><h2>Relire avant de garder</h2><p>Voici les éléments de ton texte. Tu peux les relire avant de les garder.</p>'+(importPlan?'<p class="lv-status">'+importPlan.count+' réponse'+(importPlan.count>1?'s':'')+' préparée'+(importPlan.count>1?'s':'')+' pour ton formulaire. Tu pourras les vérifier une à une.</p>'+(importPlan.unmatched.length?'<p class="lv-status">Certains passages restent dans ton texte complet sans être attribués à une question. Tu peux les consulter et compléter ce qui manque.</p>':'')+importPlan.warnings.map(w=>'<p class="lv-status">'+esc(w)+'</p>').join(''):'')+(conflicts.length?'<details class="lv-fold"><summary>'+conflicts.length+' réponse'+(conflicts.length>1?'s':'')+' déjà renseignée'+(conflicts.length>1?'s':'')+'</summary><div class="lv-facts"><p>Elles restent conservées, sauf si tu choisis leur remplacement.</p><button type="button" class="lv-link" data-replace-all>Sélectionner tous ces remplacements</button>'+conflicts.map(id=>'<label><input type="checkbox" data-replace-question="'+esc(id)+'"><span>Utiliser la nouvelle proposition pour : '+esc(APPROVED_MODEL.steps[id].q)+'</span></label><div class="lv-import-comparison"><strong>Actuellement</strong>'+esc(approvedForm.describeExisting(id))+'<strong>Nouvelle proposition</strong>'+esc(approvedForm.describeAnswer(id,importPlan.proposals[id]))+'</div>').join('')+'</div></details>':'')+(importPlan&&importPlan.count?'<details class="lv-fold"><summary>Voir la répartition par question</summary>'+Object.entries(importPlan.proposals).map(([id,a])=>'<div class="lv-import-comparison"><strong>'+esc(APPROVED_MODEL.steps[id].q)+'</strong>'+esc(approvedForm.describeAnswer(id,a))+'</div>').join('')+'</details>':'')+groups.map(([sec,rows],i)=>'<details class="lv-fold"'+(i===0?' open':'')+'><summary>'+esc(TITLES[sec]||sec)+' · '+rows.length+' élément'+(rows.length>1?'s':'')+'</summary><div class="lv-facts">'+rows.map(([label,value])=>{
    const old=label&&!repeated(label)?(existing[sec]||[]).find(x=>norm(x[0])===norm(label)&&x[1]!==value):null;
@@ -738,9 +777,12 @@ window.__enInitLifeV3=function(){
    return '<p>'+(label?'<b>'+esc(label)+'</b>':'')+esc(value)+'</p>'+(old?'<label><input type="checkbox" data-replace="'+esc(key)+'"><span>Mettre à jour cette ligne du portrait, auparavant : « '+esc(old[1])+' »</span></label>':'');
   }).join('')+'</div></details>').join('')+'<details class="lv-fold"><summary>Relire le texte complet</summary><div class="lv-editor"><textarea readonly aria-label="Portrait original complet">'+esc(importState.portrait)+'</textarea></div></details>'+(importState.discussion.trim()?'<details class="lv-fold"><summary>La discussion jointe</summary><div class="lv-editor"><textarea readonly aria-label="Discussion jointe">'+esc(importState.discussion)+'</textarea></div></details>':'')+'<p class="lv-status" data-save-status role="status" aria-live="polite"></p><div class="lv-ai-actions"><button type="button" class="lv-link" data-edit>Modifier mon texte</button><button type="button" class="lv-primary" data-keep>Garder et préparer mes réponses</button></div></div>';
   bindAIBack();
-  const replaceAll=aiPage.querySelector('[data-replace-all]');if(replaceAll)replaceAll.onclick=()=>{const inputs=[...aiPage.querySelectorAll('[data-replace-question]')],on=inputs.some(input=>!input.checked);inputs.forEach(input=>{input.checked=on;if(on)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);});replaceAll.textContent=on?'Désélectionner ces remplacements':'Sélectionner tous ces remplacements';};
-  aiPage.querySelectorAll('[data-replace-question]').forEach(input=>input.onchange=()=>{if(input.checked)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);});
-  aiPage.querySelectorAll('[data-replace]').forEach(input=>input.onchange=()=>{if(input.checked)replaceKeys.add(input.dataset.replace);else replaceKeys.delete(input.dataset.replace);});
+  const stashReview=()=>{const review=importState.review;if(review?.stage!=='preview')return;review.replaceQuestions=[...replaceQuestions];review.replaceKeys=[...replaceKeys];review.openSections=[...aiPage.querySelectorAll('details')].flatMap((d,i)=>d.open?[i]:[]);safeSave();};
+  const savedSections=importState.review?.openSections;aiPage.querySelectorAll('details').forEach((d,i)=>{if(Array.isArray(savedSections))d.open=savedSections.includes(i);d.addEventListener('toggle',stashReview);});
+  const replaceAll=aiPage.querySelector('[data-replace-all]');if(replaceAll)replaceAll.onclick=()=>{const inputs=[...aiPage.querySelectorAll('[data-replace-question]')],on=inputs.some(input=>!input.checked);inputs.forEach(input=>{input.checked=on;if(on)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);});replaceAll.textContent=on?'Désélectionner ces remplacements':'Sélectionner tous ces remplacements';stashReview();};
+  if(replaceAll&&conflicts.length&&conflicts.every(id=>replaceQuestions.has(id)))replaceAll.textContent='Désélectionner ces remplacements';
+  aiPage.querySelectorAll('[data-replace-question]').forEach(input=>{input.checked=replaceQuestions.has(input.dataset.replaceQuestion);input.onchange=()=>{if(input.checked)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);stashReview();};});
+  aiPage.querySelectorAll('[data-replace]').forEach(input=>{input.checked=replaceKeys.has(input.dataset.replace);input.onchange=()=>{if(input.checked)replaceKeys.add(input.dataset.replace);else replaceKeys.delete(input.dataset.replace);stashReview();};});
   aiPage.querySelector('[data-edit]').onclick=openReturn;
   aiPage.querySelector('[data-keep]').onclick=async e=>{
    const b=e.currentTarget;if(b.disabled)return;b.disabled=true;
@@ -752,10 +794,11 @@ window.__enInitLifeV3=function(){
     const conversation=importState.discussion.trim();
     if(conversation&&window.__enConvAdd&&!(window.__enConvs?.()||[]).some(x=>x.txt===conversation))window.__enConvAdd({w:'Ma vie · faire connaissance',src:who==='claude'?'claude':'gpt',txt:conversation});
     if(window.__enFichePortrait)window.__enFichePortrait(true);
+    if(importState.review)importState.review.stage='applied';approvedForm.refreshResume();
     await save();
     aiPage.innerHTML=aiHeader()+'<div class="lv-ai-body"><h2>C’est gardé</h2><p>Ton portrait et tes textes sont conservés dans ton carnet.</p><p>'+(preparedCount?preparedCount+' réponse'+(preparedCount>1?'s':'')+' préparée'+(preparedCount>1?'s':'')+' : vérifie et complète ce qui manque.':'Tes réponses existantes sont conservées. Tu peux poursuivre le formulaire à ton rythme.')+'</p><button type="button" class="lv-primary" data-check-answers>Vérifier mes réponses</button><button type="button" class="lv-link" data-saved-back>Revenir à Faire connaissance</button></div>';
     bindAIBack();aiPage.querySelector('[data-check-answers]').onclick=()=>approvedForm.openImportReview();aiPage.querySelector('[data-saved-back]').onclick=()=>go('mv2');
-   }catch(error){b.disabled=false;aiPage.querySelector('[data-save-status]').textContent='L’enregistrement n’a pas abouti. Tes textes sont conservés ici : tu peux réessayer.';}
+   }catch(error){if(importState.review)importState.review.stage='preview';approvedForm.refreshResume();b.disabled=false;aiPage.querySelector('[data-save-status]').textContent='L’enregistrement n’a pas abouti. Tes textes sont conservés ici : tu peux réessayer.';}
   };
  }
  window.__aiOpen=openAI;window.__mvAI=()=>who;window.__mvaiShare=openPrep;

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {webcrypto} from 'node:crypto';
 const moduleSource=fs.readFileSync(new URL('../ma-vie-validee.js',import.meta.url),'utf8');
 const win={};new Function('window',moduleSource)(win);
 const {parsePortrait,mergePortrait,toggleChoice,refused,unknown}=win.__enLifeTools;
@@ -150,4 +152,55 @@ test('qualités, émotions et nuances du couple sont réparties sans crise inven
  const p=importText('## MON INTÉRIEUR\n- Ma plus grande qualité : L’écoute et la loyauté.\n- Ce qui me met en colère : Le mensonge.\n- Une phrase qui me guide : Rester libre.\n## NOTRE HISTOIRE\n- Ce qu’elle aime chez lui ou elle : Sa tendresse. Je pense lui apporter mon soutien.\n- Ce qui est plus dur : Nous discutons calmement. Les câlins nous aident à nous réconcilier.');
  assert.deepEqual(p.proposals.in_qualite.selected,['L’écoute','La loyauté']);assert.match(p.proposals.in_valeurs.detail,/Rester libre/);
  assert.equal(p.proposals.hi_aime_chez.detail,'Sa tendresse.');assert.equal(p.proposals.hi_apporte.detail,'Je pense lui apporter mon soutien.');assert.match(p.proposals.hi_retrouver.detail,/réconcilier/);assert.equal(p.proposals.hi_perdre,undefined);
+});
+
+const {createLifeReviewState,prepareImportReviewDraft}=win.__enApprovedLifeTools;
+const savedProposal=(value,verified=false)=>({...answer([],value),verified,imported:true,sources:[{kind:'export',text:value}]});
+test('la reprise conserve le curseur et les réponses vérifiées après chiffrement',async()=>{
+ const stored={answers:{ville:savedProposal('Rennes',true),job:savedProposal('Libraire'),pa_objet:savedProposal('Un carnet')},drafts:{job:{...savedProposal('Libraire en temps partiel'),edited:true}},lastQuestion:{}};
+ const tracker=createLifeReviewState(model,stored);tracker.remember('moi','job',true);
+ const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ const start=html.indexOf('const b64='),end=html.indexOf('/* ---------- coffre v2',start);
+ const {seal,open}=runInNewContext(`const enc=new TextEncoder(),dec=new TextDecoder(),ITER=310000;${html.slice(start,end)};({seal,open})`,{TextEncoder,TextDecoder,Uint8Array,btoa,atob,crypto:webcrypto});
+ const key=await webcrypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const restored=JSON.parse(JSON.stringify(await open(key,await seal(key,{st:{'lifeform-approved-v1':stored}})))).st['lifeform-approved-v1'];
+ const resumed=createLifeReviewState(model,restored);
+ assert.equal(resumed.resume(),'job');assert.equal(restored.drafts.job.detail,'Libraire en temps partiel');assert.equal(restored.answers.ville.verified,true);
+ assert.equal(resumed.previous('job'),'ville');assert.equal(resumed.next('job'),'pa_objet');assert.ok(resumed.path('moi').some(x=>x.id==='ville'));
+});
+test('un retour arrière reste possible entre les chapitres après réouverture',()=>{
+ const stored={answers:{job:savedProposal('Libraire',true),pa_objet:savedProposal('Un carnet')},drafts:{}};
+ let tracker=createLifeReviewState(model,stored);tracker.remember('passe','pa_objet',true);
+ const restored=JSON.parse(JSON.stringify(stored));tracker=createLifeReviewState(model,restored);
+ assert.equal(tracker.resume(),'pa_objet');assert.equal(tracker.previous('pa_objet'),'job');assert.equal(tracker.location('job').chapter,'moi');
+ assert.equal(tracker.pending().length,1);
+});
+test('une position normale utilise l’identifiant de question plutôt que son ancien indice',()=>{
+ const stored={answers:{},drafts:{},lastQuestion:{moi:'job'}};
+ const tracker=createLifeReviewState(model,stored);
+ assert.equal(tracker.normalPosition('moi',[{id:'ville'},{id:'avec'},{id:'trav'},{id:'job'}],0),3);
+ assert.equal(tracker.normalPosition('moi',[{id:'ville'},{id:'job'}],0),1);
+});
+test('la vérification terminée garde ses réponses pour une simple relecture',()=>{
+ const stored={answers:{ville:savedProposal('Rennes',true),job:savedProposal('Libraire',true)},drafts:{}};
+ const tracker=createLifeReviewState(model,stored);tracker.remember('moi','job',true);tracker.finish();
+ const restored=JSON.parse(JSON.stringify(stored)),again=createLifeReviewState(model,restored);
+ assert.equal(again.pending().length,0);assert.equal(again.resume(),'ville');assert.deepEqual(again.sync(),['ville','job']);
+ assert.equal(restored.answers.job.detail,'Libraire');assert.equal(restored.answers.job.verified,true);
+});
+test('la relecture du texte garde le plan, les remplacements et les volets ouverts',()=>{
+ const state={revision:2};const plan=importText(structured([{id:'ville',rows:[{place:'Rennes'}]}]));
+ const review=prepareImportReviewDraft(state,{plan,incoming:{moi:[['Ville','Rennes']]},provider:'chatgpt',scope:null});
+ review.replaceQuestions=['ville'];review.replaceKeys=['moi:VILLE'];review.openSections=[0,2];
+ const restored=JSON.parse(JSON.stringify(state));
+ assert.equal(restored.review.stage,'preview');assert.equal(restored.review.plan.proposals.ville.rows[0].place,'Rennes');
+ assert.deepEqual(restored.review.replaceQuestions,['ville']);assert.deepEqual(restored.review.replaceKeys,['moi:VILLE']);assert.deepEqual(restored.review.openSections,[0,2]);
+ prepareImportReviewDraft(restored,{plan,incoming:restored.review.incoming,provider:'chatgpt',scope:null});assert.deepEqual(restored.review.replaceQuestions,['ville']);
+ restored.revision++;restored.review.stage='editing';prepareImportReviewDraft(restored,{plan,incoming:{},provider:'chatgpt',scope:null});assert.deepEqual(restored.review.replaceQuestions,[]);
+});
+test('les anciens imports et les brouillons corrigés rejoignent la reprise sans réimporter',()=>{
+ const stored={answers:{ville:savedProposal('Rennes',true),job:savedProposal('Libraire',true)},drafts:{job:{...savedProposal('Libraire à mi-temps',true),edited:true}}};
+ const tracker=createLifeReviewState(model,stored);assert.deepEqual(tracker.pending(),['job']);assert.equal(tracker.resume(),'job');
+ tracker.review.order.push('inconnue');assert.ok(!tracker.sync().includes('inconnue'));
+ assert.equal(stored.answers.ville.detail,'Rennes');
 });
