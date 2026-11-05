@@ -21,7 +21,7 @@ window.__enInitCode=({onChange,isActive})=>{
  function next(){
   if(phase!=='success'||busy||waiting)return;
   stopPulse();busy=true;onChange();
-  const faceStep=()=>{busy=false;phase='face';success.hidden=true;face.hidden=false;onChange();document.getElementById('o3on').focus()};
+  const faceStep=()=>{busy=false;phase='face';success.hidden=true;face.hidden=false;face.classList.add('en-face-enter');onChange();document.getElementById('o3on').focus()};
   if(window.__vaultHasSecours&&!window.__vaultHasSecours()&&window.__enSecours)window.__enSecours(faceStep);
   else faceStep();
  }

@@ -534,6 +534,9 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="profil-identite.js" defer></script>
 <link rel="stylesheet" href="onboarding-code.css">
 <link rel="stylesheet" href="code-placement.css">
+<link rel="stylesheet" href="onboarding-valide.css">
+<link rel="stylesheet" href="compagnons.css">
+<script src="compagnons.js" defer></script>
 <link rel="stylesheet" href="recovery-sheet.css">
 <script src="recovery-sheet.js" defer></script>
 <script src="onboarding-code-recovery.js" defer></script>
@@ -4113,7 +4116,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
           <div class="ost o1"><h1 class="o1t">Bienvenue dans<br class="en-auth-mobile-break"> ton espace intime</h1><p class="o1s">Ton journal, rien qu’à toi.</p><div class="o1o" aria-hidden="true"><i></i><span class="en-carnet-plume"></span><i></i></div><div class="oacc"><button type="button" id="en-auth-google">Continuer avec Google</button><button type="button" id="en-auth-email">Continuer avec mon e-mail</button></div><div class="en-guest-line"><button type="button" class="o1guest" id="o1guest">Continuer en invité</button><button type="button" class="en-guest-info" id="en-guest-info" aria-label="Informations sur le mode invité" aria-expanded="false" aria-controls="en-guest-note">ⓘ</button></div><p class="en-guest-note" id="en-guest-note" hidden>Sans compte · carnet enregistré dans ce navigateur.</p><p class="en-auth-status" id="en-auth-status" role="alert" hidden></p></div><div class="ost o2"><button type="button" class="o2ph" id="o2ph" aria-label="Ajouter une photo"><span>+</span></button><span class="o2phl" id="o2phl">ajouter une photo</span><p class="o2t">Comment t'appelles-tu&nbsp;?</p><input class="o2in" id="o2in" placeholder="Ton prénom" autocomplete="given-name"><details class="o2nick" id="o2nick-details" data-en-identity><summary>Surnom <em>facultatif</em><span class="o2chevron" aria-hidden="true">⌄</span></summary><label class="o2nick-label" for="o2nick">Ton surnom</label><input class="o2in" id="o2nick" placeholder="Ton petit nom" autocomplete="off" maxlength="50"></details><fieldset class="o2name-choice" id="o2name-choice" data-en-identity hidden><legend>Dans l’application, appelle-moi par…</legend><div class="o2name-options"><label><input type="radio" name="o2name-preference" value="0" checked><span>Mon prénom</span></label><label><input type="radio" name="o2name-preference" value="1"><span>Mon surnom</span></label></div><p class="o2name-greeting" id="o2name-greeting" aria-live="polite" hidden></p></fieldset><p class="o2lb">Anniversaire <em>facultatif</em></p><div class="o2pills"><button type="button" data-v="26">jour</button><button type="button" data-v="mars">mois</button><button type="button" data-v="1994">année</button></div><p class="o2lb">Tu es accompagnée par un·e psy&nbsp;?</p><div class="o2psy"><button type="button">Oui</button><button type="button">Pas pour l'instant</button></div><p class="o2note">Rien n’est figé, tu pourras ajuster tes choix.</p></div>
           <div class="ost o3"><div class="o3a" id="o3a"><p class="o3t" id="o3t">Un code, rien qu’à toi</p><p class="o3s" id="o3s">4 chiffres pour retrouver ton espace.</p><div class="dots" id="o3d" role="img" aria-label="0 chiffre sur 4"><i></i><i></i><i></i><i></i></div><div class="pad" id="o3p" role="group" aria-label="Clavier du code"><button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button><button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button><button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button><span aria-hidden="true"></span><button type="button" data-key="0">0</button><button type="button" data-key="Backspace" class="o3del" aria-label="Effacer le dernier chiffre">⌫</button></div><p id="o3feedback" role="status" aria-live="polite"></p></div>
 <div class="o3success" id="o3success" role="status" aria-live="polite" hidden><div class="o3symbol" aria-hidden="true"><span class="o3ring"></span><span class="o3check">✓</span></div><h2>Ton code est prêt</h2><p>Tu pourras l’utiliser pour ouvrir ton journal.</p></div>
-<div class="o3b" id="o3b" hidden><svg class="o3fid" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 14V9a5 5 0 0 1 5-5h5M34 4h5a5 5 0 0 1 5 5v5M44 34v5a5 5 0 0 1-5 5h-5M14 44H9a5 5 0 0 1-5-5v-5M17 17v4M31 17v4M24 17v10h-2M18 32c3.5 3 8.5 3 12 0"/></svg><p class="o3t">Ouvrir avec Face&nbsp;ID&nbsp;?</p><p class="o3s">ton code reste toujours possible</p><button type="button" class="o3on" id="o3on">Activer</button><button type="button" class="o3later" id="o3later">plus tard</button></div></div>
+<div class="o3b" id="o3b" hidden><svg class="o3fid" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 14V9a5 5 0 0 1 5-5h5M34 4h5a5 5 0 0 1 5 5v5M44 34v5a5 5 0 0 1-5 5h-5M14 44H9a5 5 0 0 1-5-5v-5M17 17v4M31 17v4M24 17v10h-2M18 32c3.5 3 8.5 3 12 0"/></svg><p class="o3t">Un regard, et te voilà chez toi</p><p class="o3s">Retrouve ton espace avec Face ID.</p><p class="en-face-note">Ton code à 4 chiffres reste toujours disponible.</p><button type="button" class="o3on" id="o3on">Activer Face ID</button><button type="button" class="o3later" id="o3later">Plus tard</button></div></div>
         </div>
            <div class="en-mail-overlay" id="en-mail-overlay" hidden>
     <section class="en-mail-sheet" id="en-mail-sheet" role="dialog" aria-modal="true" aria-labelledby="en-mail-title">
@@ -4186,7 +4189,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 <div class="pmode" data-m="vider" hidden><p class="vtitle">VIDE TA TÊTE</p><div class="rlab mlab" hidden><b></b><i></i></div><div class="vpage rpage" id="vpage" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Vider ma tête" data-ph="Vas-y, déverse tout, sans t’arrêter…"></div><div class="vafter" id="vafter" hidden><p class="vmsg" id="vmsg" aria-live="polite"></p><div class="vbr" id="vbr" hidden><img class="vpet" id="vpet" src="illus/dort-chat.webp" alt="Ton compagnon endormi"><small id="vbrt">inspire…</small></div><div class="vch" id="vch"><button type="button" data-a="br">Respirer un moment</button><button type="button" data-a="rac">Raconter ma journée</button><button type="button" data-a="x" class="q">fermer</button></div></div><button type="button" class="vdep" id="vdep">DÉPOSER</button><div class="lfoot" hidden><b>RELIÉ À</b><span class="litems"></span></div><div class="gtools" id="vtools" hidden><button type="button">Photo</button><button type="button">Relier</button></div><div class="ginput" id="vbar"><button type="button" class="gplus" id="vplus" aria-label="Plus d'outils" aria-expanded="false">+</button><textarea id="vin" rows="1" class="tgrow" placeholder="Écris ce qui vient…" aria-label="Écrire"></textarea><button type="button" class="gmic" id="vmic" aria-label="Message vocal"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button><button type="button" class="gsend" id="vsend" aria-label="Ajouter à la page">↑</button></div><input type="file" accept="image/*" multiple id="vfile" class="rfile"><p class="rnote" id="vnote"></p></div>
 </div>
       </div>
-      <p>Page du jour · compagnon : <button type="button" class="pettog" data-p="chat" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">chat</button> · <button type="button" class="pettog" data-p="panda" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">panda</button> · <button type="button" class="pettog" data-p="lapin" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">lapin</button> · <button type="button" class="pettog" data-p="chien" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">chien</button> · <button type="button" class="pettog" data-p="herisson" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">hérisson</button></p>
+      <p>Page du jour · compagnon : <button type="button" class="pettog" data-p="chat" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">chat</button> · <button type="button" class="pettog" data-p="panda" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">panda</button> · <button type="button" class="pettog" data-p="lapin" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">lapin</button> · <button type="button" class="pettog" data-p="chien" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">chien</button></p>
     </div></div>
   </section>
 
@@ -4196,24 +4199,55 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
     <div class="screens"><div class="screen">
       <div class="phone mv mvi" id="mvintro">
         <p class="k">FAIRE CONNAISSANCE</p><span class="fl"><i></i>✦<i></i></span>
-        <p class="t">J’aimerais te connaître un peu</p>
-        <p class="p">Quelques questions sur ta vie, pour que je puisse mieux t’écouter. Tu choisis quand.</p>
-        <button type="button" class="c" data-w="now"><span><b>Maintenant</b><small>je choisis mon compagnon, puis on commence le premier chapitre</small></span><span>›</span></button>
-        <button type="button" class="c" data-w="later"><span><b>Plus tard</b><small>je choisis seulement mon compagnon, le reste attendra</small></span><span>›</span></button>
-        <button type="button" class="lk">ce qui m’attend ⌄</button>
-        <div class="det"><p>Tu choisis d’abord ton compagnon, celui qui t’accompagnera.</p><p>Il te pose des questions, une à la fois, sur cinq chapitres : moi aujourd’hui, mes proches, mon passé, mon intérieur, notre histoire.</p><p>Tu réponds à ton rythme : tu peux passer, arrêter, reprendre quand tu veux. Tout reste entre nous.</p></div>
+        <p class="t">On prend un moment pour toi ?</p>
+        <p class="p">Quelques questions pour mieux te connaître et t’accompagner. Tu choisis ce que tu souhaites partager, et quand.</p>
+        <button type="button" class="c" data-w="now"><span><b>On prend ce temps</b><small>Je choisis qui m’accompagne, et on commence à échanger.</small></span><span>›</span></button>
+        <button type="button" class="c" data-w="later"><span><b>On se retrouve plus tard</b><small>Je choisis qui m’accompagne. Pour échanger, on se retrouve plus tard.</small></span><span>›</span></button>
+        <button type="button" class="lk" aria-expanded="false" aria-controls="en-connaissance-details">Ce qui m’attend ⌄</button>
+        <div class="det" id="en-connaissance-details"><p>Tu choisis d’abord ton compagnon, celui qui t’accompagnera.</p><p>Il te pose des questions, une à la fois, sur cinq chapitres : moi aujourd’hui, mes proches, mon passé, mon intérieur, notre histoire.</p><p>Tu réponds à ton rythme : tu peux passer, arrêter, reprendre quand tu veux. Tout reste entre nous.</p></div>
       </div>
       <p>Ma vie · introduction (première fois)</p>
     </div><div class="screen">
-      <div class="phone mv" id="mv">
-        <p class="mvt">Qui va t’accompagner&nbsp;?</p>
-        <div class="mvstage" id="mvstage"><button type="button" class="mvside l" id="mvprev" aria-label="Compagnon précédent"><img alt=""></button><button type="button" class="mvside r" id="mvnext" aria-label="Compagnon suivant"><img alt=""></button><div class="mvpet" id="mvpet"><img class="mvbig" id="mvbig" src="illus/eveil-chat.webp" alt="Ton compagnon : chat"><span class="mvheart" id="mvheart" aria-hidden="true">♥</span></div></div>
-        <p class="mvnm" id="mvnm">LE CHAT</p><p class="mvtr" id="mvtr">doux, un peu mystérieux</p>
-        <div class="mvdots" id="mvdots"><button type="button" data-p="chat" aria-label="chat" class="on"><img src="illus/eveil-chat.webp" alt=""></button><button type="button" data-p="panda" aria-label="panda"><img src="illus/eveil-panda.webp" alt=""></button><button type="button" data-p="lapin" aria-label="lapin"><img src="illus/eveil-lapin.webp" alt=""></button><button type="button" data-p="chien" aria-label="chien"><img src="illus/eveil-chien.webp" alt=""></button><button type="button" data-p="herisson" aria-label="hérisson"><img src="illus/eveil-herisson.webp" alt=""></button></div>
-        <input class="mvname" id="mvname" placeholder="Lui donner un nom…" aria-label="Le nom de ton compagnon" maxlength="20"><div class="mvsug" id="mvsug"></div>
-        <button type="button" class="mvok" id="mvok">C’est lui</button>
-        <p class="mvnote" id="mvnote" aria-live="polite"></p>
-      </div>
+      <div class="phone mv" id="mv"><section class="cf-page ti-thread" data-motion="thread" aria-label="Choisir son compagnon" data-awake="false">
+ <h2>Qui va t’accompagner ?</h2>
+ <div class="cf-animals" role="group" aria-label="Les quatre compagnons">
+  <button type="button" class="cf-animal cursor-interaction" data-animal="chat" aria-pressed="false">Chat</button>
+  <button type="button" class="cf-animal cursor-interaction" data-animal="panda" aria-pressed="false">Panda</button>
+  <button type="button" class="cf-animal cursor-interaction" data-animal="lapin" aria-pressed="false">Lapin</button>
+  <button type="button" class="cf-animal cursor-interaction" data-animal="chien" aria-pressed="true">Chien</button>
+ </div>
+ <div class="cf-portrait" data-open="false">
+  <button type="button" class="cf-scene cursor-interaction" aria-label="Découvrir les facettes du compagnon" aria-expanded="false">
+   <span class="cf-media">
+    <img class="cf-poster" width="600" height="600" alt="Le petit border collie dans son arche">
+    <video class="cf-film" width="600" height="600" playsinline muted preload="none" hidden aria-label="Le réveil de ton compagnon"></video>
+    <span class="cf-leaf-area" aria-hidden="true"><span class="cf-leaf"><span class="cf-blade"></span></span></span>
+   </span>
+  </button>
+  <div class="cf-disclosure">
+   <div class="cf-panel cf-invitation-panel">
+    <button type="button" class="cf-invitation cursor-interaction" aria-expanded="false">Touche ton compagnon pour découvrir ses facettes.</button>
+   </div>
+   <div class="cf-panel cf-bubble-panel" hidden>
+    <div class="cf-bubble" role="group" aria-label="Les facettes de ton compagnon">
+     <div class="cf-bubble-top">
+      <div class="cf-facets" role="group" aria-label="Choisir plusieurs facettes"></div>
+      <button type="button" class="cf-close cursor-interaction" aria-label="Fermer la bulle"><span aria-hidden="true">×</span></button>
+     </div>
+     <div class="cf-words" aria-live="polite"></div>
+    </div>
+   </div>
+  </div>
+ </div>
+ <p class="cf-error" role="alert" hidden>Le réveil n’a pas démarré. Sélectionne à nouveau le compagnon pour réessayer.</p>
+<div class="cf-name-zone">
+   <label for="mvname" class="cf-name-label">Comment veux-tu l’appeler ?</label>
+   <input class="cf-name" id="mvname" type="text" maxlength="30" placeholder="Son petit nom…" autocomplete="off">
+   <div class="cf-suggestions" role="group" aria-label="Idées de petits noms"></div>
+   <button type="button" class="cf-confirm" id="mvok">C’est lui</button>
+   <p class="cf-confirmation" id="mvnote" aria-live="polite" hidden></p>
+  </div>
+ </section></div>
       <p>Ma vie · choisir son compagnon</p>
     </div><div class="screen">
       <div class="phone mv mv2" id="mv2">
@@ -4928,25 +4962,7 @@ list.onclick=e=>{const it=e.target.closest('.ditem');if(!it)return;const en=ALL[
 
 </script>
 <script type="text/x-en">
-(function(){const big=document.getElementById('mvbig'),dots=document.getElementById('mvdots'),st=document.getElementById('mvstage'),nm=document.getElementById('mvname'),note=document.getElementById('mvnote'),pet=document.getElementById('mvpet'),heart=document.getElementById('mvheart'),lab=document.getElementById('mvnm'),tr=document.getElementById('mvtr'),sug=document.getElementById('mvsug');
-const K=['chat','panda','lapin','chien','herisson'];
-const D={chat:['ton chat','LE CHAT','doux, un peu mystérieux',['Plume','Mochi','Biscotte']],panda:['ton panda','LE PANDA','calme, il prend son temps',['Bambou','Nuage','Pompon']],lapin:['ton lapin','LE LAPIN','tendre et attentif',['Caramel','Noisette','Câlin']],chien:['ton chien','LE CHIEN','fidèle et plein de joie',['Biscuit','Cannelle','Filou']],herisson:['ton hérisson','LE HÉRISSON','timide, mais tout doux',['Châtaigne','Brindille','Pomme']]};
-let cur=0;
-function labels(){const k=K[cur],n=nm.value.trim();lab.textContent=n?n.toUpperCase()+' · '+D[k][1].replace(/^LE /,''):D[k][1];sug.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.textContent===n))}
-function sides(){const pv=document.querySelector('#mvprev img'),nx=document.querySelector('#mvnext img');pv.src='illus/eveil-'+K[(cur+K.length-1)%K.length]+'.webp';nx.src='illus/eveil-'+K[(cur+1)%K.length]+'.webp'}
-function fill(){sides();const k=K[cur];tr.textContent=D[k][2];sug.innerHTML=D[k][3].map(x=>`<button type="button">${x}</button>`).join('');labels()}
-function show(i,dir){i=(i+K.length)%K.length;if(i===cur)return;cur=i;big.style.setProperty('--dx',dir*-30+'px');big.classList.add('out');tr.style.opacity=0;
- setTimeout(()=>{big.src='illus/eveil-'+K[i]+'.webp';big.alt='Ton compagnon : '+K[i];big.style.setProperty('--dx',dir*30+'px');void big.offsetWidth;big.classList.remove('out');fill();tr.style.opacity=1},280);
- dots.querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===i));note.textContent=''}
-function love(){pet.classList.remove('hop');heart.classList.remove('go');void pet.offsetWidth;pet.classList.add('hop');heart.classList.add('go')}
-dots.onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=K.indexOf(b.dataset.p);show(i,i>cur?1:-1)};
-let x0=null;st.addEventListener('pointerdown',e=>{if(e.target.closest('.mvside'))return;x0=e.clientX});st.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)>35)show(cur+(dx<0?1:-1),dx<0?1:-1);else if(e.target.closest('.mvbig'))love()});
-document.getElementById('mvprev').onclick=()=>show(cur-1,-1);document.getElementById('mvnext').onclick=()=>show(cur+1,1);
-sug.onclick=e=>{const b=e.target.closest('button');if(!b)return;nm.value=nm.value.trim()===b.textContent?'':b.textContent;labels()};
-nm.addEventListener('input',labels);
-document.getElementById('mvok').onclick=()=>{const n=nm.value.trim();window.__pet=K[cur];window.__petName=n;const vp=document.getElementById('vpet');if(vp)vp.src='illus/dort-'+K[cur]+'.webp';love();
- note.textContent=n?`Bienvenue, ${n}.`:`C’est parti avec ${D[K[cur]][0]}.`};
-fill();})();
+window.__enInitCompanions();
 </script>
 <script type="text/x-en">
 (function(){const cards=document.getElementById('mvcards'),note=document.getElementById('mvnote2'),sm=document.getElementById('mvsm');
@@ -4963,9 +4979,9 @@ function bub(t){const b=document.createElement('p');b.className='mvbub';b.textCo
 function wait(){const b=document.createElement('p');b.className='mvbub wt';b.innerHTML='<i></i><i></i><i></i>';box.appendChild(b);return b}
 function play(){T.forEach(clearTimeout);T=[];box.innerHTML='';let w=wait();
  T.push(setTimeout(()=>{w.remove();bub('Coucou '+first()+'.');w=wait()},900));
- T.push(setTimeout(()=>{w.remove();bub('J’aimerais te connaître un peu. Tu veux bien ?')},2400))}
+ T.push(setTimeout(()=>{w.remove();bub('On prend un moment pour toi ?')},2400))}
 new IntersectionObserver((es,ob)=>{if(es[0].isIntersecting){play();ob.disconnect()}},{threshold:.5}).observe(ph);
-document.getElementById('mvok').addEventListener('click',play);window.__mvsay=t=>{T.forEach(clearTimeout);T=[];box.innerHTML='';const w=wait();T.push(setTimeout(()=>{w.remove();bub(t)},800))};})();
+window.__mvsay=t=>{T.forEach(clearTimeout);T=[];box.innerHTML='';const w=wait();T.push(setTimeout(()=>{w.remove();bub(t)},800))};})();
 </script>
 <script type="text/x-en">
 (function(){const chat=document.getElementById('mvchat'),inp=document.getElementById('mvin'),qb=document.getElementById('mvqbar');
@@ -5853,7 +5869,7 @@ if(S.appellation===undefined)S.appellation=S.petit?1:0;
 const me=()=>(($('o2in')||{}).value||'').trim()||window.__P0();
 const pet=()=>window.__pet||'chat';
 const petImg=()=>'illus/eveil-'+pet()+'.webp';
-const PETS=['chat','panda','lapin','chien','herisson'],PETN={chat:'chat',panda:'panda',lapin:'lapin',chien:'chien',herisson:'hérisson'};
+const PETS=['chat','panda','lapin','chien'],PETN={chat:'chat',panda:'panda',lapin:'lapin',chien:'chien',herisson:'hérisson'};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const photoSrc=()=>S.photo||petImg();
 const PEN='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>';
@@ -7175,10 +7191,10 @@ const F=$('mvfiche');if(F){const band=F.querySelector('.fband'),hd=F.querySelect
   const tip=b.querySelector('.pfdtip');let tm;const show=()=>{tip.classList.add('on');clearTimeout(tm);tm=setTimeout(()=>tip.classList.remove('on'),2800)};
   let seen=0;try{seen=+localStorage.getItem('en-tipdit')||0}catch(x){}new IntersectionObserver((es,ob)=>es.forEach(e=>{if(e.isIntersecting&&seen<2){seen++;try{localStorage.setItem('en-tipdit',seen)}catch(x){}show();ob.disconnect()}}),{threshold:.5}).observe(F)}}
 /* Ma vie : introduction */
-const I=$('mvintro');if(I){const go=later=>{window.__mvLater=later;const mv=$('mv');mv&&mv.scrollIntoView({behavior:'smooth',block:'center'})};
+const I=$('mvintro');if(I){const go=later=>{window.__mvLater=later;if(window.__enCompanionState)window.__enCompanionState.deferred=later;window.__enShow('mv')};
  I.querySelector('[data-w="now"]').onclick=()=>go(false);I.querySelector('[data-w="later"]').onclick=()=>go(true);
- const lk=I.querySelector('.lk');lk.onclick=()=>{I.classList.toggle('open');lk.textContent=I.classList.contains('open')?'ce qui m’attend ⌃':'ce qui m’attend ⌄'};
- const ok=$('mvok');if(ok)ok.addEventListener('click',()=>{if(window.__mvLater==null)return;const n=$('mvnote');if(window.__mvLater){setTimeout(()=>{if(n)n.textContent='Le reste attendra. Je serai là quand tu voudras.'},1400)}else setTimeout(()=>{const m=$('mv2');m&&m.scrollIntoView({behavior:'smooth',block:'center'})},1600)})}
+ const lk=I.querySelector('.lk');lk.onclick=()=>{I.classList.toggle('open');lk.setAttribute('aria-expanded',String(I.classList.contains('open')));lk.textContent=I.classList.contains('open')?'Ce qui m’attend ⌃':'Ce qui m’attend ⌄'};
+}
 })();
 
 </script>
@@ -9006,7 +9022,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 (function(){let P=window.__portrait||null;const sv=window.__enLive&&window.__enLive('portrait',()=>window.__portrait||null);if(sv&&!window.__portrait)window.__portrait=sv})();
 
 /* 18 · « Plus tard » après le choix du compagnon : retour à l'accueil (plus d'impasse) */
-(function(){const ok=document.getElementById('mvok');if(ok)ok.addEventListener('click',()=>{if(window.__mvLater)setTimeout(()=>window.__enShow('home'),3200)})})();
+/* Le choix du compagnon gère lui-même la suite après sa sauvegarde. */
 /* 19 · Verrouiller après : vraiment, quand l'app passe en arrière-plan */
 (function(){const RG=window.__enGet&&window.__enGet('rg');let t0=0;const MS=[0,60e3,300e3,900e3,Infinity];
  document.addEventListener('visibilitychange',()=>{if(document.hidden){t0=Date.now();return}if(!t0)return;const i=RG&&RG.verr!=null?RG.verr:4;if(Date.now()-t0>=MS[i]&&window.__vaultLock&&!document.getElementById('en-lock'))window.__vaultLock();t0=0})})();
