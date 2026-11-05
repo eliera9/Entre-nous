@@ -143,7 +143,12 @@ window.__enInitLifeV3=function(){
   const d=old?JSON.parse(JSON.stringify(old)):{id,choices:[],text:session.legacyDraft||'',fields:{},animals:[]};
   session.legacyDraft='';d.id=id;d.choices=d.choices||[];d.fields=d.fields||{};d.animals=d.animals||[];
   if(N[id].fields)for(const field of N[id].fields)if(!d.fields[field.key]&&P[field.alias])d.fields[field.key]=P[field.alias];
-  if(N[id].kind==='animals'&&!d.animals.length)d.animals.push({status:'actuel',nom:'',espece:'',depuis:'',caractere:'',souvenir:''});
+  if(N[id].kind==='animals'&&!d.animals.length){
+   if(Array.isArray(P.animauxDetails)&&P.animauxDetails.length)d.animals=JSON.parse(JSON.stringify(P.animauxDetails));
+   else if(P.animal||P.espece)d.animals.push({status:'actuel',nom:P.animal||'',espece:P.espece||'',depuis:'',caractere:P.an_car||'',souvenir:''});
+   if(P.animal_eu&&!d.animals.some(a=>a.nom===P.animal_eu))d.animals.push({status:'ancien',nom:P.animal_eu,espece:'',depuis:'',caractere:'',souvenir:P.an_eu_souv||''});
+   if(!d.animals.length)d.animals.push({status:'actuel',nom:'',espece:'',depuis:'',caractere:'',souvenir:''});
+  }
   session.draft=d;return d;
  }
  function fieldMarkup(f,value,tag){
