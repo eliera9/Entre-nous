@@ -20,7 +20,10 @@
 #en-app .lv-access summary:after,#en-app .lv-fold summary:after{content:'';width:7px;height:7px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;rotate:45deg;flex:none;margin:0 5px 4px 12px}
 #en-app .lv-access[open] summary:after,#en-app .lv-fold[open] summary:after{rotate:225deg;margin-bottom:-3px}
 #en-app .lv-access .mvai{margin:4px 0 9px;text-align:center}
-#en-app #mv3.en-life-page{align-items:stretch;overflow:hidden}
+#en-app #mv3.en-life-page{align-items:stretch;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+/* Un seul défilement : en-tête, question, réponses et actions avancent ensemble. */
+#en-app #mv3.en-life-page>.lv-scroll{flex:1 0 auto;overflow:visible;overscroll-behavior:auto}
+#en-app #mv3.en-life-page .lv-writing textarea{resize:none;overflow:hidden}
 #en-app .lv-progress{height:3px;flex:none;background:color-mix(in srgb,var(--sline) 40%,transparent);border-radius:4px;overflow:hidden}
 #en-app .lv-progress i{display:block;height:100%;background:var(--sacc);transition:width .2s}
 #en-app .lv-scroll{width:100%;min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;padding:18px 0 12px;scrollbar-width:thin}

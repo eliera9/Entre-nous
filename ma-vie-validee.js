@@ -165,7 +165,8 @@ window.__enInitLifeV3=function(){
   if(d.text?.trim())items.push(d.text.trim());
   return items.join('\n');
  }
- function renderForm(){
+ function renderForm(resetScroll=true){
+  if(resetScroll)form.scrollTop=0;
   if(session.done){
    currentDraft=null;
    form.innerHTML=header(C[chapter].title,'chapters')+'<div class="lv-scroll"><div class="lv-question"><img class="lv-avatar" src="'+pet()+'" alt=""><p class="lv-bubble">Merci pour ce que tu as choisi de me confier. Tu peux revenir sur tes réponses quand tu le souhaites.</p></div><p class="lv-status">Ce chapitre est parcouru, à ton rythme.</p></div><div class="lv-footer"><button type="button" class="lv-back" data-lv="previous" aria-label="Revoir la question précédente"><span>'+CHEV+'</span></button><button type="button" class="lv-primary" data-lv="chapters">Revenir aux chapitres</button></div>';
@@ -181,10 +182,10 @@ window.__enInitLifeV3=function(){
   form.querySelectorAll('[data-choice]').forEach(b=>{b.onclick=()=>{d.choices=toggleChoice(d.choices,options[+b.dataset.choice],single.has(id)||!!n.chipsOnly);form.querySelectorAll('[data-choice]').forEach(x=>x.setAttribute('aria-pressed',d.choices.includes(options[+x.dataset.choice])));changed();};});
   form.querySelectorAll('[data-field]').forEach(input=>input.addEventListener('input',()=>{d.fields[input.dataset.field]=input.value;changed();}));
   form.querySelectorAll('[data-animal-field]').forEach(input=>input.addEventListener('input',()=>{d.animals[+input.closest('[data-animal-index]').dataset.animalIndex][input.dataset.animalField]=input.value;changed();}));
-  form.querySelectorAll('[data-remove-animal]').forEach(b=>b.onclick=()=>{d.animals.splice(+b.dataset.removeAnimal,1);renderForm();changed();});
-  const add=form.querySelector('[data-add-animal]');if(add)add.onclick=()=>{d.animals.push({status:'actuel',nom:'',espece:'',depuis:'',caractere:'',souvenir:''});renderForm();changed();};
-  const writing=form.querySelector('.lv-editor textarea');writing.addEventListener('input',()=>{d.text=writing.value;writing.style.height='auto';writing.style.height=writing.scrollHeight+'px';changed();});
-  form.querySelectorAll('details').forEach(el=>el.addEventListener('toggle',()=>{if(form.querySelector('.lv-writing').open){writing.style.height='auto';writing.style.height=writing.scrollHeight+'px';}}));
+  form.querySelectorAll('[data-remove-animal]').forEach(b=>b.onclick=()=>{d.animals.splice(+b.dataset.removeAnimal,1);renderForm(false);changed();});
+  const add=form.querySelector('[data-add-animal]');if(add)add.onclick=()=>{d.animals.push({status:'actuel',nom:'',espece:'',depuis:'',caractere:'',souvenir:''});renderForm(false);changed();};
+  const writing=form.querySelector('.lv-editor textarea');writing.addEventListener('input',()=>{d.text=writing.value;writing.style.height='auto';writing.style.height=(writing.scrollHeight+2)+'px';changed();});
+  form.querySelectorAll('details').forEach(el=>el.addEventListener('toggle',()=>{if(form.querySelector('.lv-writing').open){writing.style.height='auto';writing.style.height=(writing.scrollHeight+2)+'px';}}));
   bindForm();
  }
  function changed(){session.draft=currentDraft;const b=form.querySelector('[data-lv="continue"]');if(b)b.disabled=!responseText(currentDraft);safeSave();}
