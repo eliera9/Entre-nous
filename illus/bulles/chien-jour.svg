@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Portrait du chien, version jour">
+ <defs><radialGradient id="disc" cx=".4" cy=".3" r=".95"><stop offset="0" stop-color="#F9EEE9"/><stop offset="1" stop-color="#F3D6CF"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#D3AAB1" flood-opacity=".32"/></filter></defs>
+ <circle cx="64" cy="58" r="43.5" fill="url(#disc)" stroke="#B7858F" stroke-width="2.6"/>
+ <g fill="#B58A8E" opacity=".65"><circle cx="28" cy="42" r="1.8"/><circle cx="99" cy="40" r="1.7"/><path d="M102 64l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></g><g filter="url(#shadow)">
+ <path d="M36 49Q16 17 28 23Q46 24 53 42Z" fill="#414651" stroke="#785C64" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M80 41Q100 12 105 31L95 60Z" fill="#414651" stroke="#785C64" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <ellipse cx="64" cy="95" rx="31" ry="22" fill="#414651" stroke="#785C64" stroke-width="1.7"/>
+ <path d="M47 80Q64 70 82 80L78 108L51 108Z" fill="#FFF4EB"/>
+ <ellipse cx="64" cy="62" rx="36" ry="34" fill="#FFF4EB" stroke="#785C64" stroke-width="2.1"/>
+ <path d="M33 49Q42 25 62 30L61 77Q52 83 39 79Q28 72 33 49Z" fill="#414651"/>
+ <path d="M62 31Q67 43 68 54L60 76Q56 48 62 31Z" fill="#FFF4EB"/>
+ <ellipse cx="45" cy="66" rx="7" ry="9" fill="#302E38"/><ellipse cx="79" cy="66" rx="7" ry="9" fill="#39313D"/>
+ <ellipse cx="42.5" cy="62.8" rx="2.7" ry="3.5" fill="#FFFFFF"/><ellipse cx="76.5" cy="62.8" rx="2.7" ry="3.5" fill="#FFFFFF"/>
+ <ellipse cx="38" cy="79" rx="4.5" ry="2.7" fill="#DDA1A8"/><ellipse cx="90" cy="79" rx="4.5" ry="2.7" fill="#DDA1A8"/>
+ <ellipse cx="64" cy="83" rx="8" ry="5" fill="#414651"/>
+ <path d="M64 86v4 M64 90q-5 4-9 0 M64 90q5 4 9 0" fill="none" stroke="#785C64" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+ </g><g filter="url(#shadow)">
+ <ellipse cx="42" cy="100" rx="13" ry="9" fill="#FFF4EB" stroke="#785C64" stroke-width="1.6"/>
+ <ellipse cx="85" cy="100" rx="13" ry="9" fill="#FFF4EB" stroke="#785C64" stroke-width="1.6"/>
+ <g fill="#D7B8B5" opacity=".86"><ellipse cx="38" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="46" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="81" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/><ellipse cx="89" cy="100" rx="2.2" ry="2.7" fill="#D7B8B5"/></g>
+ </g>
+ </svg>
