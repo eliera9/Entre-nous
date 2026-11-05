@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Portrait du lapin, version jour">
+ <defs><radialGradient id="disc" cx=".4" cy=".3" r=".95"><stop offset="0" stop-color="#F9EEE9"/><stop offset="1" stop-color="#F3D6CF"/></radialGradient><filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#D3AAB1" flood-opacity=".32"/></filter></defs>
+ <circle cx="64" cy="58" r="43.5" fill="url(#disc)" stroke="#B7858F" stroke-width="2.6"/>
+ <g fill="#B58A8E" opacity=".65"><circle cx="28" cy="42" r="1.8"/><circle cx="99" cy="40" r="1.7"/><path d="M102 64l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/></g><g filter="url(#shadow)">
+ <path d="M43 45Q27 20 22 33Q13 54 31 70L44 65Z" fill="#F5DDD5" stroke="#785C64" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M85 43Q101 19 108 32Q118 55 98 72L84 65Z" fill="#F5DDD5" stroke="#785C64" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M35 41Q26 30 26 44Q22 57 34 62Z" fill="#DDA8B9"/>
+ <path d="M94 41Q105 31 104 46Q105 58 95 63Z" fill="#DDA8B9"/>
+ <ellipse cx="64" cy="96" rx="28" ry="22" fill="#F5DDD5" stroke="#785C64" stroke-width="1.8"/>
+ <ellipse cx="64" cy="62" rx="34" ry="34" fill="#F5DDD5" stroke="#785C64" stroke-width="2.1"/>
+ <ellipse cx="64" cy="79" rx="15" ry="11" fill="#FFF1E8"/>
+ <ellipse cx="50" cy="64" rx="7.2" ry="9.072000000000001" fill="#39313D"/><ellipse cx="47.7" cy="60.6" rx="2.9" ry="3.8" fill="#FFFFFF"/><ellipse cx="53" cy="67" rx="1.1" ry="1.2" fill="#FFFFFF"/><ellipse cx="78" cy="64" rx="7.2" ry="9.072000000000001" fill="#39313D"/><ellipse cx="75.7" cy="60.6" rx="2.9" ry="3.8" fill="#FFFFFF"/><ellipse cx="81" cy="67" rx="1.1" ry="1.2" fill="#FFFFFF"/>
+ <ellipse cx="40" cy="77" rx="6.2" ry="3.6" fill="#DDA1A8"/><ellipse cx="89" cy="77" rx="6.2" ry="3.6" fill="#DDA1A8"/>
+ <path d="M59 79Q64 74 69 79Q64 85 59 79" fill="#C48598"/>
+ <path d="M58 84 Q64 89 70 84" fill="none" stroke="#785C64" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M64 83v3" fill="none" stroke="#785C64" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+ </g><g filter="url(#shadow)">
+ <ellipse cx="42" cy="100" rx="13" ry="9" fill="#F5DDD5" stroke="#785C64" stroke-width="1.6"/>
+ <ellipse cx="85" cy="100" rx="13" ry="9" fill="#F5DDD5" stroke="#785C64" stroke-width="1.6"/>
+ <g fill="#D6A1B2" opacity=".86"><ellipse cx="38" cy="100" rx="2.2" ry="2.7" fill="#D6A1B2"/><ellipse cx="46" cy="100" rx="2.2" ry="2.7" fill="#D6A1B2"/><ellipse cx="81" cy="100" rx="2.2" ry="2.7" fill="#D6A1B2"/><ellipse cx="89" cy="100" rx="2.2" ry="2.7" fill="#D6A1B2"/></g>
+ </g>
+ </svg>
