@@ -67,3 +67,24 @@
 #en-app #mv .ti-label .cf-invitation{border:1px solid var(--cf-fil);border-radius:26px;max-width:290px;padding:9px 20px;color:#DDBBC8}
 #en-app #mv .ti-note .cf-invitation{max-width:290px;margin-left:6%;margin-right:4%;padding:5px 14px;border-left:1px solid #A97D90;text-align:left;font-size:19px}
 @media(max-width:360px){#en-app #mv .ti-thread .cf-invitation{max-width:230px}}
+
+
+/* Portraits des bulles uniquement : pattes visibles hors du cercle. */
+#en-app .phone:not(#mv) button.sbplume{
+ background:transparent;
+ box-shadow:none;
+ overflow:visible;
+}
+#en-app .phone:not(#mv) button.sbplume img{
+ position:absolute;
+ left:50%;
+ top:50%;
+ transform:translate(-50%,-50%);
+ width:44px;
+ height:44px;
+ max-width:none;
+ border-radius:0;
+ object-fit:contain;
+ object-position:center;
+ pointer-events:none;
+}
