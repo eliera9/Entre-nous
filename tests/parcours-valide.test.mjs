@@ -102,3 +102,52 @@ test('le texte non attribué est conservé et les refus restent reportés',()=>{
  const p=importText('','QUESTION 001\nComment est ton sommeil ?\nRÉPONSE\nJe préfère ne pas en parler.');
  assert.equal(p.proposals.sommeil.state,'paused');assert.equal(p.proposals.sommeil.verified,false);
 });
+
+test('un paragraphe développé distingue date, lieu, motif et ressenti',()=>{
+ const p=importText("## MOI AUJOURD’HUI\n- Ville : Rennes.\n- Depuis : Juin 2024. J’ai déménagé pour rejoindre mon compagnon. Je suis encore en train de trouver mes repères.");
+ assert.deepEqual(p.proposals.ville.rows[0],{place:'Rennes',since:'Juin 2024',why:'J’ai déménagé pour rejoindre mon compagnon.'});
+ assert.match(p.proposals.ville_bien.detail,/repères/);assert.ok(!p.proposals.ville.rows[0].since.includes('compagnon'));
+});
+test('emploi actuel et anciennes études ne deviennent pas deux activités actuelles',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Travail ou études : Je suis libraire et je travaille depuis mon domicile. Auparavant, j’ai étudié le droit.');
+ assert.equal(p.proposals.job.rows[0].title,'libraire');assert.deepEqual(p.proposals.trav.selected,['Je travaille']);
+ assert.equal(p.proposals.job.rows[0].since,undefined);
+ assert.equal(p.proposals.et_quoi,undefined);assert.match(p.proposals.pa_moments.detail,/droit/);
+});
+test('études et emploi explicitement actuels peuvent coexister',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Travail ou études : Je suis étudiant en architecture et je travaille dans une librairie.');
+ assert.deepEqual(p.proposals.trav.selected,['J’étudie','Je travaille']);assert.match(p.proposals.et_quoi.rows[0].study,/architecture/);assert.match(p.proposals.job.rows[0].title,/librairie/);
+});
+test('une personne sans emploi n’est pas transformée en salariée',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Travail ou études : Je suis sans emploi actuellement.');
+ assert.equal(p.proposals.job,undefined);assert.ok(!p.proposals.trav.selected.includes('Je travaille'));
+});
+test('les ligatures et les animaux ne créent pas de faux membres de famille',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Animaux : Moka, surnommée Biscotte | Chatte | Câline | Elle vit avec nous.\n## MES PROCHES\n- Proche : Moka, dite Biscotte | Notre chatte | Depuis deux ans | Des câlins | Des jeux.\n- Proche : Zoé | Ma petite sœur | Depuis sa naissance | Nous nous parlons peu. | Nos jeux.');
+ assert.equal(p.proposals.an_quel.rows.length,1);assert.equal(p.proposals.an_quel.rows[0].species,'Chatte');
+ assert.equal(p.proposals.pr_noms.rows[0].name,'Zoé');assert.equal(p.proposals.pr_autre,undefined);
+});
+test('une ancienne amitié ne suffit pas à déclarer une amitié proche actuelle',()=>{
+ const p=importText('## MES PROCHES\n- Proche : Léa | Ancienne meilleure amie | Depuis le lycée | Amitié terminée | Nos sorties.');
+ assert.equal(p.proposals.pr_amis,undefined);assert.match(p.proposals.pr_amie_nom.rows[0].bond,/Amitié passée/);assert.equal(p.proposals.pr_amie_nom.rows[0].since,'Depuis le lycée');
+});
+test('les étapes, souvenirs et dates de couple gardent leurs champs respectifs',()=>{
+ const p=importText('## MON PASSÉ\n- Passage : Mon adolescence | 2012 | 2018 | Nantes | Élève | Mes amis | Un déménagement | La musique.\n- Souvenir : Peluche | Sans petit nom particulier | Depuis mon enfance | Je la garde.\n## NOTRE HISTOIRE\n- Dates importantes : juin 2024 : notre rencontre ; été 2025 : voyage.\n- Chapitre : Notre première rencontre | Juin 2024 | Une promenade. | — | Au parc | — | — | — | Été | De la joie | Nos échanges.');
+ assert.deepEqual(p.proposals.pa_moments.rows[0],{event:'Mon adolescence',date:'2012 → 2018'});
+ assert.equal(p.proposals.pa_objet.rows[0].name,undefined);assert.equal(p.proposals.hi_dates.rows[0].when,'2024-06');assert.equal(p.proposals.hi_dates.rows[1].when,'été 2025');
+ assert.equal(p.proposals.hi_rdv.rows[0].place,'Au parc');assert.equal(p.proposals.hi_souvenir.rows[0].title,'Notre première rencontre');
+});
+test('une envie d’écrire ne devient pas un loisir déjà pratiqué',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Loisirs et passion : La lecture et les jeux vidéo. Je rêve d’écrire un roman.');
+ assert.deepEqual(p.proposals.loisirs.selected,['Lire','Jouer aux jeux vidéo']);assert.deepEqual(p.proposals.ecrit.selected,['J’aimerais essayer']);
+});
+test('les phrases du réveil et les difficultés d’endormissement restent séparées',()=>{
+ const p=importText('## MOI AUJOURD’HUI\n- Journées, rituels et sommeil : Mes matins commencent avec un câlin. J’aime les soirées au calme. Mon sommeil est parfois difficile et je me réveille fatiguée.');
+ assert.equal(p.proposals.rev.detail,'Mes matins commencent avec un câlin.');assert.deepEqual(p.proposals.sommeil.selected,['ça dépend des soirs']);assert.equal(p.proposals.boisson,undefined);
+ assert.ok(!p.proposals.moment?.selected.includes('le soir, quand je rentre'));
+});
+test('qualités, émotions et nuances du couple sont réparties sans crise inventée',()=>{
+ const p=importText('## MON INTÉRIEUR\n- Ma plus grande qualité : L’écoute et la loyauté.\n- Ce qui me met en colère : Le mensonge.\n- Une phrase qui me guide : Rester libre.\n## NOTRE HISTOIRE\n- Ce qu’elle aime chez lui ou elle : Sa tendresse. Je pense lui apporter mon soutien.\n- Ce qui est plus dur : Nous discutons calmement. Les câlins nous aident à nous réconcilier.');
+ assert.deepEqual(p.proposals.in_qualite.selected,['L’écoute','La loyauté']);assert.match(p.proposals.in_valeurs.detail,/Rester libre/);
+ assert.equal(p.proposals.hi_aime_chez.detail,'Sa tendresse.');assert.equal(p.proposals.hi_apporte.detail,'Je pense lui apporter mon soutien.');assert.match(p.proposals.hi_retrouver.detail,/réconcilier/);assert.equal(p.proposals.hi_perdre,undefined);
+});

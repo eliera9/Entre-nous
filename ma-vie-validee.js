@@ -48,6 +48,196 @@ function createLifeLogic(model){
  return {normalize,picked,toggle,followers,path,progress,meaningful,storyAvailable};
 }
 
+/* Lecture locale des rubriques du portrait. Aucun fait personnel n'est codé ici. */
+function routeDevelopedPortrait({model,parsed,add,normalize,unmatched}){
+ const n=normalize;
+ const clean=s=>String(s||'').trim().replace(/^[—–\-\s|]+[.]?$/,'');
+ const sentences=s=>String(s).match(/[^.!?\n]+(?:[.!?]+|$)/g)?.map(x=>x.trim()).filter(Boolean)||[];
+ const only=(s,re)=>sentences(s).filter(x=>re.test(n(x))).join(' ');
+ const without=(s,re)=>sentences(s).filter(x=>!re.test(n(x))).join(' ');
+ const parts=s=>s.split('|').map(clean);
+ const name=s=>clean(s).split(/,|\s+(?:dit(?:e)?|surnomm[ée]e?)\b/i)[0].trim().replace(/[.]$/,'');
+ const short=s=>clean(s).replace(/[.]$/,'');
+ const text=(id,value,source,extra={})=>{if(clean(value))add(id,{detail:clean(value),source,...extra});};
+ const choice=(id,values,source,detail='')=>add(id,{selected:values,detail,source});
+ const row=(id,values,source,detail='')=>add(id,{rows:[values],detail,source});
+ function choose(id,value,rules,source,detail=value){
+  const values=rules.filter(([re])=>re.test(n(value))).map(([,v])=>v).filter(v=>model.steps[id]?.ideas.includes(v));
+  add(id,{selected:values,detail,source});
+ }
+ const noName=s=>/^(?:sans (?:petit )?nom|pas de (?:petit )?nom|aucun (?:petit )?nom|n a pas de nom|non nomme)/.test(n(s));
+ const months=['janvier','fevrier','mars','avril','mai','juin','juillet','aout','septembre','octobre','novembre','decembre'];
+ function date(value){const v=short(value),m=n(v).match(/^(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre) (\d{4})$/);return m?{when:m[2]+'-'+String(months.indexOf(m[1])+1).padStart(2,'0'),precision:'Un mois et une année'}:{when:v,precision:/^\d{4}$/.test(v)?'Une année':'Une période, avec mes mots'};}
+ const entries=Object.entries(parsed).flatMap(([section,rows])=>rows.map(([label,value])=>({section,label,value,key:n(label),source:(label?label+' : ':'')+value})));
+ const hasDates=entries.some(e=>e.key==='dates importantes');
+ const currentPartner=entries.find(e=>e.key==='partenaire')?.value||entries.find(e=>e.key==='proche'&&/compagnon|compagne|conjoint|partenaire|epoux|epouse/.test(n(parts(e.value)[1])))?.value.split('|')[0]||'';
+ const partnerName=name(currentPartner);
+ const friendRows=[],familyRows=[];
+ function nicknames(value,source){
+  let match;
+  const toPartner=/(?:que je surnomme(?: affectueusement)?|surnomm[ée](?: affectueusement)?)\s*[«“"]([^»”".]+)[»”"]/i.exec(value);
+  if(toPartner&&partnerName)row('hi_surnoms',{from:'Moi',for:partnerName,name:toPartner[1]},source);
+  const toMe=/(?:il|elle|[\p{L}'-]+) m['’]appelle\s*[«“"]([^»”".]+)[»”"]/iu.exec(value);
+  if(toMe)row('hi_surnoms',{from:partnerName||'Mon ou ma partenaire',for:'Moi',name:toMe[1]},source);
+ }
+ function hobbies(value,source){
+  const now=sentences(value).filter(s=>!/(?:j aimerais|je reve|je voudrais|un jour|peut etre|j espere)/.test(n(s))).join(' ');
+  choose('loisirs',now,[[/lecture|\blire\b|livres/,'Lire'],[/dessin|peint/,'Dessiner ou peindre'],[/sport|muscul|natation|yoga/,'Faire du sport'],[/musique|chanter|piano|guitare/,'Écouter ou jouer de la musique'],[/cuisin/,'Cuisiner'],[/balad|promen|randon/,'Me balader'],[/jeux video|rpg|mondes ouverts/,'Jouer aux jeux vidéo'],[/photo/,'Faire de la photo'],[/jardin/,'Jardiner'],[/films|series|animes/,'Regarder des films ou séries'],[/projets|je cree|je developpe/,'Créer des projets'],[/j ecris|je pratique l ecriture/,'Écrire']],source,now);
+  const sport=now.match(/\b(?:musculation|natation|yoga|course à pied|basket(?:ball)?|football|vélo|cyclisme|pilates|danse|tennis)\b/gi);if(sport)text('sport_quel',[...new Set(sport)].join(', '),source);
+  const creation=only(value,/projets|site |je cree|je developpe|creations/);if(creation){choose('crea',creation,[[/numerique|digital|site /,'Des projets numériques']],source);text('crea_sens',only(value,/permettent|imaginer|construire|m evader|fiere|donner vie|partager ces creations|activite professionnelle/),source);}
+  const writing=only(value,/ecrire|ecriture|roman/);if(writing){text('ecrit_projet',writing,source);choice('ecrit',[/j aimerais|je reve|je voudrais|premier pas/.test(n(writing))?'J’aimerais essayer':'Inventer des histoires'],source,writing);}
+ }
+ function media(value,source){
+  let context='';const buckets={books:[],screen:[],games:[],music:[]};
+  for(const s of sentences(value)){const v=n(s);
+   if(/musicalement|j ecoute|chante|k pop|pop de |musiques? de/.test(v))context='music';
+   else if(/mes jeux|jeux video prefer|je joue|rpg narratifs|mondes ouverts|creation de personnages/.test(v))context='games';
+   else if(/serie preferee|dramas|animes japonais|films et series|zombies/.test(v))context='screen';
+   else if(/fantasy|romantasy|dark romance|thrillers|livres|lecture/.test(v)&&!context)context='books';
+   if(context)buckets[context].push(s);
+   const favorites=s.match(/^(.+?)\s+font partie de mes univers favoris/i);if(favorites)row('oeuvre',{title:short(favorites[1].replace(/^J['’]aime\s+/i,''))},source);
+  }
+  if(buckets.books.length)choose('lire_genre',buckets.books.join(' '),[[/fantasy|romantasy/,'de la fantasy'],[/romance|romantasy/,'de la romance'],[/thrillers/,'des thrillers'],[/romans/,'des romans']],source);
+  text('serie',buckets.screen.join(' '),source);text('jeux',buckets.games.join(' '),source);text('mus',buckets.music.join(' '),source);
+ }
+ function animal(value,source,fromClose=false){
+  const p=parts(value);const first=p[0].match(/^(.+?),\s*((?:chat(?:te)?|chien(?:ne)?|lapin|oiseau|hamster|tortue)\b.*)$/i);
+  const species=fromClose?p[1]?.replace(/^(?:notre|mon|ma|un|une)\s+/i,''):first?.[2]||p[1];
+  if(!/chat|chien|lapin|oiseau|hamster|tortue|animal|cheval|poney|rat\b|souris|furet/.test(n(species))){text('an_quel',value,source);return;}
+  const old=/ancien|decede|decedee|disparu|disparue|ne vit plus|ne partage plus/.test(n(species+' '+p.slice(2).join(' ')));
+  if(old){row('an_eu_nom',{name:name(first?.[1]||p[0]),situation:p.slice(1).filter(Boolean).join(' | ')},source);choice('an',['J’en ai eu dans ma vie'],source);return;}
+  row('an_quel',{name:name(first?.[1]||p[0]),species:short(species),traits:fromClose?'':first?p[1]||'':p[2]||''},source,(fromClose?p.slice(2):[p[0]!==name(p[0])?p[0]:'',...p.slice(first?2:3)]).filter(Boolean).join(' | '));choice('an',['J’en ai dans mon quotidien'],source);
+ }
+ for(const e of entries){
+  const {key:k,value:v,source:s,section}=e;if(!clean(v))continue;
+  if(k==='ville'){row('ville',{place:short(v)},s);continue;}
+  if(k==='depuis'){
+   const ss=sentences(v),first=ss[0]||v;const period=/^(?:(?:depuis|en)\s+)?(?:(?:\d{1,2}\s+)?[\p{L}]+\s+\d{4}|\d{4}|depuis\s+.+)$/iu.test(short(first));
+   if(period)row('ville',{since:short(first)},s);else text('ville',first,s);
+   const why=ss.slice(period?1:0).filter(x=>/quitte|install|demenag|venu|venir|rejoindre/.test(n(x))).join(' ');if(why)row('ville',{why},s);
+   const feeling=only(v,/reperes|me sens|m y plais|j aime cette ville/);if(feeling)choose('ville_bien',feeling,[[/trouver mes reperes|trouve mes reperes/,'je trouve mes repères']],s);continue;
+  }
+  if(k==='vit avec'){
+   const selected=[];if(/compagnon|compagne|partenaire|conjoint|copain|copine|mon mari|ma femme/.test(n(v)))selected.push('Avec mon ou ma partenaire');if(/chat|chien|animaux|animal/.test(n(v)))selected.push('Avec des animaux');if(/seul|solo/.test(n(v))&&!selected.length)selected.push('Je vis seul');choice('avec',selected,s,v);nicknames(v,s);continue;
+  }
+  if(k==='partenaire'){row('part_nom',{name:name(v)},s);nicknames(v,s);continue;}
+  if(k==='ensemble depuis'){row('part_nom',{since:short(v)},s);continue;}
+  if(k==='proche'){
+   const p=parts(v),role=n(p[1]),who=name(p[0]),since=p[2]||'',bond=p.slice(3).filter(Boolean).join(' | ');
+   if(/chat|chien|lapin|oiseau|hamster|tortue|animal|cheval|poney|furet/.test(role)){animal(v,s,true);continue;}
+   if(/\bami/.test(role)){const past=/ancien|ancienne|passee|terminee|perdue/.test(role+' '+n(p[3]));row('pr_amie_nom',{name:who,since,bond:(past?'Amitié passée — ':'')+bond},s);friendRows.push({who,past,source:s});if(past)text('pr_amitie_perdue',p.join(' | '),s);else if(/confiance|soutien|proche/.test(n(bond)))choice('pr_amis',['Une ou plusieurs amitiés proches'],s);continue;}
+   if(/frere|soeur|fratrie/.test(role)){row('pr_noms',{name:who,relation:p[1],bond},s);familyRows.push({who,id:'pr_noms'});choice('pr_fratrie',['Des frères ou sœurs'],s);choice('pr_famille',['Ma fratrie'],s);continue;}
+   if(/mere|pere|parent/.test(role)){row('pr_maman',{name:who,role:p[1],bond},s);familyRows.push({who,id:'pr_maman'});choice('pr_famille',['Des parents ou figures parentales'],s);continue;}
+   if(/partenaire|compagnon|compagne|conjoint|epoux|epouse/.test(role)){row('part_nom',{name:who,since:short(since.replace(/^ensemble depuis\s+/i,''))},s);text('hi_aime_chez',p[3]||'',s);text('hi_souvenir',p[4]||'',s);continue;}
+   row('pr_autre',{name:who,role:p[1]||'',bond:[since,bond].filter(Boolean).join(' | ')},s);continue;
+  }
+  if(k==='animaux'){animal(v,s);continue;}
+  if(k==='travail ou etudes'){
+   const ss=sentences(v);let history=false;const current=[],past=[];
+   for(const sentence of ss){if(/aujourd hui|actuellement|desormais/.test(n(sentence)))history=false;else if(/auparavant|j ai (?:egalement )?etudie|j ai travaille|j ai ete|anciennement|autrefois/.test(n(sentence)))history=true;(history?past:current).push(sentence);}
+   const currentText=current.join(' '),study=/je suis etudiant|j etudie|je suis en (?:formation|licence|master)|actuellement en formation/.test(n(currentText));
+   if(study){const studyText=currentText.split(/\s+et je travaille\b/i)[0];row('et_quoi',{study:short(studyText.replace(/^Je suis\s+/i,''))},s);choice('trav',['J’étudie'],s);}
+   const jobText=study?current.filter(x=>/je travaille|poste|role de|emploi salarie/.test(n(x))).map(x=>x.split(/(?=je travaille\b)/i).pop()).join(' '):currentText;
+   if(jobText&&!/sans emploi|chomage|retraite|je ne travaille|je fais une pause/.test(n(jobText))){
+    const title=jobText.split(/[.!?]/)[0].replace(/^Je suis\s+/i,'').split(/\s+et je\b/i)[0].split(/\s+depuis\s+/i)[0];
+    const role=jobText.match(/(?:rôle|poste|fonction) de\s+([^,.]+?)(?:,|\s+que\b|[.]|$)/i)?.[1];
+    const sinceCandidate=jobText.match(/\bdepuis\s+([^.!?,]+)/i)?.[1];
+    const since=sinceCandidate&&/\d|enfance|adolescence|toujours|longtemps|quelques|plusieurs|hier|aujourd|mois|annee|debut|fin|ete|retour|arrivee|naissance/.test(n(sinceCandidate))?sinceCandidate:'';
+    row('job',{title:[title,role].filter(Boolean).join(' · '),since:since||''},s,jobText);choice('trav',['Je travaille'],s);choose('job',jobText,[[/teletravail|derriere un ecran/,'Du travail derrière un écran']],s,jobText);
+   }else if(!study&&currentText)choice('trav',['Une autre situation'],s,currentText);
+   text('pa_moments',past.join(' '),s);continue;
+  }
+  if(k==='ressenti sur le travail'){
+   const positive=only(v,/j aime transmettre|j apprecie|en revanche|accompagner les autres|j aime.*travail/),negative=only(v,/ne m epanouis|pression|fatig|pese|difficile|repetition|n aime pas/),future=only(v,/j aimerais|je voudrais|metier plus|quelle voie/);
+   choice('job_aime',positive&&negative?['Il y a du bon et du moins bon']:negative?['Je ne m’y retrouve pas vraiment']:positive?['Je m’y retrouve']:[],s,[negative,positive].filter(Boolean).join(' '));text('job_plus',positive,s);text('job_dur',negative,s);
+   if(future){choose('job_attire',future,[[/metier.*creatif/,'un métier créatif']],s);choose('job_reperes',future,[[/creatif|creativite/,'De la créativité'],[/autonome|autonomie/,'De l’autonomie'],[/humain/,'Du lien humain'],[/bienveillant/,'Un cadre bienveillant']],s);choice('job_futur',/metier.*(?:creatif|ressemble|humain)|voie professionnelle/.test(n(future))?['dans un métier qui me ressemble']:[],s,future);}continue;
+  }
+  if(k==='journees rituels et sommeil'){
+   text('rev',without(only(v,/matins?|au lit|reveil|telephone/),/sommeil|endorm|dormir/),s);text('jours',only(v,/journees|teletravail|apres le travail/),s);const personal=only(v,/apres le travail|mes passions/);if(personal)choice('pause',['oui, un peu'],s,personal);
+   text('moment',only(v,/particulierement|moment prefere/),s);const sleep=only(v,/sommeil|endorm|fatiguee|dormir/);if(sleep)choice('sommeil',/parfois|certains soirs|ca depend/.test(n(sleep))?['ça dépend des soirs']:/reflechis|inquiete|pense|difficile/.test(n(sleep))?['pas vraiment, ça tourne dans ma tête']:[],s,sleep);continue;
+  }
+  if(k==='loisirs et passion'){hobbies(v,s);continue;}
+  if(k==='livres films musique'){media(v,s);continue;}
+  if(k==='reve'||k==='reves'){choose('in_reves',v,[[/metier|profession/,'un métier qui me plaît'],[/maison/,'une maison à moi'],[/famille|devenir maman|devenir papa/,'une famille'],[/voyag|visiter|decouvrir le monde/,'voyager']],s);const writing=only(v,/ecrire|ecriture|roman|personnages|histoire|premier pas|premiere scene/);if(writing){text('ecrit_projet',writing,s);choice('ecrit',['J’aimerais essayer'],s,writing);}continue;}
+  if(k==='vers qui elle se tourne'||k==='vers qui il se tourne'){
+   text('pr_soutien',without(v,/nouvelles amities|meilleure amie/),s);text('pr_nouvelle',only(v,/bonne nouvelle/),s);
+   text('pr_amis',only(v,/meilleure amie|nouvelles amities/),s);const meet=only(v,/nouvelles amities|rencontrer/);if(meet){choice('pr_amis',['J’aimerais créer de nouveaux liens'],s);text('pr_rencontrer',meet,s);text('rencontres_repères',meet,s);}continue;
+  }
+  if(k==='ce qui est complique'){
+   text('pr_complique',v,s);
+   const groups=new Map();let active=null;const ss=sentences(v);
+   for(const sentence of ss){const mentioned=familyRows.filter(f=>n(sentence).includes(n(f.who)));if(mentioned.length===1)active=mentioned[0];else if(/ruptures amicales|mes amis|certaines amities/.test(n(sentence)))active=null;if(active){if(!groups.has(active))groups.set(active,[]);groups.get(active).push(sentence);}}
+   for(const[f,relevant]of groups){const personSource=entries.find(e=>e.key==='proche'&&name(parts(e.value)[0])===f.who);const p=personSource?parts(personSource.value):[];row(f.id,f.id==='pr_noms'?{name:f.who,relation:p[1]||'',bond:relevant.join(' ')}:{name:f.who,role:p[1]||'',bond:relevant.join(' ')},s);}
+   const reconnect=new Set();ss.forEach((sentence,i)=>{if(/renouer|retrouver notre complicite|entendre sa version/.test(n(sentence))){if(i&&/lui|elle|notre/.test(n(sentence)))reconnect.add(ss[i-1]);reconnect.add(sentence);}});text('pr_renouer',[...reconnect].join(' '),s);continue;
+  }
+  if(k==='a grandi a'){
+   const first=sentences(v)[0]||v;
+   for(const segment of first.split(/,?\s+puis\s+/i)){const m=segment.match(/^(.+?)\s+(jusqu['’]à|pendant)\s+(.+)$/i);if(m)row('pa_lieu',{place:short(m[1]),period:short(m[2]+' '+m[3])},s);}
+   text('pa_lieu',v,s);continue;
+  }
+  if(k==='enfance'){
+   text('pa_enfance',v,s);text('pa_jeux',only(v,/mes jeux|velo|roller|cabanes|deguisements|poursuites|jeux de role/),s);text('pa_sourire',only(v,/sorties au lac|patisseries|bonbons|soirees devant/),s);continue;
+  }
+  if(k==='ecole et adolescence'){
+   text('pa_ado',only(v,/adolescence|malheureus/),s);text('pa_ecole',only(v,/etudi|psychologie|diplome/),s);continue;
+  }
+  if(k==='moment'){const p=parts(v);row('pa_moments',{date:p[0]||'',event:p.slice(1).filter(Boolean).join(' | ')},s);continue;}
+  if(k==='passage'){const p=parts(v),period=p[1]?[p[1],p[2]].filter(Boolean).join(' → '):p[2]?'Jusqu’à '+p[2]:'';row('pa_moments',{event:p[0]||'',date:period},s,p[0]+' — '+p.slice(3).filter(Boolean).join(' | '));if(/enfance|petite enfance/.test(n(p[0])))text('pa_petite',p[4]||'',s);continue;}
+  if(k==='souvenir'&&section!=='histoire'){const p=parts(v);row('pa_objet',{object:p[0]||'',name:noName(p[1])?'':p[1]||'',since:p[2]||''},s,p.slice(3).filter(Boolean).join(' | '));continue;}
+  if(k==='facon de lui parler'){
+   choose('ton',v,[[/douceur|tendresse/,'Avec douceur'],[/franche|franchise|sincerite/,'Avec franchise'],[/humour/,'Avec un peu d’humour'],[/questions/,'En posant des questions']],s);
+   const preferred=v.match(/(?:m['’]appeler|appelle[- ]moi)\s+([^.!?,;]+)/i)?.[1];if(preferred)row('surnom',{name:short(preferred)},s);continue;
+  }
+  if(k==='confiance en soi'){choose('in_confiance',v,[[/manque.*confiance|me devaloriser|doute.*moi/,'J’ai souvent des doutes']],s);text('in_non',only(v,/dire oui|dire non|m affirmer|donner mon avis/),s);continue;}
+  if(k==='accompagnement'){choose('in_psy',v,[[/je suis (?:suivi|suivie|accompagne)|je consulte|mon psychologue|ma psychologue/,'Oui, en ce moment']],s);continue;}
+  if(k==='ce que je n ose pas dire'){const ss=v.split(/(?=J['’]aimerais que les autres comprennent)/i);text('in_non',ss[0],s);text('pr_savoir',ss.slice(1).join(' '),s);continue;}
+  if(k==='ce que j aimerais changer'){text('in_confiance',only(v,/confiance|comparer|m affirmer|dire non|jugement/),s);continue;}
+  if(k==='rencontre'){
+   choose('part_renc',only(v,/application|rencontres|nous sommes connus/),[[/application.*rencontres|appli/,'sur une appli']],s);
+   text('hi_impression',only(v,/premiere rencontre.*timide|a l aise|trouve charmant|mis.*confiance/),s);continue;
+  }
+  if(k==='moments forts'){text('hi_souvenir',without(v,/je t aime|affection.*exprime/),s);text('hi_aime',only(v,/je t aime|affection.*exprime/),s);continue;}
+  if(k==='ce qu elle aime chez lui ou elle'||k==='ce qu il aime chez lui ou elle'){
+   const ss=v.split(/(?=Je pense lui apporter)/i);text('hi_aime_chez',ss[0],s);text('hi_apporte',ss.slice(1).join(' '),s);continue;
+  }
+  if(k==='ce qui est plus dur'&&section==='histoire'){
+   text('hi_dur',without(v,/reconcilier/),s);text('hi_retrouver',only(v,/discuter calmement|reconcilier/),s);continue;
+  }
+  if(k==='projets'&&section==='histoire'){text('hi_avenir',only(v,/avenir|dates precises|calendrier/),s);choose('hi_projets',without(v,/avenir|dates precises|calendrier/),[[/voyag/,'un voyage'],[/autres animaux|accueillir.*animaux/,'un animal'],[/famille|enfants/,'une famille']],s);continue;}
+  if(k==='mon petit rituel'){text('rituel',v,s);if(partnerName)text('hi_rituels',sentences(v).filter(x=>n(x).includes(n(partnerName))).map(x=>x.split(/,\s*puis\b/i)[0]).join(' '),s);continue;}
+  if(k==='dates importantes'){
+   for(const part of v.split(';')){const i=part.indexOf(':');if(i>0)row('hi_dates',{event:short(part.slice(i+1)),...date(part.slice(0,i))},s);else text('hi_dates',part,s);}continue;
+  }
+  if(k==='chapitre'){
+   const p=parts(v);row('hi_souvenir',{title:p[0]||'',when:p[1]||''},s,[p[0],p[2],p[4]?'Lieu : '+p[4]:'',p[9]?'Ressenti : '+p[9]:'',p[10]?'Ce qui reste : '+p[10]:''].filter(Boolean).join('\n'));
+   if(/premiere rencontre|premier rendez vous/.test(n(p[0]))){row('hi_rdv',{place:p[4]||'',period:p[1]||''},s,p[2]||'');text('hi_impression',p[9]||'',s);}
+   if(/chez nous|vie commune|installation|emmenagement/.test(n(p[0]))){text('hi_ensemble',p[2]||'',s);text('hi_decision',p[2]||'',s);text('hi_saut_ressenti',p[9]||'',s);}
+   if(!hasDates&&p[1])row('hi_dates',{event:p[0]||'',...date(p[1])},s);continue;
+  }
+  const direct={
+   'endroits refuges':'refuge','petits bonheurs':'humeur','se decrit comme':'mots','je suis':'mots','ce que les autres disent de moi':'mots',
+   'fierte':'fier','fiere de':'fier','ce qui prend de l energie':'energie','ce qui aide':'aide','envies pour cette annee':'annee',
+   'grands moments':'pa_moments','epreuves':'pa_epreuves','ce qui l a construite':'pa_construite','meteo interieure':'in_meteo',
+   'ce qui pese':'in_pese','peurs':'in_peur','besoins':'in_besoins','emotion frequente':'in_emotion','ce qui apaise':'in_apaise','valeurs':'in_valeurs',
+   'ma plus grande qualite':'in_qualite','ce qui me fait rire':'mots','ce qui me fait du bien':'humeur','mon petit rituel':'rituel',
+   'une phrase qui me guide':'in_valeurs','ce qui me met en colere':'in_emotion','projets':'hi_projets'
+  };
+  if(direct[k]){
+   const rules={
+    mots:[[/sensibl/,'Sensibilité'],[/humour|drole/,'Humour'],[/creativ|creative/,'Créativité'],[/curieu/,'Curiosité'],[/loyal|loyaut/,'Loyauté'],[/ecoute/,'Écoute']],
+    in_qualite:[[/ecout/,'L’écoute'],[/creativ/,'La créativité'],[/loyal|loyaut/,'La loyauté'],[/persever/,'La persévérance']],
+    in_valeurs:[[/\bamour\b/,'l’amour'],[/\bliberte\b/,'la liberté'],[/\bfamille\b/,'la famille'],[/\bsincerite\b/,'la sincérité'],[/\bcreativite\b/,'la créativité'],[/\bpaix\b/,'la paix']],
+    in_emotion:[[/inquiet/,'De l’inquiétude'],[/tristesse/,'De la tristesse'],[/colere/,'De la colère'],[/\bjoie\b/,'De la joie'],[/nostalgie/,'De la nostalgie']],
+    in_besoins:[[/repos/,'de repos'],[/ecoutee|ecoute/,'d’être écoutée'],[/changement/,'de changement'],[/tendresse/,'de tendresse'],[/solitude|temps pour moi/,'de temps pour moi']],
+    hi_projets:[[/voyag/,'un voyage'],[/autres animaux|accueillir.*animaux/,'un animal'],[/famille|enfants/,'une famille']]
+   };
+   const id=direct[k],detail=['ce qui me fait rire','ce que les autres disent de moi','une phrase qui me guide','ce qui me met en colere'].includes(k)?e.label+' : '+v:v;
+   if(rules[id])choose(id,v,rules[id],s,detail);else text(id,detail,s);continue;
+  }
+  if(e.label)unmatched.push(s);
+ }
+}
+
 function migrateApprovedAnswers(model, previous, profile){
  const answers={},drafts={},source={};
  const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
@@ -102,7 +292,7 @@ function migrateApprovedAnswers(model, previous, profile){
 }
 
 function createApprovedImport(model, rawPortrait, discussion, portraitParser, portraitTemplate, catalog){
- const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9]+/g,' ').trim();
+ const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[’‘]/g,"'").replace(/œ/g,'oe').replace(/æ/g,'ae').replace(/[^a-z0-9]+/g,' ').trim();
  const empty=v=>!String(v||'').trim()||/^[—–\-\s|]+$/.test(String(v));
  const proposals={},warnings=[],unmatched=[];
  let portraitText=String(rawPortrait||''),structured=null;
@@ -119,7 +309,10 @@ function createApprovedImport(model, rawPortrait, discussion, portraitParser, po
   for(const v of selected){const idea=step.ideas.find(x=>normalize(x)===normalize(v));if(idea&&!a.selected.includes(idea))a.selected.push(idea);}
   if(detail&&!empty(detail)&&!a.detail.includes(detail))a.detail+=(a.detail?'\n\n':'')+detail;
   for(const row of rows){const safe={};for(const field of step.fields){const v=cleanString(row[field.key]);if(!empty(v))safe[field.key]=v;}if(Object.keys(safe).length){
-   if(!step.repeat&&a.rows.length){for(const [key,value]of Object.entries(safe)){if(!a.rows[0][key])a.rows[0][key]=value;else if(a.rows[0][key]!==value)a.detail+=(a.detail?'\n':'')+step.fields.find(f=>f.key===key).label+' : '+value;}}
+   const identityIds=['an_quel','an_eu_nom','pr_noms','pr_maman','pr_amie_nom','pr_autre','enf_noms'];
+   const same=identityIds.includes(id)&&safe.name?a.rows.find(r=>normalize(r.name)===normalize(safe.name)&&(!r.role||!safe.role||normalize(r.role)===normalize(safe.role))&&(!r.species||!safe.species||normalize(r.species)===normalize(safe.species))):null;
+   if(same){for(const[key,value]of Object.entries(safe)){if(!same[key])same[key]=value;else if(normalize(same[key])!==normalize(value)&&!same[key].includes(value))same[key]+='\n'+value;}}
+   else if(!step.repeat&&a.rows.length){for(const [key,value]of Object.entries(safe)){if(!a.rows[0][key])a.rows[0][key]=value;else if(normalize(a.rows[0][key])!==normalize(value)&&!a.rows[0][key].includes(value))a.detail+=(a.detail?'\n':'')+step.fields.find(f=>f.key===key).label+' : '+value;}}
    else if(!a.rows.some(r=>JSON.stringify(r)===JSON.stringify(safe)))a.rows.push(safe);
   }}
   if(state==='paused'){a.state='paused';a.open=false;}
@@ -128,57 +321,7 @@ function createApprovedImport(model, rawPortrait, discussion, portraitParser, po
   a.writingOpen=!!a.detail||(!step.ideas.length&&!step.fields.length);
  }
  const parsed=portraitParser(portraitText,portraitTemplate);
- const mapping={
-  'ville':['ville','place'],'depuis':['ville','since'],'vit avec':['avec'],
-  'travail ou etudes':['job','title'],'ressenti sur le travail':['job_aime'],
-  'journees rituels et sommeil':['jours'],'animaux':['an_quel'],
-  'loisirs et passion':['loisirs'],'livres films musique':['oeuvre'],
-  'endroits refuges':['refuge'],'petits bonheurs':['humeur'],'se decrit comme':['mots'],'je suis':['mots'],
-  'fierte':['fier'],'fiere de':['fier'],'ce qui prend de l energie':['energie'],'ce qui aide':['aide'],
-  'envies pour cette annee':['annee'],'facon de lui parler':['ton'],'reve':['in_reves'],'reves':['in_reves'],
-  'vers qui elle se tourne':['pr_soutien'],'ce qui est complique':['pr_complique'],'a grandi a':['pa_lieu','place'],
-  'enfance':['pa_petite'],'ecole et adolescence':['pa_ecole'],'grands moments':['pa_moments'],
-  'epreuves':['pa_epreuves'],'ce qui l a construite':['pa_construite'],'meteo interieure':['in_meteo'],
-  'ce qui pese':['in_pese'],'peurs':['in_peur'],'confiance en soi':['in_confiance'],'besoins':['in_besoins'],
-  'emotion frequente':['in_emotion'],'ce qui apaise':['in_apaise'],'valeurs':['in_valeurs'],'accompagnement':['in_psy'],
-  'partenaire':['part_nom','name'],'rencontre':['part_renc'],'ensemble depuis':['part_nom','since'],
-  'moments forts':['hi_souvenir'],'ce qu elle aime chez lui ou elle':['hi_aime_chez'],'ce qui est plus dur':['hi_perdre'],
-  'projets':['hi_projets'],'dates importantes':['hi_dates'],'une phrase qui me guide':['in_phrase']
- };
- function mappedValue(label,value,source){
-  const route=mapping[normalize(label)];if(!route||!model.steps[route[0]])return false;
-  const [id,key]=route;add(id,{rows:key?[{[key]:value}]:[],detail:key?'':value,source});return true;
- }
- for(const [section,rows]of Object.entries(parsed))for(const [label,value]of rows){
-  if(empty(value))continue;const source=(label?label+' : ':'')+value,key=normalize(label);
-  if(key==='proche'){
-   const parts=value.split('|').map(s=>s.trim());
-   const role=normalize(parts[1]),bond=parts.slice(2).join(' | ');
-   if(/\bami/.test(role)){add('pr_amie_nom',{rows:[{name:parts[0]||'',bond}],source});add('pr_amis',{selected:['Une ou plusieurs amitiés proches'],source});}
-   else if(/frere|soeur|fratrie/.test(role)){add('pr_noms',{rows:[{name:parts[0]||'',relation:parts[1]||'',bond}],source});add('pr_famille',{selected:['Ma fratrie'],source});add('pr_fratrie',{selected:['Des frères ou sœurs'],source});}
-   else if(/mere|pere|parent/.test(role)){add('pr_maman',{rows:[{role:parts[1]||'',name:parts[0]||'',bond}],source});add('pr_famille',{selected:['Des parents ou figures parentales'],source});}
-   else if(/partenaire|compagnon|compagne|conjoint/.test(role)){add('part_nom',{rows:[{name:parts[0]||''}],detail:bond,source});add('avec',{selected:['Avec mon ou ma partenaire'],source});}
-   else {add('pr_autre',{rows:[{name:parts[0]||'',role:parts[1]||'',bond}],source});add('pr_famille',{selected:['D’autres personnes importantes'],source});}
-  }else if(key==='animaux'){
-   const parts=value.split('|').map(s=>s.trim()),first=parts[0].match(/^(.{1,100}?),\s*((?:chat|chien|lapin|oiseau|hamster|tortue)[^|]*)$/i);
-   const row=first?{name:first[1],species:first[2],traits:parts[1]||''}:parts.length>=3&&/chat|chien|lapin|oiseau|hamster|tortue/i.test(parts[1])?{name:parts[0],species:parts[1],traits:parts[2]}:null;
-   add('an_quel',{rows:row?[row]:[],detail:value,source});add('an',{selected:['J’en ai dans mon quotidien'],source});
-  }else if(key==='travail ou etudes'){
-   add('job',{rows:[{title:value}],source});
-   const first=value.split(/[.!?\n]/)[0];
-   if(/\bje (?:suis etudiant|etudie)|actuellement en formation/i.test(normalize(first))){add('et_quoi',{rows:[{study:value}],source});add('trav',{selected:['J’étudie'],source});}
-   else if(!/chomage|sans emploi|retraite|arret|pause/.test(normalize(first))&&/\bje travaille|poste|conseill|enseign|infirm|ingenieur|developpeur|manager|salarie/i.test(normalize(first)))add('trav',{selected:['Je travaille'],source});
-  }else if(key==='vit avec'){
-   const selected=[];if(/compagnon|compagne|partenaire|conjoint|copain|copine|mon mari|ma femme/i.test(value))selected.push('Avec mon ou ma partenaire');if(/chat|chien|animal|animaux/i.test(value))selected.push('Avec des animaux');if(/seul|solo/i.test(value)&&!selected.length)selected.push('Je vis seul');add('avec',{selected,detail:value,source});
-  }else if(key==='loisirs et passion'){
-   const selected=[],map=[[/\blir|lecture|livres/i,'Lire'],[/dessin|peint/i,'Dessiner ou peindre'],[/sport|muscul|natation|yoga/i,'Faire du sport'],[/musique|chanter|piano|guitare/i,'Écouter ou jouer de la musique'],[/cuisin/i,'Cuisiner'],[/balad|promen|randon/i,'Me balader'],[/jeux video|rpg|mondes ouverts/i,'Jouer aux jeux vidéo'],[/photo/i,'Faire de la photo'],[/jardin/i,'Jardiner'],[/films|series|animes/i,'Regarder des films ou séries'],[/projets|creer/i,'Créer des projets'],[/ecrire|ecriture|roman/i,'Écrire']];
-   const n=normalize(value);for(const[pattern,idea]of map){const m=pattern.exec(n);if(m&&!/\b(?:pas|plus|aucun|sans)\b[^.;]{0,24}$/.test(n.slice(Math.max(0,m.index-35),m.index)))selected.push(idea);}add('loisirs',{selected,detail:value,source});
-  }else if(key==='moment'||key==='passage'){
-   const parts=value.split('|').map(s=>s.trim());add('pa_moments',{rows:[{event:parts.slice(1).join(' | ')||parts[0],date:parts.length>1?parts[0]:''}],source});
-  }else if(key==='souvenir'){
-   const parts=value.split('|').map(s=>s.trim());add('pa_objet',{rows:[{object:parts[0]||'',name:parts[1]||'',since:parts[2]||''}],detail:parts.slice(3).join(' | '),source});
-  }else if(!mappedValue(label,value,source)&&label)unmatched.push(source);
- }
+ routeDevelopedPortrait({model,parsed,add,normalize,unmatched});
  // Les échanges directs priment sur une ancienne synthèse ; aucune sélection n’est déduite d’un mot isolé.
  const tokens=q=>new Set(normalize(q).split(' ').filter(w=>w.length>3&&!/^(dans|avec|pour|comment|quand|quels|quelle|elles|alors|plutot|aujourd|parce|quelque|maintenant|vraiment|souhaites|envie|pourrais|aimerais)$/.test(w)));
  const candidates=Object.values(model.steps).map(step=>({id:step.id,tokens:tokens(step.q)}));
@@ -302,6 +445,7 @@ function mountApprovedForm(root,config){
  }
  function prepareImport(portrait,discussion){return createApprovedImport(model,portrait,discussion,parsePortrait,window.__enPortraitTpl,APPROVED_CATALOG);}
  function existingAnswer(id){const draft=drafts[id];return draft&&logic.meaningful(draft)?draft:answers[id];}
+ function describeAnswer(id,answer){return answer?serialize(model.steps[id],answer):'';}
  function importConflicts(plan){const key=a=>JSON.stringify({selected:[...(a.selected||[])].sort(),detail:a.detail||'',rows:a.rows||[],state:a.state});return Object.keys(plan.proposals).filter(id=>{const old=existingAnswer(id);return old&&(old.state==='paused'||logic.meaningful(old))&&key(old)!==key(plan.proposals[id]);});}
  function applyImport(plan,replaceIds=new Set()){
   let applied=0;const timestamp=Date.now();
@@ -347,7 +491,7 @@ function makeField(def,row,index){
  let input;
  if(def.kind==='select'){
   input=document.createElement('select');const blank=document.createElement('option');blank.value='';blank.textContent='À ta façon';input.append(blank);def.choices.forEach(choice=>{const option=document.createElement('option');option.value=choice;option.textContent=choice;input.append(option);});
- }else{input=document.createElement('input');input.type='text';input.autocomplete='off';
+ }else{input=document.createElement(['bond','traits','situation','why'].includes(def.key)?'textarea':'input');if(input.tagName==='INPUT')input.type='text';input.autocomplete='off';
   if(def.kind==='date-adaptive'){
    const precision=row.precision||'';input.type=precision==='Une date exacte'?'date':precision==='Un mois et une année'?'month':'text';if(precision==='Une année')input.inputMode='numeric';
   }
@@ -357,7 +501,7 @@ function makeField(def,row,index){
  const update=()=>{
   if(def.key==='precision'){
    row._dates=row._dates||{};row._dates[row.precision||'']=row.when||'';row.precision=input.value;row.when=row._dates[row.precision]||'';renderRecords();
-  }else row[def.key]=input.value;
+  }else row[def.key]=input.value;if(input.tagName==='TEXTAREA'){input.style.height='auto';input.style.height=Math.max(92,input.scrollHeight+2)+'px';}
   sync();
  };
  input.addEventListener(def.kind==='select'?'change':'input',update);
@@ -372,7 +516,7 @@ function renderRecords(){
   if(current.repeat){const head=document.createElement('div');head.className='en-record-heading';const legend=document.createElement('legend');legend.textContent='Repère '+(index+1);head.append(legend);if(answer.rows.length>1){const remove=document.createElement('button');remove.type='button';remove.className='en-quiet cursor-interaction';remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer le repère '+(index+1));remove.addEventListener('click',()=>{answer.rows.splice(index,1);renderRecords();sync();});head.append(remove);}group.append(head);}
   current.fields.forEach(def=>group.append(makeField(def,row,index)));records.append(group);
  });
- $('[data-add]').hidden=!current.repeat;
+ $('[data-add]').hidden=!current.repeat;requestAnimationFrame(()=>records.querySelectorAll('textarea').forEach(input=>{input.style.height='auto';input.style.height=Math.max(92,input.scrollHeight+2)+'px';}));
 }
 function revealQuestion(text){
  clearInterval(revealTimer);const target=$('[data-question-text]');$('[data-question-measure]').textContent=text;$('[data-question]').setAttribute('aria-label',text);
@@ -427,7 +571,7 @@ $('[data-review]').addEventListener('click',()=>{position=0;$('[data-dialogue]')
 window.addEventListener('resize',resizeWriting);new ResizeObserver(resizeWriting).observe(root);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(revealTimer);});
 const originalRender=render;render=function(){ $('[data-dialogue]').hidden=false;originalRender(); };
 showMenu(false);
-return {openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,selected:()=>stored.selected,saveDraft:persist};
+return {openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,describeAnswer,describeExisting:id=>describeAnswer(id,existingAnswer(id)),selected:()=>stored.selected,saveDraft:persist};
 
 }
 
@@ -588,12 +732,13 @@ window.__enInitLifeV3=function(){
  function reviewPortrait(){
   const replaceKeys=new Set(),replaceQuestions=new Set(),existing=window.__portrait||{};const conflicts=importPlan?approvedForm.importConflicts(importPlan):[];
   const groups=Object.entries(incoming||{}).filter(([,rows])=>rows.length);
-  aiPage.innerHTML=aiHeader()+'<div class="lv-ai-body lv-review"><h2>Relire avant de garder</h2><p>Voici les éléments de ton texte. Tu peux les relire avant de les garder.</p>'+(importPlan?'<p class="lv-status">'+importPlan.count+' réponse'+(importPlan.count>1?'s':'')+' préparée'+(importPlan.count>1?'s':'')+' pour ton formulaire. Tu pourras les vérifier une à une.</p>'+(importPlan.unmatched.length?'<p class="lv-status">Certains passages restent dans ton texte complet sans être attribués à une question. Tu peux les consulter et compléter ce qui manque.</p>':'')+importPlan.warnings.map(w=>'<p class="lv-status">'+esc(w)+'</p>').join(''):'')+(conflicts.length?'<details class="lv-fold"><summary>'+conflicts.length+' réponse'+(conflicts.length>1?'s':'')+' déjà renseignée'+(conflicts.length>1?'s':'')+'</summary><div class="lv-facts"><p>Elles restent conservées, sauf si tu choisis leur remplacement.</p>'+conflicts.map(id=>'<label><input type="checkbox" data-replace-question="'+esc(id)+'"><span>Utiliser la nouvelle proposition pour : '+esc(APPROVED_MODEL.steps[id].q)+'</span></label>').join('')+'</div></details>':'')+groups.map(([sec,rows],i)=>'<details class="lv-fold"'+(i===0?' open':'')+'><summary>'+esc(TITLES[sec]||sec)+' · '+rows.length+' élément'+(rows.length>1?'s':'')+'</summary><div class="lv-facts">'+rows.map(([label,value])=>{
+  aiPage.innerHTML=aiHeader()+'<div class="lv-ai-body lv-review"><h2>Relire avant de garder</h2><p>Voici les éléments de ton texte. Tu peux les relire avant de les garder.</p>'+(importPlan?'<p class="lv-status">'+importPlan.count+' réponse'+(importPlan.count>1?'s':'')+' préparée'+(importPlan.count>1?'s':'')+' pour ton formulaire. Tu pourras les vérifier une à une.</p>'+(importPlan.unmatched.length?'<p class="lv-status">Certains passages restent dans ton texte complet sans être attribués à une question. Tu peux les consulter et compléter ce qui manque.</p>':'')+importPlan.warnings.map(w=>'<p class="lv-status">'+esc(w)+'</p>').join(''):'')+(conflicts.length?'<details class="lv-fold"><summary>'+conflicts.length+' réponse'+(conflicts.length>1?'s':'')+' déjà renseignée'+(conflicts.length>1?'s':'')+'</summary><div class="lv-facts"><p>Elles restent conservées, sauf si tu choisis leur remplacement.</p><button type="button" class="lv-link" data-replace-all>Sélectionner tous ces remplacements</button>'+conflicts.map(id=>'<label><input type="checkbox" data-replace-question="'+esc(id)+'"><span>Utiliser la nouvelle proposition pour : '+esc(APPROVED_MODEL.steps[id].q)+'</span></label><div class="lv-import-comparison"><strong>Actuellement</strong>'+esc(approvedForm.describeExisting(id))+'<strong>Nouvelle proposition</strong>'+esc(approvedForm.describeAnswer(id,importPlan.proposals[id]))+'</div>').join('')+'</div></details>':'')+(importPlan&&importPlan.count?'<details class="lv-fold"><summary>Voir la répartition par question</summary>'+Object.entries(importPlan.proposals).map(([id,a])=>'<div class="lv-import-comparison"><strong>'+esc(APPROVED_MODEL.steps[id].q)+'</strong>'+esc(approvedForm.describeAnswer(id,a))+'</div>').join('')+'</details>':'')+groups.map(([sec,rows],i)=>'<details class="lv-fold"'+(i===0?' open':'')+'><summary>'+esc(TITLES[sec]||sec)+' · '+rows.length+' élément'+(rows.length>1?'s':'')+'</summary><div class="lv-facts">'+rows.map(([label,value])=>{
    const old=label&&!repeated(label)?(existing[sec]||[]).find(x=>norm(x[0])===norm(label)&&x[1]!==value):null;
    const key=sec+':'+norm(label);
    return '<p>'+(label?'<b>'+esc(label)+'</b>':'')+esc(value)+'</p>'+(old?'<label><input type="checkbox" data-replace="'+esc(key)+'"><span>Mettre à jour cette ligne du portrait, auparavant : « '+esc(old[1])+' »</span></label>':'');
   }).join('')+'</div></details>').join('')+'<details class="lv-fold"><summary>Relire le texte complet</summary><div class="lv-editor"><textarea readonly aria-label="Portrait original complet">'+esc(importState.portrait)+'</textarea></div></details>'+(importState.discussion.trim()?'<details class="lv-fold"><summary>La discussion jointe</summary><div class="lv-editor"><textarea readonly aria-label="Discussion jointe">'+esc(importState.discussion)+'</textarea></div></details>':'')+'<p class="lv-status" data-save-status role="status" aria-live="polite"></p><div class="lv-ai-actions"><button type="button" class="lv-link" data-edit>Modifier mon texte</button><button type="button" class="lv-primary" data-keep>Garder et préparer mes réponses</button></div></div>';
   bindAIBack();
+  const replaceAll=aiPage.querySelector('[data-replace-all]');if(replaceAll)replaceAll.onclick=()=>{const inputs=[...aiPage.querySelectorAll('[data-replace-question]')],on=inputs.some(input=>!input.checked);inputs.forEach(input=>{input.checked=on;if(on)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);});replaceAll.textContent=on?'Désélectionner ces remplacements':'Sélectionner tous ces remplacements';};
   aiPage.querySelectorAll('[data-replace-question]').forEach(input=>input.onchange=()=>{if(input.checked)replaceQuestions.add(input.dataset.replaceQuestion);else replaceQuestions.delete(input.dataset.replaceQuestion);});
   aiPage.querySelectorAll('[data-replace]').forEach(input=>input.onchange=()=>{if(input.checked)replaceKeys.add(input.dataset.replace);else replaceKeys.delete(input.dataset.replace);});
   aiPage.querySelector('[data-edit]').onclick=openReturn;

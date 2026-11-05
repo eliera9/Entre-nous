@@ -183,6 +183,9 @@
 #en-app #mv3 .en-field-label{display:block;font:400 italic 16px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--en-sub);margin:0 0 6px}
 #en-app #mv3 .en-field{width:100%;min-width:0;min-height:46px;display:block;border:1px solid var(--en-line);border-radius:12px;background:var(--en-bg);color:var(--en-answer);padding:10px 12px;font:400 16px/1.4 'Cormorant Garamond',Georgia,serif}
 #en-app #mv3 .en-field::placeholder{color:var(--en-sub);opacity:1}
+#en-app #mv3 textarea.en-field{min-height:92px;margin:0;resize:vertical;overflow:auto}
+#en-app .lv-import-comparison{margin:8px 0 18px;font:400 15px/1.5 'Cormorant Garamond',Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere}
+#en-app .lv-import-comparison strong{display:block;margin-top:8px}
 #en-app #mv3 .en-field[type=date],#en-app #mv3 .en-field[type=month]{min-width:0;max-width:100%;-webkit-appearance:none;box-sizing:border-box}
 #en-app #mv3 .en-known,#en-app #mv3 .en-status{font:400 italic 14px/1.5 'Cormorant Garamond',Georgia,serif;color:var(--en-sub);margin:0 0 12px}
 #en-app #mv3 .en-import-source{font:400 14px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--en-sub);margin-bottom:18px}
