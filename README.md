@@ -103,3 +103,11 @@ La couleur de la zone haute suit désormais la page active sur le document, le c
 L’accueil du code garde « Bonjour / Bonsoir » suivi de l’appellation du carnet. Une appellation explicitement vérifiée dans le formulaire est reprise pour cet accueil lors de la sauvegarde du carnet.
 
 Les 107 tests passent et la construction réussit. Le fond a été contrôlé en navigateur sur le formulaire et Faire connaissance, en jour et en nuit, avec une zone système simulée. Le rendu de la barre native de Safari ou de la PWA reste à confirmer sur un iPhone réel.
+
+### Écran de code existant — 5 novembre 2026
+
+Le clavier attend le chargement du compteur d’essais et conserve les délais déjà enregistrés. La vérification n’accepte qu’un envoi à la fois. Les erreurs asynchrones et les annulations biométriques rendent la saisie à nouveau disponible ; une erreur de stockage propose un réessai avant de poursuivre. Les échecs du code et du secours utilisent le même compteur. Les quatre repères annoncent uniquement le nombre de chiffres saisis ; la saisie au clavier et l’effacement sont disponibles.
+
+Le volet « Code oublié ? » isole le clavier en arrière-plan, gère Échap, le retour du focus et le format du secours. Fermer le volet vide le champ et désarme la confirmation d’effacement. Les commandes de restauration disposent d’un état d’attente et d’un message en cas d’erreur. Le volet de nuit suit la palette existante et les longs contenus défilent sur petit écran. Les illustrations, la disposition et « Bonjour / Bonsoir » sont conservés.
+
+Validation : 117 tests passent et la construction réussit. Les essais en navigateur utilisent le vrai contrôleur et le vrai écran dans une page locale isolée, avec stockage et authentification simulés : erreur technique, annulation biométrique, secours incorrect, Échap, secours valide, code valide, erreur de lecture avec réessai, délai conservé et affichage à 390 × 780 et 320 × 568. Aucun carnet personnel ni effacement réel n’a été utilisé. Face ID réel, le clavier natif d’iPhone et le verrouillage au niveau du système restent à confirmer sur appareil ; le déclenchement automatique du verrouillage n’est pas modifié par cette correction de l’écran.

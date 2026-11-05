@@ -62,6 +62,15 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-
 #en-lock.nuit .dots i{border-color:#F1DDE0}#en-lock.nuit .dots i.on{background:#F1DDE0}
 #en-lock.nuit .pad button{border-color:#5A4250}
 @media (prefers-reduced-motion:reduce){#en-lock,#en-lock *{transition:none!important;animation:none!important}}
+
+#en-lock button[hidden]{display:none!important}
+#en-lock button:disabled{opacity:.45;cursor:default;pointer-events:none}
+#en-lock .fg:focus-visible,#en-lock .sh button:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+#en-lock .sh .in{max-height:calc(100% - env(safe-area-inset-top,0px) - 12px);overflow-y:auto;overscroll-behavior:contain}
+#en-lock.nuit .sh .in{background:#352630;color:#F1DDE0}
+#en-lock.nuit .sh p,#en-lock.nuit .sh .b,#en-lock.nuit .sh input{color:#F1DDE0;border-color:#846574}
+#en-lock.nuit .sh .k,#en-lock.nuit .sh .lk{color:#C9A2AF}
+#en-lock.nuit .sh .er{color:#ECC0CC!important}
 /* changer mon code */
 #en-cc{position:fixed;inset:0;z-index:90;background:rgba(42,30,38,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .3s}
 #en-cc.on{opacity:1}
@@ -414,27 +423,95 @@ function mount(first){
 }
 
 /* ---------- écran de code ---------- */
+function createUnlockController(options){
+ const now=options.now||Date.now,later=options.setTimeout||setTimeout,cancel=options.clearTimeout||clearTimeout;
+ let digits='',busy=false,loading=false,ready=false,done=false,disposed=false,attempts={n:0,until:0},pendingWrite=false,timer=null,message='Ton code, rien que pour toi',error=false;
+ const remaining=()=>Math.max(0,Math.ceil((attempts.until-now())/1000));
+ const view=()=>({count:digits.length,busy:busy||loading,ready,done,blocked:remaining()>0,remaining:remaining(),message,error,retry:!ready&&!loading});
+ function notify(){if(!disposed)options.onChange?.(view());}
+ function cooldown(){if(timer!==null)cancel(timer);timer=null;const seconds=remaining();if(seconds){message=seconds>=60?'Patiente '+Math.ceil(seconds/60)+' minute'+(seconds>60?'s':'')+' avant de réessayer.':'Patiente '+seconds+' seconde'+(seconds>1?'s':'')+' avant de réessayer.';notify();timer=later(cooldown,1000);}else{message='Tu peux saisir ton code.';error=false;notify();}}
+ async function initialize(){
+  if(busy||loading||disposed||done)return;loading=true;ready=false;notify();
+  try{if(pendingWrite){await options.writeAttempts({...attempts});pendingWrite=false;}else{const value=await options.readAttempts();if(disposed)return;attempts={n:Math.max(0,Math.floor(Number(value?.n)||0)),until:Math.max(0,Number(value?.until)||0)};}
+   if(disposed)return;ready=true;error=false;message='Ton code, rien que pour toi';if(remaining())cooldown();else notify();
+  }catch(e){if(disposed)return;ready=false;error=true;message='L’accès n’a pas pu être préparé. Tu peux réessayer.';}finally{loading=false;notify();}
+ }
+ function available(){if(disposed||done||busy||!ready)return false;if(remaining()){cooldown();return false;}return true;}
+ async function failedAttempt(kind){
+  attempts.n++;if(attempts.n%5===0)attempts.until=now()+[30000,300000,1800000,3600000][Math.min(3,Math.floor(attempts.n/5)-1)];
+  pendingWrite=true;try{await options.writeAttempts({...attempts});pendingWrite=false;}catch(e){ready=false;message='L’essai n’a pas pu être enregistré. Réessaie avant de poursuivre.';error=true;return;}
+  message=kind==='recovery'?'Ce code de secours ne correspond pas.':'Pas tout à fait… on recommence doucement.';error=true;
+ }
+ async function verify(kind,value){
+  if(!available())return false;busy=true;message='Ouverture de ton carnet…';error=false;notify();let opened=false;
+  try{
+   const callback=kind==='code'?options.verifyCode:kind==='recovery'?options.verifyRecovery:options.verifyBiometric;
+   if(typeof callback!=='function')throw Error('indisponible');
+   opened=await callback(value)===true;if(disposed)return false;
+   if(opened){done=true;digits='';message='Ton carnet s’ouvre…';try{await options.clearAttempts();}catch(e){}if(!disposed)options.onUnlocked?.(kind);}
+   else if(kind==='biometric'){message='Tu peux utiliser ton code pour ouvrir ton carnet.';error=false;}
+   else await failedAttempt(kind);
+  }catch(e){if(!disposed){message=kind==='biometric'?'Tu peux utiliser ton code pour ouvrir ton carnet.':'Ton carnet n’a pas pu s’ouvrir. Tu peux réessayer.';error=kind!=='biometric';}}
+  finally{if(!disposed){digits='';busy=false;if(remaining()&&!done&&ready)cooldown();else notify();}}
+  return opened;
+ }
+ function input(value){if(!available()||!/^\d$/.test(String(value))||digits.length>=4)return;digits+=String(value);message='Ton code, rien que pour toi';error=false;notify();if(digits.length===4)return verify('code',digits);}
+ function remove(){if(!available())return;digits=digits.slice(0,-1);message='Ton code, rien que pour toi';error=false;notify();}
+ function clear(){if(busy||done)return;digits='';if(ready&&!remaining()){message='Ton code, rien que pour toi';error=false;}notify();}
+ function recovery(value){const normalized=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(normalized.length!==16)return Promise.resolve(false);return verify('recovery',normalized);}
+ function dispose(){disposed=true;digits='';if(timer!==null)cancel(timer);timer=null;}
+ const initialized=initialize();return{input,remove,clear,recovery,biometric:()=>verify('biometric'),retry:initialize,view,dispose,initialized};
+}
+
 function lockUI(meta,onOk,onSec,onFid){
  window.__enSetAuthLayout(false);
  const h=new Date().getHours(),mo=h<12?'matin':h<18?'aprem':h<22?'soir':'nuit',m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
  const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
  const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=nuit?'nuit':'';
- el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm?', '+nm.trim():''}</p><p class="sb" id="en-lsb">Ton code, rien que pour toi</p><div class="dots" id="en-ld"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
- <div class="sh" id="en-sh" hidden><div class="in"><p class="k">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" hidden></p></div><label class="b ol">REPRENDRE UNE SAUVEGARDE<input type="file" accept="application/json,.json" hidden id="en-rf"></label><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><p class="s" style="font-size:13px;opacity:.8">Efface le journal de ce téléphone et te déconnecte. Ce qui est gardé dans ton compte en ligne n’est pas touché : pour le supprimer, ouvre l’app puis Réglages › Mon compte › supprimer mon compte.</p><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
+ el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm?', '+nm.trim():''}</p><p class="sb" id="en-lsb" role="status" aria-live="polite">Ton code, rien que pour toi</p><div class="dots" id="en-ld" role="img" aria-label="0 chiffres saisis sur 4"><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n}</button>`).join('')}</div><button type="button" class="fg" id="en-lockretry" hidden>Réessayer</button><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
+ <div class="sh" id="en-sh" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="en-lockrecoverytitle"><p class="k" id="en-lockrecoverytitle">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" role="status" aria-live="polite" hidden></p></div><button type="button" class="b ol" id="en-restore">REPRENDRE UNE SAUVEGARDE</button><input type="file" accept="application/json,.json" hidden id="en-rf"><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><p class="s" style="font-size:13px;opacity:.8">Efface le journal de ce téléphone et te déconnecte. Ce qui est gardé dans ton compte en ligne n’est pas touché : pour le supprimer, ouvre l’app puis Réglages › Mon compte › supprimer mon compte.</p><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);window.__enSyncChrome();
- let code='',busy=false,fails=0,until=0;dbGet('lockf').then(L=>{if(L&&L.until>Date.now())until=L.until}).catch(()=>{});const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb');
- const paint=()=>dots.forEach((x,i)=>x.classList.toggle('on',i<code.length));
- el.querySelector('.pad').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||busy)return;if(Date.now()<until){sb.textContent='Patiente un petit moment…';return}
-  if(b.classList.contains('fid')){busy=true;sb.textContent='…';const ok=await onFid();if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{sb.textContent='Face ID n’a pas marché : tape ton code';busy=false}return}
-  if(b.classList.contains('del')){code=code.slice(0,-1);paint();return}if(code.length>=4)return;code+=b.textContent;paint();
-  if(code.length===4){busy=true;sb.textContent='…';const ok=await onOk(code);if(ok){dbDel('lockf');el.classList.add('out');setTimeout(()=>el.remove(),450)}else{fails++;/* essais ratés gardés même si on ferme l'app : attente de plus en plus longue */const L=(await dbGet('lockf').catch(()=>null))||{n:0};L.n++;if(L.n%5===0){L.until=Date.now()+[30e3,300e3,1800e3,3600e3][Math.min(3,L.n/5-1)];until=L.until}dbPut('lockf',L).catch(()=>{});
-   const dd=el.querySelector('#en-ld');dd.classList.add('shake');setTimeout(()=>{dd.classList.remove('shake');code='';paint();sb.textContent='Pas tout à fait… on recommence doucement';busy=false},700)}}});
- const sh=el.querySelector('#en-sh');el.querySelector('#en-fg').onclick=()=>{sh.hidden=false};el.querySelector('#en-shx').onclick=()=>{sh.hidden=true};
- el.querySelector('#en-wipe').onclick=async e=>{const b=e.currentTarget;if(!b.dataset.c){b.dataset.c=1;b.textContent='TOUCHE ENCORE POUR TOUT EFFACER';return}await window.__enWipeLocal();location.reload()};
- el.querySelector('#en-secgo').onclick=async()=>{const x=el.querySelector('#en-secin').value,er=el.querySelector('#en-secer');er.hidden=true;const ok=await onSec(x);if(ok){el.classList.add('out');setTimeout(()=>el.remove(),450)}else{er.textContent='Ce code de secours ne correspond pas.';er.hidden=false}};
- el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{await restoreVaultRecord(JSON.parse(await f.text()));location.reload()}catch(x){sh.querySelector('.k').textContent='CE FICHIER N’EST PAS UNE SAUVEGARDE VALIDE'}};
- dbGet('restore-previous').then(previous=>{if(!previous?.box)return;const undo=document.createElement('button');undo.type='button';undo.className='lk';undo.textContent='annuler la dernière restauration';sh.querySelector('.in').appendChild(undo);undo.onclick=async()=>{await dbPut(KEY,previous);await dbDel('restore-previous');location.reload()}}).catch(()=>{});
+ const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb'),dd=el.querySelector('#en-ld'),sh=el.querySelector('#en-sh'),ui=el.querySelector('.ui'),sec=el.querySelector('#en-secin'),er=el.querySelector('#en-secer'),wipe=el.querySelector('#en-wipe');
+ let fileBusy=false,shakeTimer,controller;
+ function render(s){
+  dots.forEach((x,i)=>x.classList.toggle('on',i<s.count));dd.setAttribute('aria-label',s.count+' chiffres saisis sur 4');sb.textContent=s.message;
+  const disabled=s.busy||!s.ready||s.blocked||s.done||fileBusy;
+  el.querySelectorAll('.pad button,#en-secgo').forEach(b=>b.disabled=disabled);
+  el.querySelector('#en-fg').disabled=s.busy||s.done||fileBusy;sec.disabled=disabled;
+  el.querySelectorAll('#en-wipe,#en-restore,#en-shx,#en-undo').forEach(b=>b.disabled=s.busy||s.done||fileBusy);
+  const retry=el.querySelector('#en-lockretry');retry.hidden=!s.retry;retry.disabled=s.busy;
+  el.setAttribute('aria-busy',String(s.busy||fileBusy));
+  if(!sh.hidden){er.textContent=s.message;er.hidden=!(s.error||s.blocked||s.busy||s.retry);}
+  if(s.error){dd.classList.remove('shake');if(shakeTimer)clearTimeout(shakeTimer);dd.classList.add('shake');shakeTimer=setTimeout(()=>dd.classList.remove('shake'),550);}
+ }
+ function closeSheet(){if(controller.view().busy||fileBusy)return;sh.hidden=true;ui.inert=false;sec.value='';er.hidden=true;controller.clear();delete wipe.dataset.c;wipe.textContent='TOUT EFFACER ET RECOMMENCER';el.querySelector('#en-fg').focus();}
+ function keyboard(e){
+  if(!el.isConnected||controller.view().done)return;
+  if(!sh.hidden){
+   if(e.key==='Escape'){e.preventDefault();closeSheet();return;}
+   if(e.key==='Tab'){const nodes=[...sh.querySelectorAll('button:not(:disabled),input:not([hidden]):not(:disabled)')].filter(n=>!n.hidden);const first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}
+   return;
+  }
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(/^\d$/.test(e.key)){e.preventDefault();controller.input(e.key)}else if(e.key==='Backspace'||e.key==='Delete'){e.preventDefault();controller.remove()}else if(e.key==='Escape'){controller.clear()}
+ }
+ controller=createUnlockController({readAttempts:()=>dbGet('lockf'),writeAttempts:value=>dbPut('lockf',value),clearAttempts:()=>dbDel('lockf'),verifyCode:onOk,verifyRecovery:onSec,verifyBiometric:onFid,onChange:render,onUnlocked(){
+  document.removeEventListener('keydown',keyboard);sec.value='';if(shakeTimer)clearTimeout(shakeTimer);el.classList.add('out');window.__enSyncChrome();setTimeout(()=>{controller.dispose();el.remove();window.__enSyncChrome();document.querySelector('#en-app .phone.en-on')?.focus({preventScroll:true})},450);
+ }});
+ el.querySelector('.pad').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.classList.contains('fid'))controller.biometric();else if(b.classList.contains('del'))controller.remove();else controller.input(b.textContent)};
+ el.querySelector('#en-lockretry').onclick=()=>controller.retry();
+ el.querySelector('#en-fg').onclick=()=>{controller.clear();sh.hidden=false;ui.inert=true;render(controller.view());el.querySelector('#en-shx').focus()};
+ el.querySelector('#en-shx').onclick=closeSheet;
+ sh.onclick=e=>{if(e.target===sh)closeSheet()};
+ el.querySelector('#en-secgo').onclick=()=>{const value=sec.value.toUpperCase().replace(/[^A-Z0-9]/g,'');if(value.length!==16){er.textContent='Saisis les 16 caractères de ton code de secours.';er.hidden=false;sec.focus();return}return controller.recovery(value)};
+ sec.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();el.querySelector('#en-secgo').click()}};
+ el.querySelector('#en-restore').onclick=()=>el.querySelector('#en-rf').click();
+ wipe.onclick=async()=>{if(controller.view().busy||fileBusy)return;if(!wipe.dataset.c){wipe.dataset.c=1;wipe.textContent='TOUCHE ENCORE POUR TOUT EFFACER';return}fileBusy=true;render(controller.view());let failure=false;try{await window.__enWipeLocal();location.reload()}catch(e){failure=true}finally{fileBusy=false;render(controller.view());if(failure){er.textContent='Le journal n’a pas pu être effacé. Tu peux réessayer.';er.hidden=false}}};
+ el.querySelector('#en-rf').onchange=async e=>{const f=e.target.files[0];if(!f||fileBusy||controller.view().busy)return;fileBusy=true;render(controller.view());let failure=false;try{await restoreVaultRecord(JSON.parse(await f.text()));location.reload()}catch(x){failure=true}finally{fileBusy=false;e.target.value='';render(controller.view());if(failure){er.textContent='Ce fichier n’est pas une sauvegarde valide ou n’a pas pu être enregistré.';er.hidden=false}}};
+ dbGet('restore-previous').then(previous=>{if(!previous?.box||!el.isConnected)return;const undo=document.createElement('button');undo.type='button';undo.id='en-undo';undo.className='lk';undo.textContent='annuler la dernière restauration';sh.querySelector('.in').appendChild(undo);render(controller.view());undo.onclick=async()=>{if(fileBusy||controller.view().busy)return;fileBusy=true;render(controller.view());let failure=false;try{await dbPut(KEY,previous);await dbDel('restore-previous');location.reload()}catch(e){failure=true}finally{fileBusy=false;render(controller.view());if(failure){er.textContent='La restauration précédente n’a pas pu être rétablie.';er.hidden=false}}}}).catch(()=>{});
+ document.addEventListener('keydown',keyboard);
+ requestAnimationFrame(()=>el.querySelector('.pad button:not(:disabled)')?.focus({preventScroll:true}));
 }
 
 /* ---------- départ ---------- */
