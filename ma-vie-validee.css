@@ -83,7 +83,6 @@
 #en-app .lv-facts b{display:block;font:400 12px 'Cormorant SC',Georgia,serif;letter-spacing:.06em;color:var(--lv-soft);margin-bottom:4px}
 #en-app .lv-facts label{display:flex;gap:9px;align-items:flex-start;font:400 14px/1.4 'Cormorant Garamond',Georgia,serif;padding:8px 0}
 #en-app .lv-facts input{accent-color:var(--sacc);margin-top:4px}
-#en-app .lv-tour-launch{all:unset;box-sizing:border-box;cursor:pointer;display:block;margin:4px auto 14px;min-height:44px;padding:10px 16px;text-align:center;font:400 italic 14px 'Cormorant Garamond',Georgia,serif;color:var(--smuted)}
 #en-app #home .lv-guide{position:absolute;inset:0;z-index:90;overflow:hidden}
 #en-app .lv-guide .lv-spot{position:absolute;border-radius:16px;box-shadow:0 0 0 4px var(--sbg),0 0 0 9999px rgba(42,30,38,.55);pointer-events:none}
 #en-app .lv-guide .lv-tip{position:absolute;left:15px;right:15px;box-sizing:border-box;padding:13px 17px 16px;border:1px solid var(--sline);border-radius:23px;background:var(--sbg);color:var(--sink);box-shadow:0 8px 26px rgba(30,15,25,.15);max-height:calc(100% - 24px);overflow:auto}

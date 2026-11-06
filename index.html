@@ -678,6 +678,8 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <link rel="stylesheet" href="ma-vie-pages.css">
 <script src="ma-vie-pages.js" defer></script>
 <script src="ma-vie-validee.js" defer></script>
+<link rel="stylesheet" href="accueil-valide.css">
+<script src="accueil-valide.js" defer></script>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -6689,7 +6691,7 @@ const moment=()=>{const c=document.querySelector('#c-moment .chip.on, #c-moment 
 const REP=v=>v<15?'Je suis là. On peut juste respirer un moment.':v<30?'Ce n’est pas grave de ne pas aller bien.':v<44?'Doucement. Une chose à la fois.':v<57?'Une journée calme, c’est bien aussi.':v<71?'Garde ce petit élan, il te va bien.':v<86?'Ça fait plaisir à lire.':'Savoure-le, tu le mérites.';
 const box=document.createElement('div');box.className='nhm';$('hres').prepend(box);
 const wr=H.querySelector('.wr'),WC=[...wr.querySelectorAll('.wc')];
-function cards(v){WC.forEach(c=>c.classList.remove('pick'));if(v==null){WC.forEach(c=>wr.appendChild(c));return}const k=v<44?1:0;const c=WC[k];c.classList.add('pick');wr.prepend(c)}
+function cards(v){WC.forEach(c=>c.classList.remove('pick'));}
 function drawM(v){const w=WORD(v);box.innerHTML='<div class="nhl"><button type="button" class="pe" style="background:'+col(v)+'" aria-label="Appui long pour noter une nouvelle humeur"></button><span class="nhw">'+w[0].toUpperCase()+w.slice(1)+', '+moment()+'.</span></div><p class="nhr">« '+REP(v)+' » <em>Tu veux le poser par écrit ?</em></p>';
  box.querySelector('.nhl').onclick=again;cards(v);
  let seen=false;try{seen=localStorage.getItem('en-hint-perle')==='1'}catch(e){}if(!seen&&!window.__hintShown){window.__hintShown=1;const hb=document.createElement('span');hb.className='nhhint';hb.textContent='touche ta perle pour noter une autre humeur';box.appendChild(hb);setTimeout(()=>{hb.classList.add('out');setTimeout(()=>hb.remove(),600)},4200);try{localStorage.setItem('en-hint-perle','1')}catch(e){}}}
@@ -8459,7 +8461,7 @@ if(PP&&old){card=document.createElement('div');card.className='mppc acpp';old.re
   card.innerHTML='<p class="k">TES PETITS PAS DU JOUR</p><span class="acpg" role="progressbar" aria-label="Avancée des petits pas du jour" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><i style="width:'+pct+'%"></i></span>'+todo.concat(done).map(row).join('')+'<button class="lk">tous mes petits pas ›</button>'}
  const WORDS=['C’est noté. Je le garde avec toi.','C’est fait, et c’est noté.','Noté. Merci de me l’avoir dit.'];
  const FEEL=['soulagée','fière','bizarre','pas grand-chose'];
- function sheet(p,prev){if(H.querySelector('.acps'))return;const pet='illus/eveil-'+(window.__pet||'chat')+(isN(H)?'-nuit':'')+'.webp';
+ function sheet(p,prev){if(window.__enAccueilPas){window.__enAccueilPas(p,()=>{hold=null;PP.emit()});return;}if(H.querySelector('.acps'))return;const pet='illus/eveil-'+(window.__pet||'chat')+(isN(H)?'-nuit':'')+'.webp';
   const dim=document.createElement('div');dim.className='acps-dim';const s=document.createElement('div');s.className='acps';if(!animOn()){dim.classList.add('still');s.classList.add('still')}
   dim.style.top=s.style.top='0px';dim.style.height=s.style.height=H.clientHeight+'px';
   s.innerHTML='<div class="in" role="dialog" aria-label="Petit pas fait"><span class="gr"></span><div class="pl"><img alt="" src="'+pet+'"><p>'+WORDS[(p.id.charCodeAt(p.id.length-1)||0)%3]+'</p></div><p class="q">Comment tu t’es sentie ? <span style="opacity:.75">(si tu veux)</span></p><div class="fs">'+FEEL.map(f=>'<button type="button" data-f="'+f+'">'+f+'</button>').join('')+'</div><input class="mo" placeholder="un mot de plus…" aria-label="Un mot de plus"><div class="ac"><button type="button" class="un">Annuler</button><button type="button" class="cl">fermer</button></div></div>';
@@ -9334,7 +9336,7 @@ new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getEleme
 /* revenue de Google à la première ouverture : on passe directement à « Comment t'appelles-tu ? » */
 /* Le retour OAuth est vérifié par auth-connexion.js avant de poursuivre. */
 })();</script>
-<script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();</script>
+<script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();window.__enInitAccueil&&window.__enInitAccueil();</script>
 </body>
 </html>
 

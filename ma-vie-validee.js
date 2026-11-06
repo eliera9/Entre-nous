@@ -902,8 +902,6 @@ window.__enInitLifeV3=function(){
  }
  window.__tourStart=startTour;
  if(H){
-  const launch=document.createElement('button');launch.type='button';launch.className='lv-tour-launch';launch.textContent='Visite guidée';launch.onclick=startTour;
-  const write=H.querySelector('.wr');if(write)write.after(launch);else H.querySelector('.body')?.append(launch);
   new MutationObserver(()=>{if(tourState&&!H.classList.contains('en-on'))stopTour(false);}).observe(H,{attributes:true,attributeFilter:['class']});
   new ResizeObserver(placeTour).observe(H);window.addEventListener('resize',placeTour);
  }

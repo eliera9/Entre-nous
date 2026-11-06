@@ -1,0 +1,103 @@
+/* Dernières décisions de l’accueil, après les styles historiques. */
+#en-app .phone .mvhd.sbhas,#en-app .phone .phd.sbhas{background-image:none!important;border-top:0!important}
+#en-app #home .av-legacy{display:none!important}
+#en-app #home [hidden]{display:none!important}
+#en-app #home .heph .herow{align-items:center}
+#en-app #home .heph .herow>div:nth-child(2){align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+#en-app #home .heph>.hpl{top:34px;right:16px;width:48px!important;height:48px!important;background:transparent;box-shadow:none}
+#en-app #home .hpl img{width:48px!important;height:48px!important;mask-image:none!important;-webkit-mask-image:none!important;object-fit:contain!important;opacity:1!important}
+#en-app #home .hpl:after{display:none}
+#en-app #home .heph>.smenu.float{top:39px;width:38px;height:38px}
+#en-app #home .av-mood{--av-panel:var(--sbg);--av-line:#cbaeb7;--av-button:#b97e8e;position:relative;isolation:isolate;box-sizing:border-box;margin:12px 0 0;padding:12px 20px 16px;border-radius:30px;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--sbg) 92%,#fff),transparent 66%),var(--sbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--av-line) 45%,transparent),0 13px 28px -23px #5d314a;color:var(--sink)}
+#en-app #home.nuit .av-mood{--av-panel:#392936;--av-line:#8a6479;--av-button:#dcb7c6;background:radial-gradient(ellipse at 50% 0%,#594056,transparent 66%),var(--av-panel);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--av-line) 45%,transparent),0 13px 28px -23px #120a12}
+#en-app #home .av-mood:before{content:"";position:absolute;inset:9px;border:1px solid color-mix(in srgb,var(--av-line) 22%,transparent);border-radius:23px;pointer-events:none;z-index:-1}
+#en-app #home .av-mood,#en-app #home .av-bubble,#en-app #home .av-step-sheet{display:block;gap:0}
+#en-app #home .av-ornament{display:flex;align-items:center;justify-content:center;gap:10px;height:36px;margin:0 auto 4px}
+#en-app #home .av-ornament img{display:block;width:72px;height:36px;object-fit:contain;flex:none}
+#en-app #home .av-ornament:before,#en-app #home .av-ornament:after{content:"";flex:0 0 32px;width:32px;height:1px;background:var(--av-line);opacity:.65}
+#en-app #home .av-question{margin:0 0 7px;text-align:center;color:var(--sink);font:italic 500 24px/1.2 'Cormorant Garamond',Georgia,serif;text-transform:none;letter-spacing:normal}
+#en-app #home .av-mood:has(.av-edit[hidden]) .av-question{color:var(--smuted)}
+#en-app #home .av-edit output{display:block;text-align:center;color:var(--smuted);font:500 12.5px/1.2 'Cormorant SC',Georgia,serif;margin-bottom:2px}
+#en-app #home .av-slider{position:relative;height:44px;isolation:isolate}
+#en-app #home .av-track{position:absolute;left:13px;right:13px;top:14px;height:16px;border-radius:20px;background:linear-gradient(90deg,#a99cc4,#c3b3d6,#e6d3dc,#e9bcc4,#d99aa8);opacity:.88;pointer-events:none}
+#en-app #home .av-slider:before{content:"";position:absolute;left:calc(13px + (100% - 26px)*var(--av-position,.5));top:8px;width:54px;height:34px;transform:translateX(-50%);border-radius:50%;background:var(--av-mood-color,#e6d3dc);filter:blur(15px);opacity:.3;pointer-events:none}
+#en-app #home #av-range{appearance:none;-webkit-appearance:none;position:relative;z-index:2;display:block;width:100%;height:44px;margin:0;background:transparent;border:0;cursor:ew-resize}
+#en-app #home #av-range::-webkit-slider-runnable-track{height:8px;background:transparent;border:0}
+#en-app #home #av-range::-moz-range-track{height:8px;background:transparent;border:0}
+#en-app #home #av-range::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:27px;height:27px;margin-top:-9.5px;border:4px solid var(--av-panel);border-radius:50%;background:var(--av-mood-color,#e6d3dc);box-shadow:none}
+#en-app #home #av-range::-moz-range-thumb{width:19px;height:19px;border:4px solid var(--av-panel);border-radius:50%;background:var(--av-mood-color,#e6d3dc);box-shadow:none}
+#en-app #home .av-note{display:block;min-height:44px;max-width:100%;margin:8px auto 0;padding:9px 22px;border:0;border-radius:30px;background:color-mix(in srgb,var(--av-button) 30%,transparent);color:var(--sink);font:500 13px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.12em;cursor:pointer}
+#en-app #home .av-status{display:flex;align-items:center;justify-content:center;gap:10px;width:fit-content;max-width:100%;box-sizing:border-box;margin:2px auto 12px;padding:9px 16px;border:0;border-radius:24px;background:color-mix(in srgb,var(--av-mood-color,#e6d3dc) 12%,var(--av-panel));color:var(--sink);font:italic 500 20px/1.25 'Cormorant Garamond',Georgia,serif;cursor:pointer}
+#en-app #home .av-status i{display:block;width:13px;height:13px;flex:none;border-radius:50%;background:var(--av-mood-color,#e6d3dc);box-shadow:0 0 0 4px color-mix(in srgb,var(--av-mood-color,#e6d3dc) 25%,transparent)}
+#en-app #home .av-response{position:relative;margin:9px 0 14px;padding:4px 15px;text-align:center;font:italic 500 17px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted)}
+#en-app #home .av-response:before{content:"“";position:absolute;left:0;top:-8px;color:var(--av-line);font:400 38px/1 'Cormorant Garamond',Georgia,serif;opacity:.65}
+#en-app #home .av-response:after{content:"”";position:absolute;right:0;bottom:-12px;color:var(--av-line);font:400 38px/1 'Cormorant Garamond',Georgia,serif;opacity:.65}
+
+#en-app #home .wr{--av-card-line:var(--sline);position:relative;isolation:isolate;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px -4px 0!important;padding:0!important;overflow:visible!important}
+#en-app #home .wr:before{content:"";position:absolute;z-index:-1;inset:-17px -3px 0;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--av-mood-color,#e6d3dc) 18%,transparent),transparent 72%);pointer-events:none}
+#en-app #home .wr .wc{position:relative;overflow:hidden;box-sizing:border-box;width:auto!important;min-width:0;min-height:148px!important;margin:0!important;padding:14px 5px 13px!important;border:.8px solid color-mix(in srgb,var(--sline) 70%,transparent)!important;border-radius:25px!important;display:grid!important;grid-template-columns:minmax(0,1fr);grid-template-rows:64px 12px 13.8px;align-items:center;justify-items:center;align-content:center;gap:2px;text-align:center;transform:none;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--av-mood-color,#e6d3dc) 19%,transparent),transparent 75%),var(--sbg)!important;box-shadow:0 8px 15px -14px var(--sink)!important}
+#en-app #home.nuit .wr .wc{background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--av-mood-color,#e6d3dc) 19%,transparent),transparent 75%),#392936!important}
+#en-app #home .wr .wc:before{content:"";position:absolute;inset:5px;border:1px solid color-mix(in srgb,var(--sline) 28%,transparent);border-radius:20px;pointer-events:none}
+#en-app #home .wr .wc img{display:block;height:58px!important;width:auto!important;max-width:86%;object-fit:contain;object-position:center;margin:0 auto 6px!important;justify-self:center;align-self:center;filter:none}
+#en-app #home .wr .wc b{display:block;white-space:nowrap;max-width:100%;overflow:hidden;justify-self:stretch;margin:0!important;font:500 10px/1.2 'Cormorant SC',Georgia,serif!important;letter-spacing:.03em;color:#82475d!important;text-transform:uppercase;text-align:center}
+#en-app #home .wr .wc>span{display:block;white-space:nowrap;max-width:100%;overflow:hidden;justify-self:stretch;margin:0!important;font:italic 500 11.5px/1.2 'Cormorant Garamond',Georgia,serif!important;color:#8c6b78!important;text-overflow:ellipsis;text-align:center}
+#en-app #home.nuit .wr .wc b{color:#f1dde0!important}#en-app #home.nuit .wr .wc>span{color:#b88e9c!important}
+@keyframes av-writing-invite{0%,48%,100%{transform:translateY(0) scale(1);border-color:color-mix(in srgb,var(--sline) 70%,transparent)}22%{transform:translateY(-4px) scale(1.015);border-color:var(--sacc);box-shadow:0 6px 20px -5px color-mix(in srgb,var(--av-mood-color,#e6d3dc) 35%,transparent)}}
+#en-app #home .wr.av-invited .wc{animation:av-writing-invite 1800ms cubic-bezier(.22,.61,.36,1) 4 both;transform-origin:50% 65%}
+#en-app #home .wr.av-invited .wc:nth-child(2){animation-delay:140ms}#en-app #home .wr.av-invited .wc:nth-child(3){animation-delay:280ms}
+#en-app #home .lv-tour-launch{display:none!important}
+
+/* Le bas garde la place nécessaire au geste système, sans marge décorative. */
+#en-app .phone .nav.av-nav{container-type:inline-size;grid-template-columns:repeat(5,minmax(0,1fr));height:calc(60px + env(safe-area-inset-bottom,0px))!important;padding:10px 0 env(safe-area-inset-bottom,0px)!important;border:0!important;bottom:0!important;margin:0!important;align-items:start!important;background:var(--sbg)!important}
+#en-app .phone .nav.av-nav>span{min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 3px 4px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.08em;color:var(--smuted);opacity:.8;white-space:nowrap}
+#en-app .phone .nav.av-nav>span.a{color:var(--sacc);opacity:1}
+#en-app .phone .nav.av-nav .ni{display:none!important}
+#en-app .phone .nav.av-nav .av-nav-art{display:block;width:29px;height:29px;flex:none;background:currentColor;mask:var(--av-nav-art) center/contain no-repeat;-webkit-mask:var(--av-nav-art) center/contain no-repeat}
+#en-app .phone .nav.av-nav>span.a:after{content:"";position:absolute;bottom:-2px;width:23px;height:2px;border-radius:999px;background:var(--sacc)}
+#en-app .phone .nav.av-nav .navw{position:relative;display:flex;align-items:center;justify-content:center;line-height:0;padding:0;width:52px;height:52px;margin-top:-30px;flex:none}
+#en-app .phone .nav.av-nav .navw svg{display:block;flex:none;width:20px;height:20px;margin:0;stroke-width:1.5}
+#en-app .phone .nav.av-nav .navw:before,#en-app .phone .nav.av-nav .navw:after{content:"";position:absolute;top:50%;height:.7px;width:calc(50cqw - 32px);background:var(--sline);transform:translateY(-50%);pointer-events:none}
+#en-app .phone .nav.av-nav .navw:before{right:calc(100% + 6px)}#en-app .phone .nav.av-nav .navw:after{left:calc(100% + 6px)}
+#en-app .phone.av-nav-page .body,#en-app .phone.av-nav-page .rgbody{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))!important}
+
+#en-app #home{--av-bubble-fill:color-mix(in srgb,var(--sacc) 6%,var(--sbg));--av-confirm:#8b657b;--av-confirm-ink:#fff0f4}
+#en-app #home.nuit{--av-confirm:#b493ae;--av-confirm-ink:#2a1e26}
+#en-app #home .av-bubble{position:absolute;z-index:60;right:14px;top:82px;width:min(278px,calc(100% - 28px));box-sizing:border-box;padding:18px 19px 15px;border-radius:20px 5px 20px 20px;background:var(--av-bubble-fill);color:var(--sink);box-shadow:0 10px 30px -8px color-mix(in srgb,var(--sink) 20%,transparent),inset 0 0 0 .6px var(--sline);animation:av-bubble-in 220ms ease-out}
+#en-app #home .av-bubble:before{content:"";position:absolute;right:15px;top:-6px;width:13px;height:13px;background:var(--av-bubble-fill);transform:rotate(45deg);border-radius:3px}
+#en-app #home .av-signature{margin:0 30px 9px 0;color:var(--smuted);font:500 11px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.13em}
+#en-app #home .av-message{margin:0;font:400 16px/1.4 'Entre nous Newsreader',Georgia,serif;color:var(--sink)}
+#en-app #home .av-dismiss{position:absolute;right:5px;top:4px;display:flex;align-items:center;justify-content:center;width:44px;height:44px;padding:12px;border:0;border-radius:50%;background:transparent;color:var(--smuted);cursor:pointer}
+#en-app #home .av-dismiss svg{display:block;width:16px;height:16px;stroke-width:1.5}
+#en-app #home .av-bubble-actions{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:15px}
+#en-app #home .av-primary{display:block;box-sizing:border-box;min-height:44px;width:100%;padding:10px 14px;border:0;border-radius:24px;background:var(--av-confirm);color:var(--av-confirm-ink);font:500 12px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.04em;cursor:pointer}
+#en-app #home .av-later{display:block;width:fit-content;min-height:44px;margin:0 auto;padding:7px 12px;border:0;border-radius:12px;background:transparent;color:var(--smuted);font:italic 500 15px/1.2 'Cormorant Garamond',Georgia,serif;cursor:pointer}
+#en-app #home .av-tour{position:absolute;inset:0;z-index:80;overflow:hidden}
+#en-app #home .av-tour-spot{position:absolute;box-shadow:0 0 0 9999px rgba(25,12,25,.55);outline:1px solid var(--sline);pointer-events:none}
+#en-app #home .av-tour-tip{z-index:1;border-radius:20px}
+#en-app #home .av-tour-tip:before{display:none}
+
+#en-app #home .av-feedback{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}
+#en-app #home .av-step-dim{position:absolute;inset:0;background:rgba(40,20,35,.25);opacity:0;transition:opacity 300ms ease;pointer-events:auto}
+#en-app #home .av-step-sheet{position:relative;box-sizing:border-box;max-height:calc(100% - 16px);overflow-y:auto;padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px));border-radius:24px 24px 0 0;background:var(--sbg);color:var(--sink);font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(calc(100% + 16px));opacity:0;transition:transform 420ms cubic-bezier(.22,.61,.36,1),opacity 260ms ease;pointer-events:auto}
+#en-app #home .av-feedback.av-open .av-step-sheet{transform:none;opacity:1}#en-app #home .av-feedback.av-open .av-step-dim{opacity:1}
+#en-app #home .av-grab{display:block;width:36px;height:4px;margin:0 auto 12px;border-radius:2px;background:var(--sline)}
+#en-app #home .av-step-word{display:flex;align-items:center;gap:10px;padding-right:26px}
+#en-app #home .av-step-word img{display:block;width:44px;height:44px;flex:none;object-fit:contain}
+#en-app #home .av-step-word p{margin:0;font:400 16px/1.4 'Entre nous Newsreader',Georgia,serif;color:var(--sink)}
+#en-app #home .av-step-question{position:relative;display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:13px 0 7px;color:var(--smuted);font:italic 500 14.5px/1.3 'Cormorant Garamond',Georgia,serif}
+#en-app #home .av-info{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;margin:-9px 0;padding:0;border:0;background:transparent;color:var(--smuted);cursor:pointer}
+#en-app #home .av-info span{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;box-sizing:border-box;border:.8px solid currentColor;border-radius:50%;font:500 11px/1 'Cormorant Garamond',Georgia,serif}
+#en-app #home .av-hint{position:absolute;right:0;top:calc(100% + 5px);z-index:2;box-sizing:border-box;padding:8px 12px;border:1px solid var(--sline);border-radius:12px;background:var(--sbg);color:var(--sink);box-shadow:0 8px 16px -12px var(--sink);font:italic 500 14.5px/1.3 'Cormorant Garamond',Georgia,serif}
+#en-app #home .av-feelings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#en-app #home .av-feelings button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:7px 10px;border:0;border-radius:999px;background:color-mix(in srgb,var(--sacc) 7%,var(--sbg));color:var(--sink);font:italic 500 14px/1.25 'Cormorant Garamond',Georgia,serif;cursor:pointer}
+#en-app #home .av-feelings button[aria-pressed=true]{background:color-mix(in srgb,var(--sacc) 17%,var(--sbg))}
+#en-app #home .av-feelings button svg{display:none;width:12px;height:12px;flex:none}#en-app #home .av-feelings button[aria-pressed=true] svg{display:block}
+#en-app #home .av-free{display:block;box-sizing:border-box;width:100%;min-height:38px;margin:8px 0 0;padding:8px 2px;border:0;border-bottom:1px solid var(--sline);border-radius:0;background:transparent;color:var(--sink);font:italic 500 16px/1.3 'Cormorant Garamond',Georgia,serif;resize:none;overflow:hidden}
+#en-app #home .av-free::placeholder{color:var(--smuted)}#en-app #home .av-confirm{margin-top:16px}
+@keyframes av-step-tick{0%{transform:scale(.85)}55%{transform:scale(1.16)}100%{transform:scale(1)}}
+#en-app #home .av-ticked{animation:av-step-tick 280ms ease-out 1}
+@keyframes av-bubble-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+#en-app #home.ac-still .av-bubble,#en-app #home.ac-still .wr.av-invited .wc{animation:none!important}
+#en-app #home .av-feedback.av-still .av-step-sheet,#en-app #home .av-feedback.av-still .av-step-dim{transition:none!important}
+@media(prefers-reduced-motion:reduce){#en-app #home .av-bubble,#en-app #home .wr.av-invited .wc,#en-app #home .av-ticked{animation:none!important}#en-app #home .av-step-sheet,#en-app #home .av-step-dim{transition:none!important}}
+@media(max-width:380px){#en-app #home .av-mood{padding-inline:18px}#en-app #home .av-step-sheet{padding-inline:16px}}
