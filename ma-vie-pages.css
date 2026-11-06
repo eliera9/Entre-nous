@@ -117,9 +117,6 @@
 
 #eli-grouped-life-pages .np-stage{padding:18px 8px}
 #eli-grouped-life-pages .np-phone{--ec-bg:light-dark(#f5e0d3,#30252c);--ec-ink:light-dark(#6b3f55,#efd6e0);--ec-muted:light-dark(#865e6c,#c9a7b6);--ec-line:light-dark(#cda5ab,#805e70);--ec-field:light-dark(#f9eae1,#3a2c35);--ec-selected:light-dark(#ead0cf,#503b48);width:min(100%,440px);margin:auto;padding:22px 23px 26px;background:var(--ec-bg);color:var(--ec-ink);border-radius:22px;font-family:'Cormorant Garamond',Georgia,serif}
-#eli-grouped-life-pages .np-picker-row{display:grid;grid-template-columns:1fr;gap:5px;margin-bottom:17px}
-#eli-grouped-life-pages .np-picker-row .ec-trigger{font:400 13px/1.4 'Figtree',system-ui,sans-serif;padding:8px 11px;min-height:44px;margin:0}
-#eli-grouped-life-pages .np-picker-row .ec-menu .ec-option{font:400 14px/1.4 'Figtree',system-ui,sans-serif;min-height:39px}
 #eli-grouped-life-pages .fh-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;font:400 12px/1.4 'Figtree',sans-serif;color:var(--ec-muted)}
 #eli-grouped-life-pages .fh-top button{display:grid;place-items:center;width:44px;height:44px;flex:none;border:0;padding:0;background:transparent;color:var(--ec-muted)}
 #eli-grouped-life-pages .fh-top button span{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--ec-line);border-radius:50%}
