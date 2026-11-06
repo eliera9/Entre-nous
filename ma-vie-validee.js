@@ -414,7 +414,7 @@ function prepareImportReviewDraft(state,{plan,incoming,provider,scope}){
  return state.review;
 }
 
-function mountApprovedForm(root,config){
+function mountLegacyApprovedForm(root,config){
  const model=APPROVED_MODEL,logic=createLifeLogic(model);
  const stored=config.keep('lifeform-approved-v1',{version:1,answers:{},drafts:{},lastPosition:{},selected:'moi',migrated:false,imports:[]});
  if(!stored.migrated){const migrated=migrateApprovedAnswers(model,config.previous,config.profile);Object.assign(stored.answers,migrated.answers);Object.assign(stored.drafts,migrated.drafts);stored.migrationArchive=JSON.parse(JSON.stringify(config.previous||{}));stored.migrated=true;}
@@ -428,7 +428,7 @@ function mountApprovedForm(root,config){
  root.innerHTML=APPROVED_MARKUP;
  const form=$('form'),field=$('[data-free]'),options=$('[data-options]'),fold=$('[data-fold]'),records=$('[data-records]'),gate=$('[data-gate]'),writing=$('[data-writing]'),writeBody=$('[data-writing-body]'),writeFold=$('[data-write-fold]'),next=$('[data-next]');
  const complete=a=>a&&(a.state==='paused'||(a.state==='answered'&&a.verified!==false));
- function persist(){stored.selected=chapterId;return Promise.resolve().then(()=>config.save()).then(()=>true,()=>{const status=$('[data-status]');if(status)status.textContent='L’enregistrement n’a pas abouti. Tes réponses restent affichées. Réessaie l’enregistrement avant de quitter cette page.';return false;});}
+ function persist(){if(config.flushGrouped)return config.flushGrouped();stored.selected=chapterId;return Promise.resolve().then(()=>config.save()).then(()=>true,()=>{const status=$('[data-status]');if(status)status.textContent='L’enregistrement n’a pas abouti. Tes réponses restent affichées. Réessaie l’enregistrement avant de quitter cette page.';return false;});}
  function serialize(step,answer){
   if(answer.declined)return 'Ne pas répondre';
   const lines=[...answer.selected];
@@ -466,6 +466,7 @@ function mountApprovedForm(root,config){
   updateCards();if(navigate)config.show('mv2');else persist();
  }
  function updateCards(){
+  if(config.refreshGrouped){config.refreshGrouped();return;}
   if(logic.storyAvailable(answers))config.addStory();
   const checked={};for(const[id,a]of Object.entries(answers))if(a.verified!==false)checked[id]=a;
   config.overview.querySelectorAll('.mvc').forEach(card=>{const id=card.dataset.c;if(!model.chapters.some(c=>c.id===id))return;card.hidden=id==='histoire'&&!logic.storyAvailable(answers);const p=logic.progress(id,checked);const fill=card.querySelector('.mvpg i'),count=card.querySelector('.mvcnt');if(fill)fill.style.width=Math.round(p.filled/p.total*100)+'%';if(count)count.textContent=p.filled+' / '+p.total;});
@@ -578,7 +579,7 @@ function render(){
  renderIdeas();renderRecords();sync();icons();
  if(blocked){next.disabled=false;next.textContent='Garder ce sujet pour plus tard';}else next.textContent='Continuer';
 }
-function openChapter(id,resume=true,review=false){reviewingImports=review;
+function openChapter(id,resume=true,review=false){if(config.openGrouped)return config.openGrouped(id,resume,review);reviewingImports=review;
  if(!model.chapters.some(c=>c.id===id))return;chapterId=id;stored.selected=id;config.onOpen(id);refreshPath();
  const firstUnanswered=active.findIndex(x=>answers[x.id]?.state==='paused'||!complete(answers[x.id]));
  const fallback=firstUnanswered>=0?firstUnanswered:(lastPosition[id]||0);position=resume?(reviewingImports?Math.max(0,active.findIndex(x=>x.id===reviewState.review.cursor)):(answers[active[firstUnanswered]?.id]?.state==='paused'?firstUnanswered:reviewState.normalPosition(id,active,fallback))):0;render();config.show('mv3');requestAnimationFrame(resizeWriting);
@@ -620,8 +621,23 @@ $('[data-review]').addEventListener('click',()=>{const first=reviewState.sync()[
 window.addEventListener('resize',resizeWriting);new ResizeObserver(resizeWriting).observe(root);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(revealTimer);});
 const originalRender=render;render=function(){ $('[data-dialogue]').hidden=false;originalRender(); };
 showMenu(false);
-return {openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,describeAnswer,describeExisting:id=>describeAnswer(id,existingAnswer(id)),selected:()=>stored.selected,saveDraft:persist,refreshResume:updateCards};
+return {commitGrouped:(id,answer,chapter)=>{chapterId=chapter;updateProfile(model.steps[id],answer);},openChapter,showMenu,prepareImport,importConflicts,applyImport,firstImported,openImportReview,describeAnswer,describeExisting:id=>describeAnswer(id,existingAnswer(id)),selected:()=>stored.selected,saveDraft:persist,refreshResume:updateCards};
 
+}
+
+function mountApprovedForm(root,config){
+ const legacy=mountLegacyApprovedForm(root,config);let pages=null;
+ const stored=config.keep('lifeform-approved-v1',{});
+ const ensure=()=>pages||(pages=window.__enMountGroupedLife(root,{...config,stored,model:APPROVED_MODEL,onAnswer:(id,answer,chapter)=>legacy.commitGrouped(id,answer,chapter)}));
+ config.openGrouped=(id,resume=true,review=false)=>review?ensure().openImportReview():ensure().openChapter(id,resume);
+ config.refreshGrouped=()=>pages?.refreshResume();
+ config.flushGrouped=()=>pages?pages.saveDraft():Promise.resolve(config.save());
+ const legacyPeople=new Set(['pr_maman','pr_noms','pr_autre','pr_amie_nom','an_quel','an_eu_nom','part_nom']);
+ const allowed=()=>new Set([...ensure().schema().map(item=>item.id),...legacyPeople]);
+ const prepareImport=(...args)=>{const plan=legacy.prepareImport(...args),keep=allowed();for(const id of Object.keys(plan.proposals))if(!keep.has(id))delete plan.proposals[id];plan.count=Object.keys(plan.proposals).length;return plan;};
+ const applyImport=(...args)=>{pages?.snapshot();pages?.destroy();pages=null;const count=legacy.applyImport(...args);ensure().refreshResume();return count;};
+ const result={...legacy,openChapter:(...args)=>ensure().openChapter(...args),showMenu:()=>ensure().showMenu(),prepareImport,applyImport,firstImported:()=>ensure().firstImported(),openImportReview:()=>ensure().openImportReview(),saveDraft:()=>pages?pages.saveDraft():legacy.saveDraft(),refreshResume:()=>ensure().refreshResume()};
+ ensure().refreshResume();window.__enGroupedLifeSchema=scope=>ensure().schema(scope);return result;
 }
 
 window.__enApprovedLifeTools={model:APPROVED_MODEL,createLifeDecision,createLifeLogic,migrateApprovedAnswers,createApprovedImport,createLifeReviewState,prepareImportReviewDraft};
@@ -711,7 +727,8 @@ window.__enInitLifeV3=function(){
   const ids=new Set();
   function visit(id){if(ids.has(id)||!APPROVED_MODEL.steps[id])return;ids.add(id);(APPROVED_MODEL.route[id]||[]).forEach(rule=>rule.then.forEach(visit));}
   APPROVED_MODEL.chapters.filter(c=>!chapterScope||c.id===chapterScope).forEach(c=>c.themes.forEach(t=>t.roots.forEach(visit)));
-  const schema=[...ids].map(id=>{const s=APPROVED_MODEL.steps[id];return {id,question:s.q,ideas:s.ideas,mode:s.mode,fields:s.fields.map(f=>({key:f.key,label:f.label,kind:f.kind,choices:f.choices})),repeat:s.repeat};});
+  const schema=window.__enGroupedLifeSchema?window.__enGroupedLifeSchema(chapterScope):[...ids].map(id=>{const s=APPROVED_MODEL.steps[id];return {id,question:s.q,ideas:s.ideas,mode:s.mode,fields:s.fields.map(f=>({key:f.key,label:f.label,kind:f.kind,choices:f.choices})),repeat:s.repeat};});
+  if(window.__enGroupedLifeSchema){const topics=schema.map(item=>item.page+" — "+item.question).join("\n");text=text.replace(/Ce qu'on explore[\s\S]*?\nÀ la fin,/,"Questions validées, à utiliser seulement si l’information manque. Les questions retirées ne doivent pas être réintroduites sous une autre formulation :\n\n"+topics+"\n\nÀ la fin,");}
   text=text.replace('sans rien avant ni après.','puis le bloc de réponses destiné à mon application, défini ci-dessous.');
   return text+'\n\nPOUR LE RETOUR DANS MON APPLICATION\nQuand je demande « mon portrait », conserve le portrait lisible complet demandé ci-dessus. Puis ajoute un bloc JSON entre les lignes exactes === REPONSES_ENTRE_NOUS_V1 === et === FIN_REPONSES_ENTRE_NOUS_V1 ===. Ce bloc sert uniquement à préparer mes réponses avant ma vérification.\nFormat : {"version":1,"answers":[{"id":"identifiant ci-dessous","selected":[],"detail":"","rows":[],"state":"answered"}]}\nUtilise seulement les faits explicitement confiés dans la conversation. Les dernières réponses directes corrigent les anciennes synthèses. Ne pose aucune nouvelle question pour produire cet export. Omet entièrement les questions dont tu ignores la réponse. N’invente jamais de nom, d’intention, de date ou de décès. Mets les nuances dans detail. selected ne contient que des libellés exacts des idées proposées, avec plusieurs idées uniquement si elles sont compatibles. rows contient une fiche par personne, animal, objet ou événement, avec les clés fields du bon écran. Si un objet n’a pas de nom, laisse son nom vide. Pour une date exacte, utilise AAAA-MM-JJ seulement si le jour, le mois et l’année sont tous connus ; sinon conserve la période avec les mots de la personne. Utilise state="paused" seulement si la personne a explicitement refusé ou reporté ce sujet. Les refus ne doivent jamais devenir des réponses inventées. Ne présente pas ces propositions comme déjà validées.\nVoici les écrans réels à utiliser pour les identifiants et les champs :\n'+JSON.stringify(schema);
  };

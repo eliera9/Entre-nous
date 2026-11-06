@@ -1,0 +1,247 @@
+JOURNAL INTIME — ORGANISATION DES PAGES
+Version du 6 novembre 2026
+5 chapitres — 23 pages — 132 formulations validées.
+
+Une page rassemble un sujet. Les relances dépendent des choix et restent repliables.
+Les numéros ci-dessous renvoient au tri validé ; ils ne sont pas les numéros affichés dans chaque page.
+
+PAGES ET QUESTIONS
+
+MOI AUJOURD’HUI
+
+1. Chez toi
+Introduction : On commence par chez toi, tout doucement : ton quotidien et ce que tu y ressens.
+001 — Parle-moi un peu de l’endroit où tu vis. [Question de page]
+002 — Comment te sens-tu là où tu vis ? [Question de page]
+003 — Avec qui partages-tu ton quotidien à la maison ? [Question de page]
+004 — Et ça te plaît, d’avoir ton petit chez-toi ? [Relance selon les réponses]
+005 — Et ça se passe comment, avec tes colocs ? [Relance selon les réponses]
+
+2. Ton activité
+Introduction : Ton activité du moment, ce qu’elle t’apporte et ce que tu imagines pour la suite.
+007 — En ce moment, tu travailles, tu étudies, ou tu es dans une autre situation ? [Question de page]
+008 — À quoi ressemble ton travail, concrètement ? [Relance selon les réponses]
+009 — Qu’est-ce que tu ressens par rapport à ton activité ? [Relance selon les réponses]
+010 — Qu’est-ce qui te donne envie d’y aller, le matin ? [Relance selon les réponses]
+011 — Qu’est-ce qui est le plus dur pour toi, là-bas ? [Relance selon les réponses]
+012 — Et dans quelques années, tu t’imagines où ? [Relance selon les réponses]
+013 — Si tout était possible, tu ferais quoi ? [Relance selon les réponses]
+016 — Qu’est-ce que tu étudies, et où en es-tu ? [Relance selon les réponses]
+017 — Et ça te plaît ? [Relance selon les réponses]
+018 — Et après, tu te vois où ? [Relance selon les réponses]
+019 — Et comment tu le vis, ce moment ? [Relance selon les réponses]
+
+3. Ton rythme
+Introduction : Du réveil au soir, on regarde ce qui rythme tes journées.
+021 — Comment démarre généralement ta journée ? [Question de page]
+023 — Quel rythme ont tes journées ? [Question de page]
+025 — Et ça te va, ce calme ? [Relance selon les réponses]
+026 — Quels moments de la journée apprécies-tu particulièrement ? [Question de page]
+028 — Et le soir, tu arrives à t’endormir facilement ? [Question de page]
+
+4. Ce qui t’anime
+Introduction : Tes univers, tes petits bonheurs et ce que tu aimes créer.
+030 — Quand tu as du temps pour toi, qu’aimes-tu faire ? [Question de page]
+031 — Qu’aimes-tu lire ? Un genre, un livre, un univers… [Relance selon les réponses]
+032 — Tu dessines quoi, plutôt ? [Relance selon les réponses]
+033 — Quel sport, toi ? [Relance selon les réponses]
+034 — Tu écoutes quoi, en ce moment ? [Relance selon les réponses]
+035 — Et ton plat signature, c’est quoi ? [Relance selon les réponses]
+036 — Plutôt balade en ville ou dans la nature ? [Relance selon les réponses]
+037 — Tu joues à quoi, en ce moment ? [Relance selon les réponses]
+038 — Tu aimes photographier quoi ? [Relance selon les réponses]
+039 — Tu fais pousser quoi ? [Relance selon les réponses]
+040 — Ta série du moment ? [Relance selon les réponses]
+041 — Qu’aimes-tu créer ? [Relance selon les réponses]
+042 — Dans la création, qu’est-ce qui te plaît ou te fait du bien ? [Relance selon les réponses]
+043 — Quelle place l’écriture a-t-elle, ou aimerais-tu lui donner ? [Relance selon les réponses]
+044 — Si tu as une envie d’écriture, qu’aimerais-tu explorer à ton rythme ? [Relance selon les réponses]
+045 — Une œuvre dans laquelle tu aimes revenir ? [Question de page]
+046 — Et un endroit où tu te sens vraiment bien, comme chez toi ? [Question de page]
+047 — C’est quoi, les petits riens qui te font du bien ? Un rayon de soleil, un bon café, un câlin… [Question de page]
+
+5. Ton portrait
+Introduction : Quelques mots sur toi et la façon dont tu aimerais qu’on te comprenne.
+048 — Comment te décrirais-tu à quelqu’un qui ne te connaît pas encore ? [Question de page]
+053 — Comment souhaites-tu que je te parle ? [Question de page]
+112 — Qu’est-ce que tu aimerais que les gens sachent sur toi, sans avoir à le dire ? [Question de page]
+
+MES PROCHES
+
+1. Ta famille
+Introduction : Les personnes de ta famille, leur place et les moments que tu gardes.
+Fiches : une personne de la famille à la fois
+056 — Tu me présentes ta famille ? [Dans la fiche ou en relance]
+057 — Qu’aimerais-tu me raconter sur [prénom] et sa place dans ta vie ? [Dans la fiche ou en relance]
+058 — Quels moments aimerais-tu garder de ton histoire avec [prénom] ? [Dans la fiche ou en relance]
+060 — Qu’est-ce qui te vient en premier quand tu penses à sa personnalité ? [Dans la fiche ou en relance]
+061 — Qu’aimerais-tu me confier sur ce qui est compliqué entre vous ? [Dans la fiche ou en relance]
+062 — Cette distance, comment tu la vis aujourd’hui ? [Dans la fiche ou en relance]
+063 — Quel souvenir te vient en premier quand tu penses à [prénom] ? [Dans la fiche ou en relance]
+064 — Une petite habitude qui représente votre lien ? [Dans la fiche ou en relance]
+065 — Quel moment a marqué un changement dans votre lien ? [Dans la fiche ou en relance]
+066 — Aujourd’hui, comment gardez-vous le lien ? [Dans la fiche ou en relance]
+067 — Qu’est-ce qui te fait du bien dans ce lien, et qu’est-ce qui est plus difficile ? [Dans la fiche ou en relance]
+
+2. Tes amitiés
+Introduction : Les amitiés d’aujourd’hui et celles qui ont fait partie de ta vie.
+Fiches : une amitié actuelle ou passée à la fois
+070 — Il y a des amis que tu aimerais me présenter ? [Dans la fiche ou en relance]
+071 — Comment décrirais-tu [prénom] et la place de cette amitié dans ta vie ? [Dans la fiche ou en relance]
+072 — Qu’aimerais-tu raconter de votre histoire ? [Dans la fiche ou en relance]
+074 — Qu’est-ce qui te vient en premier quand tu penses à sa personnalité ? [Dans la fiche ou en relance]
+075 — Quel souvenir te vient en premier quand tu penses à [prénom] ? [Dans la fiche ou en relance]
+076 — Aujourd’hui, comment gardez-vous le lien ? [Dans la fiche ou en relance]
+077 — Qu’aimerais-tu me confier sur ce qui est compliqué entre vous ? [Dans la fiche ou en relance]
+078 — Cette distance, comment tu la vis aujourd’hui ? [Dans la fiche ou en relance]
+079 — Comment vos chemins se sont-ils croisés ? [Dans la fiche ou en relance]
+080 — Qu’est-ce que vous aimez partager ? [Dans la fiche ou en relance]
+081 — Quel moment a marqué un changement dans votre lien ? [Dans la fiche ou en relance]
+082 — Qu’est-ce qui te fait du bien dans ce lien, et qu’est-ce qui est plus difficile ? [Dans la fiche ou en relance]
+084 — De votre histoire, qu’aimerais-tu garder ou raconter aujourd’hui ? [Dans la fiche ou en relance]
+085 — Qu’est-ce qui te donnerait envie de renouer, ou de garder cette distance ? [Dans la fiche ou en relance]
+086 — Qu’est-ce que vous aimiez partager ? [Dans la fiche ou en relance]
+087 — Qu’est-ce que cette amitié a laissé dans ta vie ? [Dans la fiche ou en relance]
+
+3. Tes compagnons
+Introduction : Leur caractère, votre lien et les souvenirs que tu veux garder.
+Fiches : un animal actuel ou passé à la fois
+029 — Et si un jour tu en avais un, ce serait lequel ? [Dans la fiche ou en relance]
+088 — Un animal fait partie de ta vie ? [Dans la fiche ou en relance]
+089 — Comment est [nom de l’animal], et quelle place ce lien a dans ta vie ? [Dans la fiche ou en relance]
+090 — Qu’aimerais-tu raconter de votre vie ensemble ? [Dans la fiche ou en relance]
+091 — Quels moments avec [nom de l’animal] te font du bien ? [Dans la fiche ou en relance]
+092 — Une petite habitude de [nom de l’animal] que tu aimerais raconter ? [Dans la fiche ou en relance]
+093 — Qu’est-ce qui décrit le mieux son petit caractère ? [Dans la fiche ou en relance]
+094 — Comment votre lien se construit-il ? [Dans la fiche ou en relance]
+095 — Qu’est-ce qui est plus difficile dans votre quotidien ? [Dans la fiche ou en relance]
+096 — Comment [nom de l’animal] est arrivé dans ta vie ? [Dans la fiche ou en relance]
+097 — Quels moments rythment votre quotidien ? [Dans la fiche ou en relance]
+098 — Quel souvenir de [nom de l’animal] aimerais-tu garder ? [Dans la fiche ou en relance]
+099 — Qu’aimerais-tu garder du caractère de [nom de l’animal] et de votre lien ? [Dans la fiche ou en relance]
+100 — Quels moments avec [nom de l’animal] aimerais-tu garder ici ? [Dans la fiche ou en relance]
+101 — Qu’aimerais-tu me confier de son absence ? [Dans la fiche ou en relance]
+
+4. Ton cercle aujourd’hui
+Introduction : Les liens présents dans ta vie et ceux que tu aimerais construire.
+Fiches : présentation courte du partenaire, avant les questions sur le cercle actuel
+069 — Tu partages ta vie avec quelqu’un ? [Dans la fiche ou en relance]
+103 — Tu aimerais rencontrer du monde ? [Question de page]
+104 — Quels liens ou quels moments te donneraient envie d’aller vers les autres ? [Dans la fiche ou en relance]
+109 — Quand c’est difficile, vers qui peux-tu te tourner ? [Question de page]
+
+MON PASSÉ
+
+1. Tes racines
+Introduction : Les lieux où tu as grandi et la petite personne que tu étais.
+102 — Comment as-tu vécu le fait de grandir sans fratrie ? [Rubrique facultative et repliable]
+113 — Où as-tu grandi ? Tu peux raconter une ou plusieurs étapes. [Question de page]
+115 — Quand tu étais enfant, comment te décrirais-tu ? [Question de page]
+
+2. Souvenirs d’enfance
+Introduction : Tes jeux, tes rêves et ces souvenirs qui sont restés.
+116 — Tu jouais à quoi, des heures entières ? [Question de page]
+117 — Quel métier ou quelle vie imaginais-tu pour plus tard ? [Question de page]
+118 — Un souvenir d’enfance que tu aimerais garder ici ? [Question de page]
+119 — Un objet souvenir que tu aimerais garder dans ce carnet ? [Question de page]
+
+3. Ton adolescence
+Introduction : Cette période, ses musiques et le regard que tu portes sur elle.
+125 — Quels mots évoquent ton adolescence ? [Question de page]
+126 — Une musique qui te rappelle cette période, ou ce qu’elle évoque pour toi ? [Question de page]
+128 — Quel regard portes-tu aujourd’hui sur la personne que tu étais à l’adolescence ? [Question de page]
+
+4. Ce qui t’a construite
+Introduction : Ce que tu comprends de ton histoire, à ton rythme.
+130 — Certaines périodes sont plus difficiles à raconter. Cette page peut rester fermée aussi longtemps que tu le souhaites. [Rubrique facultative et repliable]
+131 — Avec le recul, qu’est-ce qui a fait de toi la personne que tu es ? [Question de page]
+132 — Quelque chose que tu aimerais dire à l’enfant que tu étais ? [Question de page]
+
+MON INTÉRIEUR
+
+1. Ce qui te traverse
+Introduction : Tes émotions, ce qui pèse et ce qui t’aide à trouver du calme.
+051 — Quand ça ne va pas, qu’est-ce qui t’aide le plus ? [Question de page]
+134 — Qu’est-ce qui te pèse en ce moment ? [Question de page]
+135 — Tu en as déjà parlé à quelqu’un ? [Relance selon les réponses]
+142 — Quelles émotions reviennent, et comment les vis-tu ? [Question de page]
+143 — Qu’est-ce qui t’apaise vraiment ? [Relance selon les réponses]
+N07 — De quoi aimerais-tu ne plus te sentir responsable ? [Relance selon les réponses]
+
+2. Confiance et peurs
+Introduction : Tes doutes, tes qualités et ce que tu vis intérieurement.
+136 — Quelles inquiétudes ou peurs aimerais-tu poser ici ? [Question de page]
+137 — Comment se passe la confiance en toi, en ce moment ? [Question de page]
+138 — Une qualité que tu aimerais te reconnaître ? [Rubrique facultative et repliable]
+
+3. Besoins et limites
+Introduction : Ce dont tu as besoin et la place que tu te laisses.
+140 — De quoi tu aurais le plus besoin ? [Question de page]
+141 — Tu arrives à dire non ? [Question de page]
+N02 — Qu’est-ce qui te retient de dire non, même quand tu en aurais besoin ? [Relance selon les réponses]
+
+4. Ton corps
+Introduction : Un espace que tu peux ouvrir seulement si tu en as envie.
+139 — La relation à ton corps peut rester un sujet privé. Tu choisis si tu souhaites ouvrir cette page. [Question de page]
+
+5. Envies et valeurs
+Introduction : Ce qui compte, les envies de cette année et celles pour plus tard.
+052 — Et cette année, qu’est-ce que tu aimerais vivre ? [Question de page]
+144 — Ta vie idéale dans cinq ans, elle ressemblerait à quoi ? [Question de page]
+145 — Qu’est-ce qui compte le plus pour toi ? [Question de page]
+N03 — Y a-t-il une envie que tu repousses par peur de te lancer ? [Question de page]
+
+NOTRE HISTOIRE
+
+1. Vos débuts
+Introduction : Tes premières impressions et les débuts de votre histoire.
+147 — Ta première impression ? [Question de page]
+149 — Votre premier rendez-vous : qu’aimerais-tu en garder ? [Question de page]
+150 — À quel moment tu as su que c’était sérieux ? [Question de page]
+151 — Les mots et les gestes qui marquent votre histoire : qu’as-tu envie de raconter ? [Question de page]
+
+2. Votre quotidien
+Introduction : Vos habitudes à deux et la vie que vous partagez.
+155 — Si vous vivez ensemble, qu’est-ce que cela a changé pour vous ? [Rubrique facultative et repliable]
+156 — Vous avez des petits rituels à deux ? [Question de page]
+158 — Des petits noms que vous souhaitez garder dans votre histoire ? [Question de page]
+
+3. Ce qui vous unit
+Introduction : Ce que tu aimes dans votre lien et la façon dont tu aimerais être soutenue.
+159 — Qu’est-ce que tu aimes chez ton ou ta partenaire ? [Question de page]
+N06 — Quand tu traverses un moment difficile, qu’aimerais-tu que ton ou ta partenaire comprenne de tes besoins ? [Question de page]
+
+4. Les moments délicats
+Introduction : Ce qui est parfois moins simple, avec la liberté de rester en surface.
+161 — Qu’est-ce qui crée parfois des tensions ou des incompréhensions entre vous ? [Question de page]
+163 — Y a-t-il une période fragile dont tu souhaites parler ? [Rubrique facultative et repliable]
+
+5. Vos souvenirs et vos envies
+Introduction : Les moments à garder, les dates qui comptent et vos projets.
+164 — Un souvenir de votre histoire que tu veux conserver ? [Question de page]
+166 — Quels projets vous font envie ? [Question de page]
+168 — Quelles dates ou périodes comptent dans votre histoire ? [Question de page]
+
+
+LIENS ENTRE LES QUESTIONS
+Chez toi : les questions sur la vie seule ou la colocation suivent le choix du foyer.
+Ton activité : travail, études et autre situation ouvrent leurs questions adaptées ; plusieurs situations peuvent coexister.
+Ce qui t’anime : chaque loisir choisi ouvre ses relances ; création et écriture peuvent être approfondies.
+Les fiches de famille, d’amis et d’animaux réutilisent leurs réponses sur la même personne ; les idées proches ne créent pas plusieurs relances identiques.
+Les amitiés passées passent directement à la question 084 ; l’ancienne question 083 est exclue.
+Un futur animal ouvre la question 029 ; les animaux actuels ou passés ont leurs fiches.
+La présentation du partenaire reste courte dans Mes proches ; les questions sur votre couple sont dans Notre histoire.
+Les questions 102, 130, 138, 155 et 163 sont des rubriques que l’on peut choisir d’ouvrir.
+La question N07 suit ce qui pèse ; N02 suit une difficulté à dire non ; N03 se trouve avec les envies et les valeurs ; N06 se trouve dans Ce qui vous unit.
+Les questions 051 et 143 sont rattachées : ce qui aide, puis ce qui apaise plus précisément.
+Les dates et durées sont facultatives et peuvent être choisies ensemble ; l’année reste facultative.
+
+REPÈRES VISUELS
+En-tête et compagnon issus des aperçus validés.
+Questions numérotées en italique.
+Suggestions dans un menu compact qui se ferme après sélection.
+Champ libre toujours accessible, sur une ligne au départ puis adapté au texte.
+Prénom et âge côte à côte ; âge en texte libre.
+Ajout de photo en médaillon centré.
+Signets à gauche : Cette personne et toi / Vos moments partagés.
+Relances repliables : question en italique plus petite, sans i ni filet vertical.

@@ -1,0 +1,188 @@
+
+
+
+
+
+
+
+#eli-grouped-life-pages *{box-sizing:border-box}
+#eli-grouped-life-pages .ec-stage{padding:18px 10px;min-height:650px}
+#eli-grouped-life-pages .ec-paper{--ec-bg:light-dark(#f5e0d3,#30252c);--ec-ink:light-dark(#6b3f55,#efd6e0);--ec-muted:light-dark(#865e6c,#c9a7b6);--ec-line:light-dark(#cda5ab,#805e70);--ec-field:light-dark(#f9eae1,#3a2c35);--ec-selected:light-dark(#ead0cf,#503b48);background:var(--ec-bg);color:var(--ec-ink);width:min(100%,420px);margin:auto;padding:26px 24px;border-radius:22px;font-family:'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-question{position:relative;display:flex;align-items:flex-start;gap:2px;margin-bottom:3px}
+#eli-grouped-life-pages h3,#eli-grouped-life-pages .ec-prompt{flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;font:italic 500 19px/1.3 'Cormorant Garamond',Georgia,serif;margin:0;padding-top:9px;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-num{flex:none;font:500 13px/1.3 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted);font-variant-numeric:lining-nums;border-bottom:.7px solid var(--ec-line);padding-bottom:3px}
+#eli-grouped-life-pages .ec-icon{border:0;padding:0;background:transparent;color:var(--ec-muted);width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none}
+#eli-grouped-life-pages .ec-icon [data-lucide]{width:14px;height:14px}
+#eli-grouped-life-pages .ec-info-mark{width:16px;height:16px;border:.7px solid currentColor;border-radius:50%;font:italic 500 12px/15px Georgia,serif;text-align:center}
+#eli-grouped-life-pages .ec-help{position:absolute;right:0;top:100%;z-index:5;width:min(265px,100%);background:var(--ec-field);color:var(--ec-ink);border:.7px solid var(--ec-line);border-radius:13px;padding:12px 14px;margin:0;font:italic 400 16px/1.4 'Cormorant Garamond',Georgia,serif;box-shadow:0 6px 16px color-mix(in srgb,var(--ec-ink) 10%,transparent)}
+#eli-grouped-life-pages .ec-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;min-height:47px;margin-top:8px;padding:10px 12px;border:.7px solid var(--ec-line);border-radius:12px;background:var(--ec-field);color:var(--ec-ink);font:italic 400 17px/1.4 'Cormorant Garamond',Georgia,serif;text-align:left;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-trigger [data-lucide]{width:12px;height:12px;flex:none;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-trigger[aria-expanded="true"]{border-color:var(--ec-ink)}
+#eli-grouped-life-pages .ec-trigger[aria-expanded="true"] [data-lucide]{transform:rotate(180deg)}
+#eli-grouped-life-pages .ec-menu{margin-top:4px;border:.7px solid var(--ec-line);border-radius:11px;padding:3px;background:var(--ec-field);box-shadow:0 4px 12px color-mix(in srgb,var(--ec-ink) 9%,transparent)}
+#eli-grouped-life-pages .ec-options{max-height:176px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--ec-line) var(--ec-field)}
+#eli-grouped-life-pages .ec-option{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:31px;width:100%;padding:3px 10px;text-align:left;border:0;border-radius:7px;background:transparent;color:var(--ec-ink);font:italic 400 17px/1.4 'Cormorant Garamond',Georgia,serif;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-option:hover,#eli-grouped-life-pages .ec-option[aria-pressed="true"]{background:var(--ec-selected)}
+#eli-grouped-life-pages .ec-option:disabled{opacity:.45}
+#eli-grouped-life-pages .ec-check{font:400 12px/1 system-ui,sans-serif;visibility:hidden;flex:none}
+#eli-grouped-life-pages .ec-option[aria-pressed="true"] .ec-check{visibility:visible}
+#eli-grouped-life-pages .ec-people,#eli-grouped-life-pages .ec-time-modes{display:flex;flex-wrap:wrap;gap:0 7px;margin-top:12px}
+#eli-grouped-life-pages .ec-pill{min-width:0;max-width:100%;min-height:44px;border:0;background:transparent;padding:5px 0;color:var(--ec-ink);font:italic 400 16px/1.2 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-pill>span{display:flex;align-items:center;gap:6px;border:.7px solid var(--ec-line);border-radius:999px;padding:6px 10px;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-pill[aria-pressed="true"]>span{background:var(--ec-selected);border-color:var(--ec-ink)}
+#eli-grouped-life-pages .ec-pill.ec-add>span{border-style:dashed}
+#eli-grouped-life-pages .ec-pill .ec-check{width:10px}
+#eli-grouped-life-pages .ec-pill[aria-pressed="true"] .ec-check{visibility:visible}
+#eli-grouped-life-pages .ec-person-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#eli-grouped-life-pages .ec-person-title{min-width:0;overflow-wrap:anywhere;font:italic 500 17px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-fields{display:grid;grid-template-columns:1.2fr 1fr;gap:8px}
+#eli-grouped-life-pages input,#eli-grouped-life-pages textarea{min-width:0;width:100%;min-height:47px;border:.7px solid var(--ec-line);border-radius:12px;padding:10px 11px;background:var(--ec-field);color:var(--ec-ink);font:italic 400 17px/1.4 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages input::placeholder,#eli-grouped-life-pages textarea::placeholder{color:var(--ec-muted);opacity:1}
+#eli-grouped-life-pages textarea{display:block;resize:none;overflow:hidden;padding:11px 14px;margin-top:12px}
+#eli-grouped-life-pages .ec-general{margin-top:20px}
+#eli-grouped-life-pages .ec-custom{margin-bottom:8px}
+#eli-grouped-life-pages .ec-photo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+#eli-grouped-life-pages .ec-photo-preview{width:64px;height:64px;object-fit:cover;border-radius:14px;border:.7px solid var(--ec-line);flex:none}
+#eli-grouped-life-pages .ec-photo-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#eli-grouped-life-pages .ec-photo-add{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 12px;border:.7px dashed var(--ec-line);border-radius:12px;background:transparent;color:var(--ec-ink);font:italic 400 16px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-photo-add [data-lucide]{width:15px;height:15px;flex:none;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-photo-remove{min-height:44px;padding:8px 0;border:0;background:transparent;color:var(--ec-muted);font:italic 400 15px/1.3 'Cormorant Garamond',Georgia,serif;text-decoration:underline;text-decoration-color:var(--ec-line);text-underline-offset:4px}
+#eli-grouped-life-pages .ec-partner-note{margin:16px 0 0;font:italic 400 17px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-topic-title{display:flex;align-items:center;gap:9px;min-width:0;flex:1;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-topic-title [data-lucide]{width:16px;height:16px;color:var(--ec-muted);flex:none}
+#eli-grouped-life-pages [data-visual="cards"] .ec-topic{border:.7px solid var(--ec-line);border-radius:17px;background:var(--ec-field);margin-bottom:12px}
+#eli-grouped-life-pages [data-visual="cards"] .ec-topic-toggle{padding:14px 13px;min-height:56px}
+#eli-grouped-life-pages [data-visual="cards"] .ec-topic-body{padding:0 13px 15px}
+#eli-grouped-life-pages [data-visual="notebook"] .ec-topic{border:0;background:transparent;margin-bottom:9px}
+#eli-grouped-life-pages [data-visual="notebook"] .ec-topic-toggle{border-bottom:.7px solid var(--ec-line);padding:8px 0;min-height:53px}
+#eli-grouped-life-pages [data-visual="notebook"] .ec-topic-title{font:italic 500 19px/1.2 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages [data-visual="notebook"] .ec-bookmark{display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:23px;min-height:31px;border-radius:3px 3px 8px 3px;background:var(--ec-selected);color:var(--ec-muted);font:400 12px/1 'Cormorant Garamond',Georgia,serif;flex:none}
+#eli-grouped-life-pages [data-visual="notebook"] .ec-topic-body{padding:7px 0 15px;margin-top:6px}
+#eli-grouped-life-pages [data-visual="bubbles"] .ec-topic{border:0;background:transparent;margin-bottom:13px}
+#eli-grouped-life-pages [data-visual="bubbles"] .ec-topic-toggle{background:var(--ec-selected);border-radius:18px 18px 18px 5px;min-height:54px;padding:12px 14px}
+#eli-grouped-life-pages [data-visual="bubbles"] .ec-topic-body{padding:8px 2px 15px}
+#eli-grouped-life-pages [data-signet="left"] .ec-bookmark{min-height:33px;border-radius:3px 3px 0 0;clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 5px),0 100%);padding-bottom:3px}
+#eli-grouped-life-pages [data-signet="above"] .ec-topic-toggle{align-items:flex-end;padding-top:12px;padding-bottom:9px}
+#eli-grouped-life-pages [data-signet="above"] .ec-topic-title{flex-wrap:wrap;gap:5px;align-items:flex-start}
+#eli-grouped-life-pages [data-signet="above"] .ec-bookmark{min-width:36px;min-height:22px;align-self:flex-start;border-radius:6px 6px 0 0;font-size:12px}
+#eli-grouped-life-pages [data-signet="above"] .ec-topic-title>span:last-child{flex-basis:100%}
+#eli-grouped-life-pages [data-signet="above"] .ec-topic-toggle>[data-lucide]{margin-bottom:3px}
+#eli-grouped-life-pages [data-signet="above"] .ec-topic-body{margin-left:0;padding-left:12px}
+#eli-grouped-life-pages [data-signet="ribbon"] .ec-topic-toggle{border-bottom:0;gap:8px;padding:7px 0;align-items:center}
+#eli-grouped-life-pages [data-signet="ribbon"] .ec-topic-title{flex:0 1 auto;min-height:44px;background:var(--ec-selected);padding:9px 23px 9px 10px;gap:8px;border-radius:3px 0 0 3px;clip-path:polygon(0 0,100% 0,calc(100% - 9px) 50%,100% 100%,0 100%)}
+#eli-grouped-life-pages [data-signet="ribbon"] .ec-bookmark{min-width:19px;min-height:0;align-self:center;border-radius:0;background:transparent}
+#eli-grouped-life-pages [data-signet="ribbon"] .ec-topic-toggle>[data-lucide]{margin-left:auto}
+#eli-grouped-life-pages [data-signet="ribbon"] .ec-topic-body{margin-left:10px;padding-left:12px}
+#eli-grouped-life-pages .ec-topics{margin-top:18px}
+#eli-grouped-life-pages .ec-topic{border-top:.7px solid var(--ec-line)}
+#eli-grouped-life-pages .ec-topic:last-child{border-bottom:.7px solid var(--ec-line)}
+#eli-grouped-life-pages .ec-topic-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:9px 0;border:0;background:transparent;color:var(--ec-ink);font:italic 500 17px/1.3 'Cormorant Garamond',Georgia,serif;text-align:left}
+#eli-grouped-life-pages .ec-topic-toggle [data-lucide],#eli-grouped-life-pages .ec-more-toggle [data-lucide]{width:13px;height:13px;flex:none;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-topic-toggle[aria-expanded="true"] [data-lucide],#eli-grouped-life-pages .ec-more-toggle[aria-expanded="true"] [data-lucide]{transform:rotate(180deg)}
+#eli-grouped-life-pages .ec-topic-body{padding-bottom:15px}
+#eli-grouped-life-pages .ec-more{margin-top:10px}
+#eli-grouped-life-pages .ec-more-toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:8px 0;border:0;background:transparent;color:var(--ec-muted);font:italic 400 16px/1.3 'Cormorant Garamond',Georgia,serif;text-align:left}
+#eli-grouped-life-pages .ec-more-body{padding-top:4px}
+#eli-grouped-life-pages .ec-response-area{min-width:0;padding:3px 12px 7px;border:.7px solid var(--ec-line);border-radius:16px;background:var(--ec-field);margin-top:8px}
+#eli-grouped-life-pages .ec-response-area>.ec-answer-choices>.ec-trigger{border:0;border-radius:0;background:transparent;padding-left:0;padding-right:0;margin-top:0}
+#eli-grouped-life-pages .ec-response-area>textarea{margin-top:0;border-width:.7px 0 0;border-radius:0;background:transparent;padding-left:0;padding-right:0}
+#eli-grouped-life-pages .ec-more{margin-top:14px}
+#eli-grouped-life-pages .ec-followup{margin-top:5px}
+#eli-grouped-life-pages .ec-followup-toggle{display:flex;align-items:baseline;gap:9px;width:100%;min-height:44px;padding:10px 0;border:0;background:transparent;color:var(--ec-ink);font:italic 500 17px/1.3 'Cormorant Garamond',Georgia,serif;text-align:left}
+#eli-grouped-life-pages .ec-followup-number{flex:none;border-bottom:.7px solid var(--ec-line);padding-bottom:3px;color:var(--ec-muted);font:500 11.5px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-followup-question{flex:1;min-width:0;overflow-wrap:anywhere}
+#eli-grouped-life-pages .ec-followup-toggle [data-lucide]{width:12px;height:12px;flex:none;align-self:center;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-followup-toggle[aria-expanded="true"] [data-lucide]{transform:rotate(180deg)}
+#eli-grouped-life-pages .ec-followup-body{padding-bottom:7px}
+#eli-grouped-life-pages .ec-followup-body .ec-response-area{margin-top:1px}
+#eli-grouped-life-pages .ec-follow-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px}
+#eli-grouped-life-pages .ec-another{border:0;border-bottom:.7px solid var(--ec-line);background:transparent;color:var(--ec-muted);min-height:44px;padding:8px 0;font:italic 400 15px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-follow-count{font:400 12px/1.5 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-date-labels,#eli-grouped-life-pages .ec-date-fields{display:grid;grid-template-columns:.75fr 1.5fr 1.1fr;gap:8px}
+#eli-grouped-life-pages .ec-date-labels{margin-top:10px;margin-bottom:6px}
+#eli-grouped-life-pages .ec-date-labels label{padding-left:8px;font:italic 400 15px/1.3 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-date-fields .ec-trigger{margin-top:0;padding-left:8px;padding-right:8px}
+#eli-grouped-life-pages .ec-duration{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+#eli-grouped-life-pages .ec-duration .ec-trigger{margin-top:0}
+#eli-grouped-life-pages .ec-status{margin:10px 0 0;font:italic 400 15px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-add-question{margin-top:10px;padding-top:10px;border-top:.7px solid var(--ec-line)}
+#eli-grouped-life-pages .ec-add-question p{margin:0 0 5px;font:italic 400 17px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .ec-undo{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font:italic 400 15px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .ec-undo button{border:0;border-bottom:.7px solid var(--ec-line);background:transparent;color:var(--ec-ink);font:inherit;min-height:44px;padding:8px 0}
+#eli-grouped-life-pages [hidden]{display:none!important}
+@media(pointer:coarse){#eli-grouped-life-pages .ec-option{min-height:44px}}
+@media(max-width:360px){#eli-grouped-life-pages .ec-paper{padding:24px 16px}#eli-grouped-life-pages .ec-date-fields,#eli-grouped-life-pages .ec-date-labels{gap:6px}}
+
+
+
+#eli-grouped-life-pages .np-stage{padding:18px 8px}
+#eli-grouped-life-pages .np-phone{--ec-bg:light-dark(#f5e0d3,#30252c);--ec-ink:light-dark(#6b3f55,#efd6e0);--ec-muted:light-dark(#865e6c,#c9a7b6);--ec-line:light-dark(#cda5ab,#805e70);--ec-field:light-dark(#f9eae1,#3a2c35);--ec-selected:light-dark(#ead0cf,#503b48);width:min(100%,440px);margin:auto;padding:22px 23px 26px;background:var(--ec-bg);color:var(--ec-ink);border-radius:22px;font-family:'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .np-picker-row{display:grid;grid-template-columns:1fr;gap:5px;margin-bottom:17px}
+#eli-grouped-life-pages .np-picker-row .ec-trigger{font:400 13px/1.4 'Figtree',system-ui,sans-serif;padding:8px 11px;min-height:44px;margin:0}
+#eli-grouped-life-pages .np-picker-row .ec-menu .ec-option{font:400 14px/1.4 'Figtree',system-ui,sans-serif;min-height:39px}
+#eli-grouped-life-pages .fh-top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;font:400 12px/1.4 'Figtree',sans-serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .fh-top button{display:grid;place-items:center;width:44px;height:44px;flex:none;border:0;padding:0;background:transparent;color:var(--ec-muted)}
+#eli-grouped-life-pages .fh-top button span{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--ec-line);border-radius:50%}
+#eli-grouped-life-pages .fh-top img{width:16px;height:16px;display:block}
+#eli-grouped-life-pages .fh-top img.night{display:none}
+@media(prefers-color-scheme:dark){#eli-grouped-life-pages .fh-top img.day{display:none}#eli-grouped-life-pages .fh-top img.night{display:block}}
+#eli-grouped-life-pages .np-chapter{font:400 12px/1.5 'Cormorant SC',Georgia,serif;letter-spacing:.15em;text-align:center;margin:6px 0}
+#eli-grouped-life-pages .np-title{font:400 26px/1.2 'Cormorant Garamond','Cormorant Garamond',Georgia,serif;text-align:center;text-transform:uppercase;letter-spacing:.06em;color:var(--ec-muted);margin:5px 0 17px;overflow-wrap:anywhere}
+#eli-grouped-life-pages .np-position{margin:0 0 16px;text-align:center;color:var(--ec-muted);font:400 12px/1.4 'Figtree',system-ui,sans-serif}
+#eli-grouped-life-pages .np-progress{display:flex;gap:5px;height:3px;margin:0 0 22px}
+#eli-grouped-life-pages .np-progress span{flex:1;border-radius:3px;background:color-mix(in srgb,var(--ec-line) 55%,var(--ec-bg))}
+#eli-grouped-life-pages .np-progress span.is-current{background:color-mix(in srgb,var(--ec-ink) 55%,var(--ec-bg))}
+#eli-grouped-life-pages .fq-dialogue{display:flex;align-items:flex-end;gap:9px;margin:0 0 21px}
+#eli-grouped-life-pages .fq-avatar{width:54px;height:62px;object-fit:contain;flex:none}
+#eli-grouped-life-pages .fq-avatar.night{display:none}
+#eli-grouped-life-pages .fq-question{position:relative;flex:1;min-width:0;margin:0;padding:15px;border-radius:19px;background:color-mix(in srgb,var(--ec-ink) 6%,var(--ec-bg));font:400 18px/1.4 'Entre nous Newsreader',Georgia,serif;color:var(--ec-ink)}
+#eli-grouped-life-pages .fq-question:before{content:'';position:absolute;left:-6px;bottom:13px;width:13px;height:13px;transform:rotate(45deg);border-radius:0 0 0 4px;background:color-mix(in srgb,var(--ec-ink) 6%,var(--ec-bg))}
+@media(prefers-color-scheme:dark){#eli-grouped-life-pages .fq-avatar.day{display:none}#eli-grouped-life-pages .fq-avatar.night{display:block}}
+#eli-grouped-life-pages .np-page>.ec-answer{margin-bottom:23px}
+#eli-grouped-life-pages .np-page>.ec-paper{width:100%;padding:0;margin:0;border-radius:0;background:transparent}
+#eli-grouped-life-pages .np-page .np-supplement{margin-top:25px}
+#eli-grouped-life-pages .np-field-row{display:grid;grid-template-columns:1fr;gap:8px;margin:8px 0 10px}
+#eli-grouped-life-pages .np-field-row.is-paired{grid-template-columns:1fr 1fr}
+#eli-grouped-life-pages .np-fields-label{display:block;margin:7px 0 0;color:var(--ec-muted);font:italic 400 15px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .np-record{padding-bottom:10px}
+#eli-grouped-life-pages .np-record+.np-record{padding-top:12px;border-top:.7px solid var(--ec-line)}
+#eli-grouped-life-pages .np-record-title{display:flex;justify-content:space-between;align-items:center;font:italic 400 15px/1.3 'Cormorant Garamond',Georgia,serif;color:var(--ec-muted)}
+#eli-grouped-life-pages .np-quiet{min-height:44px;padding:8px 0;border:0;background:transparent;color:var(--ec-muted);font:italic 400 16px/1.3 'Cormorant Garamond',Georgia,serif;text-decoration:underline;text-decoration-color:var(--ec-line);text-underline-offset:4px}
+#eli-grouped-life-pages .np-free-gate{margin:4px 0 20px}
+#eli-grouped-life-pages .np-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:23px;padding-top:13px;border-top:.7px solid var(--ec-line)}
+#eli-grouped-life-pages .np-nav{display:flex;align-items:center;gap:7px;min-height:44px;padding:8px 0;border:0;background:transparent;color:var(--ec-ink);font:italic 400 17px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .np-nav [data-lucide]{width:14px;height:14px}
+#eli-grouped-life-pages .np-nav:disabled{opacity:.4}
+#eli-grouped-life-pages .np-index-list{display:grid;gap:8px;margin:15px 0}
+#eli-grouped-life-pages .np-index-button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:10px 0;border:0;border-bottom:.7px solid var(--ec-line);background:transparent;color:var(--ec-ink);text-align:left;font:italic 400 18px/1.3 'Cormorant Garamond',Georgia,serif}
+#eli-grouped-life-pages .np-index-button span:last-child{color:var(--ec-muted);font:400 12px/1.4 'Figtree',system-ui,sans-serif;flex:none}
+#eli-grouped-life-pages .np-page .ec-photo{justify-content:center;flex-direction:column;gap:0;margin-top:17px}
+#eli-grouped-life-pages .np-page .ec-photo-preview{width:56px;height:56px;border-radius:50%;margin-bottom:7px}
+#eli-grouped-life-pages .np-page .ec-photo-actions{justify-content:center;flex-direction:column;gap:0}
+#eli-grouped-life-pages .np-page .ec-photo-add{display:flex;flex-direction:column;gap:7px;border:0;padding:0;background:transparent;font-size:17px}
+#eli-grouped-life-pages .np-page .ec-photo-add .np-medallion{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border:.7px solid var(--ec-line);border-radius:50%;background:var(--ec-field)}
+#eli-grouped-life-pages .np-page .ec-photo-add .np-medallion [data-lucide]{width:18px;height:18px}
+#eli-grouped-life-pages .np-page .ec-photo-remove{min-height:38px}
+#eli-grouped-life-pages .np-animal-future{margin-top:22px}
+#eli-grouped-life-pages .np-page .ec-pill>span{background:var(--ec-field)}
+#eli-grouped-life-pages .np-page .ec-pill[aria-pressed="true"]>span{background:var(--ec-selected)}
+@media(max-width:360px){#eli-grouped-life-pages .np-phone{padding:20px 16px}#eli-grouped-life-pages .np-title{font-size:24px}}
+
+#eli-grouped-life-pages .np-page .np-medallion{overflow:hidden}
+#eli-grouped-life-pages .np-page .np-medallion .ec-photo-preview{width:100%;height:100%;margin:0;border:0;border-radius:50%}
+
+#en-app #mv3.en-life-page:has(>#eli-grouped-life-pages){padding:0;align-items:stretch}
+#eli-grouped-life-pages{width:100%;flex:1 0 auto}
+#eli-grouped-life-pages .np-stage{padding:12px 0 0}
+#eli-grouped-life-pages .np-phone{--ec-bg:var(--sbg);width:100%;max-width:620px;border-radius:0;padding:12px 20px calc(28px + env(safe-area-inset-bottom))}
+#eli-grouped-life-pages[data-theme="day"] .fq-avatar.day{display:block}
+#eli-grouped-life-pages[data-theme="day"] .fq-avatar.night{display:none}
+#eli-grouped-life-pages[data-theme="night"] .fq-avatar.day{display:none}
+#eli-grouped-life-pages[data-theme="night"] .fq-avatar.night{display:block}
+#eli-grouped-life-pages button{cursor:pointer}
+#eli-grouped-life-pages .np-import-note{margin:0 0 7px}
+
+/* Icônes Lucide intégrées localement, dans la teinte des contrôles. */
+#eli-grouped-life-pages .np-photo-glyph{width:18px;height:18px;background:var(--ec-muted);-webkit-mask:url('icons/image-plus.svg') center/contain no-repeat;mask:url('icons/image-plus.svg') center/contain no-repeat}
+#eli-grouped-life-pages .np-photo-glyph i{visibility:hidden}
+#eli-grouped-life-pages .ec-remove [data-lucide="trash-2"]{display:block;width:15px;height:15px;font-size:0;background:var(--ec-muted);-webkit-mask:url('icons/trash-2.svg') center/contain no-repeat;mask:url('icons/trash-2.svg') center/contain no-repeat}
