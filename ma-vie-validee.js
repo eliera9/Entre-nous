@@ -441,7 +441,7 @@ function mountApprovedForm(root,config){
    case 'part_nom':set('partenaire',r.name);set('part_nom',r.name);set('part_duree',r.since);break;
    case 'job':set('metier',r.title);set('job_duree',r.since);P.job_jour=answer.selected.join(', ');break;
    case 'et_quoi':set('et_quoi',r.study);set('et_annee',r.stage);break;
-   case 'surnom':set('surnom',r.name);break;
+   case 'surnom':set('surnom',r.name);window.__enApplyFormName?.(answer,{force:true});break;
    case 'enf_noms':P.enf_noms=answer.rows.map(x=>x.name).filter(Boolean).join(', ');P.enf_ages=answer.rows.map(x=>[x.name,x.age].filter(Boolean).join(' : ')).join('\n');break;
    case 'pr_noms':P.pr_noms=answer.rows.map(x=>x.name).filter(Boolean).join(', ');break;
    case 'an_quel':P.animauxDetails=answer.rows.map(x=>({status:'actuel',nom:x.name||'',espece:x.species||'',caractere:x.traits||''}));set('animal',r.name);set('espece',r.species);set('an_car',r.traits);break;
