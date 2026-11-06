@@ -72,7 +72,7 @@ MES PROCHES
 Introduction : Les personnes de ta famille, leur place et les moments que tu gardes.
 Fiches : une personne de la famille à la fois
 056 — Tu me présentes ta famille ? [Dans la fiche ou en relance]
-057 — Qu’aimerais-tu me raconter sur [prénom] et sa place dans ta vie ? [Dans la fiche ou en relance]
+057 — Quelle relation as-tu avec [prénom] aujourd’hui ? [Dans la fiche ou en relance]
 058 — Quels moments aimerais-tu garder de ton histoire avec [prénom] ? [Dans la fiche ou en relance]
 060 — Qu’est-ce qui te vient en premier quand tu penses à sa personnalité ? [Dans la fiche ou en relance]
 061 — Qu’aimerais-tu me confier sur ce qui est compliqué entre vous ? [Dans la fiche ou en relance]
