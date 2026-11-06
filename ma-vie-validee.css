@@ -204,3 +204,7 @@
 #en-app #mv3 :is(button,input,textarea,select):focus-visible{outline:2px solid var(--en-action);outline-offset:3px}
 @media(max-width:360px){#en-app #mv3.en-life-page{padding:18px 14px calc(20px + env(safe-area-inset-bottom))}#en-app #mv3 .en-question{font-size:16px;padding:15px 12px}#en-app #mv3 .en-question-text{inset:15px 12px}}
 @media(prefers-reduced-motion:reduce){#en-app #mv3 .en-fold-tail svg{transition:none}}
+
+/* Les formulaires conservent les fonds jour/nuit du carnet. */
+#en-app #mv3.en-life-page{--en-bg:var(--sbg);background:var(--sbg)!important}
+#en-app #mv3 .en-product{--en-bg:var(--sbg);background:var(--sbg)}

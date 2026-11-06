@@ -44,6 +44,7 @@ window.__enInitCompanions=()=>{
    const wanted='illus/avatars-compagnons/'+state.selected+'-'+(isNight?'nuit':'jour')+'.svg';
    if(image.getAttribute('src')!==wanted)image.setAttribute('src',wanted);
   });
+  window.__enSyncBubbleAvatars?.();
  }
  syncAvatars();document.addEventListener('DOMContentLoaded',syncAvatars);
  // Certaines bulles sont créées seulement à l'ouverture de leur page.

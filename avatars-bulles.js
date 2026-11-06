@@ -1,7 +1,7 @@
 /* Les avatars des conversations ; le choix du compagnon conserve ses scènes. */
 (()=>{
 // Début du modèle des avatars.
-const BUBBLE_CONTEXTS='.lv-question,.lv-bubbleline,.mvring,.gring,.sbplume,.ps-bub,.ps-yay,.bub,.rgov .a,.rgcard,.acps .pl';
+const BUBBLE_CONTEXTS='.lv-question,.lv-bubbleline,.mvring,.gring,.sbplume,.ps-bub,.ps-yay,.bub,.rgov .a,.rgcard,.acps .pl,.ps-lk,.lv-question,.lv-bubbleline,.en-dialogue';
 function avatarAsset(source,night){
  const match=String(source||'').match(/(?:^|\/)illus\/(?:eveil-(chat|panda|lapin|chien)(?:-nuit)?\.webp|avatars-compagnons\/(chat|panda|lapin|chien)-(?:jour|nuit)\.svg)(?:[?#].*)?$/);
  return match?'illus/avatars-compagnons/'+(match[1]||match[2])+'-'+(night?'nuit':'jour')+'.svg':null;
@@ -14,13 +14,15 @@ function normalize(image){
  if(!eligible(image))return;
  const phone=image.closest('.phone'),theme=phone||document.documentElement;
  const night=phone?nightPalette(phone.className,getComputedStyle(phone).getPropertyValue('--sbg')):theme.classList.contains('en-nuit');
- const asset=avatarAsset(image.getAttribute('src'),night);if(!asset)return;
+ let asset=avatarAsset(image.getAttribute('src'),night);if(!asset)return;
+ const selected=window.__pet;if(['chat','panda','lapin','chien'].includes(selected))asset='illus/avatars-compagnons/'+selected+'-'+(night?'nuit':'jour')+'.svg';
  if(image.getAttribute('src')!==asset)image.setAttribute('src',asset);
  if(!image.classList.contains('en-bubble-avatar'))image.classList.add('en-bubble-avatar');
  const frame=image.closest('.mvring,.gring,.sbplume,.rgov .a,.rgcard>span:first-child');
  if(frame&&!frame.classList.contains('en-avatar-frame'))frame.classList.add('en-avatar-frame');
 }
 function scan(){scheduled=false;document.querySelectorAll('#en-app img').forEach(normalize);}
+window.__enSyncBubbleAvatars=scan;
 function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(scan);}}
 function install(){
  if(installed)return;installed=true;

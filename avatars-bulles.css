@@ -20,3 +20,16 @@
 @media(max-width:360px){#en-app #mv2 .mvhd .mvtt p{font-size:16px;letter-spacing:.1em}#en-app #mv2 .mvbub{padding:11px 13px}}
 
 #en-app .sbplume>.en-bubble-avatar{position:static!important;left:auto!important;top:auto!important;pointer-events:none}
+
+/* Une même bulle dans les pages, les volets et les messages insérés ensuite. */
+#en-app :is(.mvbub,.gb.gai,.ps-bub p,.ps-yay p,.sbpbub>p,.ad-sh .bub p,.rgcard p,.rgmo>p,.acps .pl p,.lv-bubble,.en-question,.en-next-question,.rgbub){font-family:'Entre nous Newsreader',Georgia,serif!important;font-style:normal!important;font-weight:400!important;font-size:16px!important;line-height:1.4!important;color:var(--lv-ink,var(--sink))!important}
+#en-app :is(.mvbub,.gb.gai,.ps-bub p,.ps-yay p,.ad-sh .bub p,.acps .pl p,.lv-bubble,.en-question,.en-next-question){background:var(--lv-fill,color-mix(in srgb,var(--sacc) 6%,var(--sbg)))!important;border-radius:19px!important}
+#en-app :is(.ps-bub,.ps-yay,.ad-sh .bub,.acps .pl){align-items:flex-end;gap:10px}
+#en-app :is(.ps-bub,.ps-yay,.ad-sh .bub,.acps .pl)>.en-bubble-avatar{width:44px!important;height:44px!important;flex:0 0 44px}
+#en-app :is(.ps-bub,.ps-yay,.ad-sh .bub,.acps .pl)>p{min-width:0;padding:12px 14px!important}
+#en-app .sbpbub>p{font-size:16px!important}
+/* Aucun ancien filet de séparation sous les commandes du haut. */
+#en-app :is(.mvhd,.phd).sbhas{background-image:none!important}
+
+#en-app :is(.ps-bub p,.ps-yay p,.ad-sh .bub p,.acps .pl p,.lv-bubble,.en-question,.en-next-question){position:relative;background:color-mix(in srgb,var(--sacc) 6%,var(--sbg))!important}
+#en-app :is(.ps-bub p,.ps-yay p,.ad-sh .bub p,.acps .pl p,.lv-bubble,.en-question)::before{content:'';position:absolute;left:-6px;bottom:13px;width:13px;height:13px;border-radius:0 0 0 4px;background:color-mix(in srgb,var(--sacc) 6%,var(--sbg));transform:rotate(45deg)}

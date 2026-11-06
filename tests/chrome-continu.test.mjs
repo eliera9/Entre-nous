@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
-const start=html.indexOf('/* Le fond de la zone système'),end=html.indexOf('function viewportBounds()',start);
+const start=html.indexOf('/* Couleur visible au-dessus de la page'),end=html.indexOf('function viewportBounds()',start);
 const code=html.slice(start,end);
 function fixture(){
  const classes=new Set();const node=(type,bg)=>({nodeType:1,type,bg,style:{backgroundColor:''},classList:{contains:c=>type==='root'?classes.has(c):false},matches:s=>type==='app'?s.includes('#en-app'):type==='phone'?s.includes('.phone'):type==='lock'?s.includes('#en-lock'):false});
@@ -50,4 +50,14 @@ test('l’accueil du code reprend l’appellation explicitement vérifiée dans 
   document:{createElement:()=>({setAttribute(){},remove(){}}),body:{appendChild(){}}}
  });
  await save(true);assert.equal(records.at(-1).nm,'Camille');verified=false;await save(true);assert.equal(records.at(-1).nm,'Prénom initial');
+});
+
+test('un voile de fenêtre est composé avec le fond de la page, y compris les couleurs CSS modernes',()=>{
+ const {chromeVisibleBackground}=runInNewContext(code+';({chromeVisibleBackground})',{window:{},document:{documentElement:{},body:{},querySelector:()=>null,getElementById:()=>null,addEventListener(){},elementsFromPoint:()=>[veil,phone]},getComputedStyle:e=>e.css,requestAnimationFrame:()=>1,MutationObserver:class{observe(){}},addEventListener(){}});
+ const phone={getBoundingClientRect:()=>({left:0,top:32,width:390}),contains:()=>true};
+ const veil={css:{backgroundColor:'color(srgb 0.2 0.1 0.15 / 0.3)',opacity:'1'},parentElement:phone};
+ // Les objets sont fournis par la fermeture de la fonction simulant le hit-test.
+ assert.equal(chromeVisibleBackground(phone,'rgb(245, 224, 211)'),'rgb(187, 164, 159)');
+ veil.css.backgroundColor='rgb(42, 30, 38)';assert.equal(chromeVisibleBackground(phone,'rgb(245, 224, 211)'),'rgb(42, 30, 38)');
+ veil.css.opacity='0';assert.equal(chromeVisibleBackground(phone,'rgb(245, 224, 211)'),'rgb(245, 224, 211)');
 });
