@@ -208,3 +208,26 @@
 /* Les formulaires conservent les fonds jour/nuit du carnet. */
 #en-app #mv3.en-life-page{--en-bg:var(--sbg);background:var(--sbg)!important}
 #en-app #mv3 .en-product{--en-bg:var(--sbg);background:var(--sbg)}
+
+/* Corrections choisies du formulaire uniquement : accueil et champs validés conservés. */
+#en-app #mv3 .en-top [data-position]{display:none}
+#en-app #mv3 .en-top .en-form-home{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;flex:none;cursor:pointer;color:var(--en-sub)}
+#en-app #mv3 .en-form-home span{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--en-line);border-radius:50%}
+#en-app #mv3 .en-form-home svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#en-app #mv3 .en-step-progress{display:flex;gap:5px;height:3px;margin:0 0 24px}
+#en-app #mv3 .en-step-progress i{flex:1;border-radius:3px;background:color-mix(in srgb,var(--sline) 60%,var(--sbg))}
+#en-app #mv3 .en-step-progress i.done{background:var(--sacc)}
+#en-app #mv3 .en-step-progress i.current{background:color-mix(in srgb,var(--sacc) 55%,var(--sbg))}
+#en-app #mv3 .en-question,#en-app #mv3 .en-disclosure .en-hint{font:400 18px/1.4 'Entre nous Newsreader',Georgia,serif!important;color:var(--lv-ink)!important}
+#en-app #mv3 [data-ideas]{border-radius:17px;background:color-mix(in srgb,var(--sacc) 6%,var(--sbg));margin-bottom:20px}
+#en-app #mv3 .en-disclosure{background:transparent}
+#en-app #mv3 [data-write-fold],#en-app #mv3 [data-write-summary]{display:none!important}
+#en-app #mv3 [data-writing]{margin:12px 14px 0;padding-bottom:14px}
+#en-app #mv3 .en-options{display:flex;gap:5px 8px;flex-wrap:wrap;padding:0 14px}
+#en-app #mv3 .en-choice{width:auto;min-height:36px;border:1px solid var(--en-line);border-radius:18px;padding:6px 9px;gap:7px}
+#en-app #mv3 .en-choice span{font-size:16px;font-weight:400;color:var(--en-sub)}
+#en-app #mv3 .en-choice input{width:10px;height:10px;flex-basis:10px;order:0}
+#en-app #mv3 .en-choice input:checked::after{inset:2px;width:4px;height:4px}
+@media(pointer:coarse){#en-app #mv3 .en-choice{min-height:44px}}
+#en-app #mv3 [data-ideas]:has([data-fold][aria-expanded=false]) [data-writing]{display:none}
+#en-app #mv3 .en-choice input{order:-1}
