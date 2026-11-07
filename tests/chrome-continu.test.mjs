@@ -61,3 +61,24 @@ test('un voile de fenêtre est composé avec le fond de la page, y compris les c
  veil.css.backgroundColor='rgb(42, 30, 38)';assert.equal(chromeVisibleBackground(phone,'rgb(245, 224, 211)'),'rgb(42, 30, 38)');
  veil.css.opacity='0';assert.equal(chromeVisibleBackground(phone,'rgb(245, 224, 211)'),'rgb(245, 224, 211)');
 });
+
+test('la zone système iOS ne réduit pas la hauteur du carnet, même si un champ est encore focalisé',()=>{
+ const start=html.indexOf('function keyboardViewport('),end=html.indexOf('if(window.visualViewport){',start);
+ const source=html.slice(start,end),values=new Map([['--en-viewport-height','797px'],['--en-viewport-top','47px']]);
+ const root={clientHeight:844,style:{setProperty:(key,value)=>values.set(key,value),removeProperty:key=>values.delete(key)}};
+ const document={documentElement:root,activeElement:{tagName:'BODY'}},viewport={height:797,offsetTop:47,scale:1};
+ const {viewportBounds}=runInNewContext(source+';({viewportBounds})',{window:{visualViewport:viewport},document,innerHeight:844});
+ viewportBounds();assert.equal(values.size,0);
+ document.activeElement={tagName:'INPUT'};viewportBounds();assert.equal(values.size,0);
+ viewport.height=460;viewportBounds();assert.equal(values.get('--en-viewport-height'),'460px');assert.equal(values.get('--en-viewport-top'),'47px');
+ viewport.height=797;viewportBounds();assert.equal(values.size,0);
+});
+
+test('le zoom et la barre du navigateur ne sont pas pris pour un clavier',()=>{
+ const start=html.indexOf('function keyboardViewport('),end=html.indexOf('function viewportBounds()',start);
+ const {keyboardViewport}=runInNewContext(html.slice(start,end)+';({keyboardViewport})');
+ assert.equal(keyboardViewport({height:690,offsetTop:47,scale:1},844,false),null);
+ assert.equal(keyboardViewport({height:400,offsetTop:100,scale:2},844,true),null);
+ const landscape=keyboardViewport({height:210,offsetTop:0,scale:1},390,true);
+ assert.equal(landscape.height,210);assert.equal(landscape.top,0);
+});

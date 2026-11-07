@@ -148,8 +148,17 @@ html.en-nuit,html.en-nuit body{background:#2A1E26}
 .onb .o3a[hidden]{display:none!important}
 html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:100dvh}
 #en-app{top:var(--en-viewport-top,0px);bottom:auto;height:100%;height:var(--en-viewport-height,100dvh)}
-/* Le fond couvre l'écran ; les commandes restent dans la zone utilisable. */
-#en-app .phone{top:env(safe-area-inset-top,0px)!important;height:calc(100% - env(safe-area-inset-top,0px))!important;transition:none}
+/* Le décor couvre tout l’écran. Seul le contenu, jamais le cadre, évite l’encoche. */
+:root{--en-safe-top:env(safe-area-inset-top,0px);--en-safe-bottom:env(safe-area-inset-bottom,0px)}
+#en-app .phone{top:0!important;height:100%!important;padding-top:var(--en-safe-top)!important;transition:none}
+#en-app .phone#mv{padding-top:var(--en-safe-top)!important}
+#en-app #home,#en-app #onb{padding-top:0!important}
+#en-app #home .heph{height:calc(250px + var(--en-safe-top))!important}
+#en-app #home .heph>.hpl{top:calc(34px + var(--en-safe-top))}
+#en-app #home .heph>.smenu.float{top:calc(39px + var(--en-safe-top))}
+#en-app #mvfiche.pf{padding-top:0!important;container-type:inline-size}
+#en-app #mvfiche.pf .fband{aspect-ratio:auto!important;height:calc(100cqw / 2.3 + var(--en-safe-top))!important}
+#en-app #mvfiche.pf .pfhd{top:calc(51px + var(--en-safe-top))!important}
 #en-app #onb{top:0!important;height:100%!important}
 #en-app #onb .otrack{min-height:0;min-width:0}
 #en-app #onb .ost{flex-shrink:0;min-height:0}
@@ -416,11 +425,19 @@ document.addEventListener('transitionend',scheduleChrome,true);
 addEventListener('pageshow',scheduleChrome);
 scheduleChrome();
 
+/* iOS peut exclure sa zone système de visualViewport sans qu’un clavier soit ouvert. */
+function keyboardViewport(viewport,layoutHeight,editing){
+ const zoomed=Math.abs((viewport.scale||1)-1)>.05;
+ const keyboard=editing&&!zoomed&&layoutHeight-viewport.height>Math.max(120,layoutHeight*.18);
+ return keyboard?{height:viewport.height,top:Math.max(0,viewport.offsetTop||0)}:null;
+}
 function viewportBounds(){
  const v=window.visualViewport;if(!v)return;
  const root=document.documentElement;
- root.style.setProperty('--en-viewport-height',v.height+'px');
- root.style.setProperty('--en-viewport-top',v.offsetTop+'px');
+ const active=document.activeElement,editing=!!active&&(active.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+ const keyboard=keyboardViewport(v,Math.max(root.clientHeight||0,innerHeight),editing);
+ if(keyboard){root.style.setProperty('--en-viewport-height',keyboard.height+'px');root.style.setProperty('--en-viewport-top',keyboard.top+'px');}
+ else{root.style.removeProperty('--en-viewport-height');root.style.removeProperty('--en-viewport-top');}
 }
 if(window.visualViewport){window.visualViewport.addEventListener('resize',viewportBounds);window.visualViewport.addEventListener('scroll',viewportBounds);viewportBounds();}
 addEventListener('resize',()=>{viewportBounds();window.__enSyncChrome()});

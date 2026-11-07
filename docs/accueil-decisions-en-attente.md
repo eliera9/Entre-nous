@@ -69,3 +69,10 @@ Le contrôle visuel utilise exclusivement des données fictives dans une page lo
 ## Contraintes conservées
 
 Ne pas publier de données du journal. Préserver les réponses et brouillons existants, ainsi que l’audience du Site. L’autorisation actuelle porte sur toute cette page ; les autres parties du formulaire validé restent inchangées.
+
+## Correction du cadrage iOS — 7 novembre 2026
+
+- Le cadre des pages couvre désormais tout l’écran : la marge de l’encoche s’applique au contenu et aux commandes, sans découper le décor. L’accueil et le profil prolongent leur illustration sous la zone système.
+- Sans clavier, la hauteur suit `100dvh`. Une hauteur réduite de `visualViewport` n’est plus imposée à toute l’application ; l’ajustement est limité à un clavier réellement ouvert, hors zoom.
+- La navigation se place au bord inférieur du cadre complet. Sa réserve basse est de `max(0px, safe-area-inset-bottom - 10px)` ; avec une marge iOS de 34 px, les derniers éléments se terminent 27 px au-dessus du bord de l’écran.
+- Contrôles : accueil, journal et profil dans un cadre de 390 × 844 px avec marges système de 47/34 px. Les tests vérifient aussi le retour à la pleine hauteur après fermeture du clavier, un champ encore focalisé et le zoom. Ces contrôles simulent les marges ; ils ne constituent pas un test sur un iPhone physique.

@@ -4,10 +4,10 @@
 #en-app #home [hidden]{display:none!important}
 #en-app #home .heph .herow{align-items:center}
 #en-app #home .heph .herow>div:nth-child(2){align-self:stretch;display:flex;flex-direction:column;justify-content:center}
-#en-app #home .heph>.hpl{top:34px;right:16px;width:48px!important;height:48px!important;background:transparent;box-shadow:none}
+#en-app #home .heph>.hpl{top:calc(34px + var(--en-safe-top,0px));right:16px;width:48px!important;height:48px!important;background:transparent;box-shadow:none}
 #en-app #home .hpl img{width:48px!important;height:48px!important;mask-image:none!important;-webkit-mask-image:none!important;object-fit:contain!important;opacity:1!important}
 #en-app #home .hpl:after{display:none}
-#en-app #home .heph>.smenu.float{top:39px;width:38px;height:38px}
+#en-app #home .heph>.smenu.float{top:calc(39px + var(--en-safe-top,0px));width:38px;height:38px}
 #en-app #home .av-mood{--av-panel:var(--sbg);--av-line:#cbaeb7;--av-button:#b97e8e;position:relative;isolation:isolate;box-sizing:border-box;margin:12px 0 0;padding:12px 20px 16px;border-radius:30px;background:radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--sbg) 92%,#fff),transparent 66%),var(--sbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--av-line) 45%,transparent),0 13px 28px -23px #5d314a;color:var(--sink)}
 #en-app #home.nuit .av-mood{--av-panel:#392936;--av-line:#8a6479;--av-button:#dcb7c6;background:radial-gradient(ellipse at 50% 0%,#594056,transparent 66%),var(--av-panel);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--av-line) 45%,transparent),0 13px 28px -23px #120a12}
 #en-app #home .av-mood:before{content:"";position:absolute;inset:9px;border:1px solid color-mix(in srgb,var(--av-line) 22%,transparent);border-radius:23px;pointer-events:none;z-index:-1}
@@ -47,8 +47,8 @@
 #en-app #home .wr.av-invited .wc:nth-child(2){animation-delay:140ms}#en-app #home .wr.av-invited .wc:nth-child(3){animation-delay:280ms}
 #en-app #home .lv-tour-launch{display:none!important}
 
-/* Le bas garde la place nécessaire au geste système, sans marge décorative. */
-#en-app .phone .nav.av-nav{container-type:inline-size;grid-template-columns:repeat(5,minmax(0,1fr));height:calc(60px + env(safe-area-inset-bottom,0px))!important;padding:10px 0 env(safe-area-inset-bottom,0px)!important;border:0!important;bottom:0!important;margin:0!important;align-items:start!important;background:var(--sbg)!important}
+/* Une seule réserve pour le geste système ; la barre rejoint réellement le bas. */
+#en-app .phone .nav.av-nav{--av-bottom-space:max(0px,calc(var(--en-safe-bottom,0px) - 10px));container-type:inline-size;grid-template-columns:repeat(5,minmax(0,1fr));height:calc(60px + var(--av-bottom-space))!important;padding:10px 0 var(--av-bottom-space)!important;border:0!important;bottom:0!important;margin:0!important;align-items:start!important;background:var(--sbg)!important}
 #en-app .phone .nav.av-nav>span{min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 3px 4px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.08em;color:var(--smuted);opacity:.8;white-space:nowrap}
 #en-app .phone .nav.av-nav>span.a{color:var(--sacc);opacity:1}
 #en-app .phone .nav.av-nav .ni{display:none!important}
