@@ -5,6 +5,18 @@ import {runInNewContext} from 'node:vm';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const start=html.indexOf('/* Couleur visible au-dessus de la page'),end=html.indexOf('function viewportBounds()',start);
 const code=html.slice(start,end);
+test('le lancement installé utilise le grand viewport, Safari conserve le viewport dynamique',()=>{
+ const a=html.indexOf('document.documentElement.classList.toggle(\'en-standalone\''),b=html.indexOf('\n',a);
+ const launch=html.slice(a,b);
+ for(const [standalone,media,expected] of [[true,false,true],[false,true,true],[false,false,false],[undefined,false,false]]){
+  let actual;
+  runInNewContext(launch,{navigator:{standalone},window:{matchMedia:()=>({matches:media})},document:{documentElement:{classList:{toggle:(name,value)=>{assert.equal(name,'en-standalone');actual=value}}}}});
+  assert.equal(actual,expected);
+ }
+ assert.match(html,/:root\.en-standalone\{--en-layout-height:100vh\}/);
+ assert.match(html,/@media\(display-mode:standalone\)\{:root\{--en-layout-height:100vh\}\}/);
+ assert.match(html,/height:var\(--en-viewport-height,var\(--en-layout-height\)\)/);
+});
 function fixture(){
  const classes=new Set();const node=(type,bg)=>({nodeType:1,type,bg,style:{backgroundColor:''},classList:{contains:c=>type==='root'?classes.has(c):false},matches:s=>type==='app'?s.includes('#en-app'):type==='phone'?s.includes('.phone'):type==='lock'?s.includes('#en-lock'):false});
  const root=node('root'),body=node('body'),app=node('app'),phone=node('phone','rgb(255, 248, 243)'),lock=node('lock','rgb(42, 30, 38)'),meta={content:''};let showingLock=false,lockOut=false,observer;const events={},frames=[];

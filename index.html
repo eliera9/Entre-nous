@@ -10,6 +10,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>/* Même viewport sur toutes les pages, y compris après l'accueil. */
 window.__enSetAuthLayout=function(active){document.documentElement.classList.toggle('en-auth-screen',!!active)};
+document.documentElement.classList.toggle('en-standalone',navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches);
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -146,8 +147,13 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-
 #souv .en-sv0 p{font:italic 15px/1.45 'Cormorant Garamond',serif;color:var(--smuted);margin:0 0 14px}
 html.en-nuit,html.en-nuit body{background:#2A1E26}
 .onb .o3a[hidden]{display:none!important}
-html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:100dvh}
-#en-app{top:var(--en-viewport-top,0px);bottom:auto;height:100%;height:var(--en-viewport-height,100dvh)}
+:root{--en-layout-height:100vh;--en-layout-height:100dvh}
+/* En web app iOS, dvh peut retrancher la barre système alors que le décor
+   se dessine derrière celle-ci. vh conserve le cadre complet, sans ajouter d'inset. */
+:root.en-standalone{--en-layout-height:100vh}
+@media(display-mode:standalone){:root{--en-layout-height:100vh}}
+html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:var(--en-layout-height)}
+#en-app{top:var(--en-viewport-top,0px);bottom:auto;height:100%;height:var(--en-viewport-height,var(--en-layout-height))}
 /* Le décor couvre tout l’écran. Seul le contenu, jamais le cadre, évite l’encoche. */
 :root{--en-safe-top:env(safe-area-inset-top,0px);--en-safe-bottom:env(safe-area-inset-bottom,0px)}
 #en-app .phone{top:0!important;height:100%!important;padding-top:var(--en-safe-top)!important;transition:none}
