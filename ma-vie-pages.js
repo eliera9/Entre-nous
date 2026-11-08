@@ -618,6 +618,13 @@ window.__enMountGroupedLife=function(host,config){
   
   
   
+  // Un proche ajouté depuis Psy rejoint aussi les rôles et la fiche affichés ici.
+  docListener('en-life-people-changed',()=>{
+   if(category!=='family')return;
+   selected.clear();savedPeople.selected.forEach(role=>selected.add(role));
+   active=Object.values(pools).flat().find(person=>person.uid===savedPeople.activeId)||active;
+   renderEntry();renderPeople();renderProfile();
+  });
   if(!visible().includes(active))active=visible()[0]||null;renderEntry();renderPeople();renderProfile();
   if(typeof ResizeObserver!=='undefined'){let width=0;new GroupedResizeObserver(entries=>{const next=entries[0].contentRect.width;if(next!==width){width=next;fitPaper(paper);}}).observe(paper);}
  });

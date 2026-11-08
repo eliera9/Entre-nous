@@ -699,6 +699,9 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="auth-connexion.js" defer></script>
 <link rel="stylesheet" href="ma-vie-validee.css">
 <link rel="stylesheet" href="ma-vie-pages.css">
+<link rel="stylesheet" href="psy-preparation.css">
+<script src="psy-preparation-store.js" defer></script>
+<script src="psy-preparation.js" defer></script>
 <script src="ma-vie-pages.js" defer></script>
 <script src="ma-vie-validee.js" defer></script>
 <link rel="stylesheet" href="accueil-valide.css">
@@ -6851,12 +6854,38 @@ reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);
  S.msNotes=saved.msNotes||null;S.msCk=saved.msCk||{};S.msDone=!!saved.msDone;S.sessionDate=saved.sessionDate;S.msSubjects=saved.msSubjects||[];
 }}
 /* une seule liste de petits pas : ceux de la psy sont ceux de « Mes petits pas », famille PSY */
-const PSYP=x=>x&&(x.f==='psy'||x.fam==='psy');
 function enBridge(S){let tmp=Array.isArray(S.pas)?S.pas:[];delete S.pas;
  const pp=()=>{const P=window.__PP;if(P&&tmp.length){tmp.forEach(x=>{x.f='psy';x.fam='psy';if(!P.items.some(y=>y.id===x.id))P.items.push(x)});tmp=[]}return P};
  Object.defineProperty(S,'pas',{configurable:true,enumerable:true,get(){const P=pp();return P?P.items.filter(PSYP):tmp},set(a){a=a||[];const P=pp();if(!P){tmp=a;return}a.forEach(x=>{x.f='psy';x.fam='psy'});const rest=P.items.filter(x=>!PSYP(x));P.items.splice(0,P.items.length,...rest,...a);P.emit&&P.emit()}})}
 function enPushPas(o){o.f='psy';o.fam='psy';const P=window.__PP;if(P){P.items.unshift(o);P.emit&&P.emit()}else S.pas=[o,...S.pas]}
 function sessionLabel(upper){const d=S.sessionDate?new Date(S.sessionDate+'T12:00:00'):new Date();const t=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});return upper?t.toUpperCase():t}
+/* Première séance validée : module partagé, coffre et personnes canoniques. */
+const preparationStore=window.__enKeep('psy-preparation-v1',window.__enPsyPreparationStore.createPreparation(S.first));
+let preparation=null,preparationRoot=null,preparationWaiting=false;
+const emptyLife={};
+function preparationLife(){return window.__enPsyPreparationStore.ensureLife(window.__enGet('lifeform-approved-v1')||emptyLife)}
+function renderPreparation(){
+ ph.classList.add('preparation-active');
+ if(!window.__enLifeV3Ready){if(!preparationWaiting){preparationWaiting=true;document.addEventListener('DOMContentLoaded',()=>{preparationWaiting=false;if(['intro','firstr','firsthub','fpage'].includes(cur().v))renderPreparation()},{once:true})}return}
+ if(!preparation){
+  const wrapper=document.createElement('div');wrapper.innerHTML=window.__enPsyPreparationTemplate;preparationRoot=wrapper.firstElementChild;B.replaceChildren(preparationRoot);
+  preparation=window.__enMountPsyPreparation(preparationRoot,{
+   stored:preparationStore,life:preparationLife,
+   title:title=>{TT.textContent=title},scrollTop:()=>{ph.scrollTop=0},
+   save:async()=>{await window.__vaultPushNow()},
+   peopleChanged:()=>document.dispatchEvent(new Event('en-life-people-changed')),
+   avatar:root=>{const night=ph.classList.contains('nuit')||document.documentElement.classList.contains('en-nuit'),pet=['chat','panda','lapin','chien'].includes(window.__pet)?window.__pet:'chat';root.style.setProperty('--psy-avatar',`url("illus/avatars-compagnons/${pet}-${night?'nuit':'jour'}.svg")`);},
+   ongoing:()=>go('raconter'),later:()=>act('skipintro')
+  });
+ }else if(!B.contains(preparationRoot))B.replaceChildren(preparationRoot);
+ preparation.refreshContext();
+}
+new MutationObserver(()=>{if(ph.classList.contains('preparation-active'))preparation?.refreshContext()}).observe(ph,{attributes:true,attributeFilter:['class']});
+document.addEventListener('en-life-people-changed',()=>preparation?.refreshContext());
+window.addEventListener('pagehide',()=>preparation?.flush());
+
+const PSYP=x=>x&&(x.f==='psy'||x.fam==='psy');
+
 const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
 const go=(v,o)=>{S.stack.push(Object.assign({v},o||{}));render(1)};
 const back=()=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro'))S.stack.pop();render(1)};
@@ -7121,6 +7150,8 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
 /* ---------- rendu ---------- */
 const TITLES={tabs:'MON ESPACE PSY',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
 function render(top){const c=cur();let h='';
+ if(['intro','firstr','firsthub','fpage'].includes(c.v)&&window.__enMountPsyPreparation){renderPreparation();return}
+ if(preparation){preparation.snapshot();preparation.flush()}ph.classList.remove('preparation-active');
  if(c.v==='tabs'){const T=[['avant','AVANT'],['apres','APRÈS'],['pas','PETITS PAS'],['seances','MES SÉANCES'],['evol','ÉVOLUTION']];
   h=`<div class="ps-tabs" id="pstabs">${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-k="${t[0]}">${t[1]}</button>`).join('')}</div>`+({avant:tAvant,apres:tApres,pas:tPas,seances:tSeances,evol:tEvol}[S.tab])()}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
@@ -7151,7 +7182,7 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t)});
 ph.addEventListener('keydown',e=>{if(e.target.id==='msin'&&e.key==='Enter')act('msadd')});
-BK.addEventListener('click',e=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
+BK.addEventListener('click',e=>{if(ph.classList.contains('preparation-active')&&preparation?.back()){e.stopImmediatePropagation();return}if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
 
 /* ---------- actions ---------- */
 function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
