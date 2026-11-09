@@ -56,7 +56,7 @@ test('le code conserve Bonjour et Bonsoir suivis du prénom du carnet',()=>{
 test('l’accueil du code reprend l’appellation explicitement vérifiée dans le formulaire',async()=>{
  const saveCode=html.slice(html.indexOf('function save(force){'),html.indexOf('setInterval(()=>{if(DEK)save()}'));
  const records=[];let verified=true;
- const save=runInNewContext(`let DEK={},W={code:{}},META={nm:'Prénom initial'},M={ls:{}},last='',dirty=true,saving=null;${saveCode};save`,{
+ const save=runInNewContext(`let ENROLL={active:false},DEK={},W={code:{}},META={nm:'Prénom initial'},M={ls:{}},last='',dirty=true,saving=null;${saveCode};save`,{
   snapshot:()=>({'lifeform-approved-v1':{answers:{surnom:{state:'answered',verified,rows:[{name:'Camille'}]}}}}),
   seal:async()=>({}),dbPut:async(key,record)=>records.push(record),KEY:'v1',CLOUD:{push(){}},setTimeout:()=>0,
   document:{createElement:()=>({setAttribute(){},remove(){}}),body:{appendChild(){}}}

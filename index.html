@@ -208,11 +208,12 @@ html.en-ready,html.en-ready body{height:100%;min-height:100%;min-height:var(--en
 <script>
 /* Entre nous · démarrage de l'app (PWA)
    - coffre chiffré (AES-GCM, clé tirée du code à 4 chiffres par PBKDF2) gardé dans IndexedDB, sur ce téléphone seulement
-   - tant que le code n'est pas entré, rien n'est lisible ; les écrans ne se chargent qu'après
+   - les carnets terminés demandent leur code ; une inscription inachevée reprend son brouillon local sans déverrouillage
    - un seul écran à la fois, en plein écran */
 (()=>{
 'use strict';
-const DB='entre-nous',STORE='coffre',KEY='v1',ITER=310000;
+const DB='entre-nous',STORE='coffre',KEY='v1',ITER=310000,ENROLL_KEY='inscription-en-cours-v1';
+const ENROLL={active:false,screen:'onb',step:0,identity:{},restoring:false,suspended:false};let enrollmentStore=null;
 const enc=new TextEncoder(),dec=new TextDecoder();
 const b64=u=>{const bytes=new Uint8Array(u);let out='';for(let i=0;i<bytes.length;i+=0x8000)out+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(out)};
 const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
@@ -223,14 +224,14 @@ async function dbGet(k){const d=await idb();return new Promise((res,rej)=>{const
 async function dbPut(k,v){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
 async function dbDel(k){const d=await idb();return new Promise(res=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).delete(k);t.oncomplete=()=>res();t.onerror=()=>res()})}
 async function dbEntries(){const d=await idb();return new Promise((res,rej)=>{const store=d.transaction(STORE).objectStore(STORE),keys=store.getAllKeys(),values=store.getAll();store.transaction.oncomplete=()=>res(keys.result.map((k,i)=>[k,values.result[i]]));store.transaction.onerror=()=>rej(store.transaction.error)})}
-async function dbWriteEntries(entries){const d=await idb();return new Promise((res,rej)=>{const transaction=d.transaction(STORE,'readwrite'),store=transaction.objectStore(STORE);for(const [key,value] of entries)store.put(value,key);transaction.oncomplete=()=>res();transaction.onerror=transaction.onabort=()=>rej(transaction.error||new Error('La restauration n’a pas pu être enregistrée.'))})}
+async function dbWriteEntries(entries,clearEnrollment=false){const d=await idb();return new Promise((res,rej)=>{const transaction=d.transaction(STORE,'readwrite'),store=transaction.objectStore(STORE);for(const [key,value] of entries)store.put(value,key);if(clearEnrollment)store.delete(ENROLL_KEY);transaction.oncomplete=()=>res();transaction.onerror=transaction.onabort=()=>rej(transaction.error||new Error('La restauration n’a pas pu être enregistrée.'))})}
 async function backupPayload(record){if(!record?.box||!record?.w?.code)throw new Error('Le coffre n’est pas encore enregistré.');const medias={};for(const [key,value] of await dbEntries())if(typeof key==='string'&&key.startsWith('m:'))medias[key.slice(2)]=b64(value);return {app:'Entre nous',type:'coffre',...record,medias}}
 async function restoreVaultRecord(payload){
  if(payload.app!=='Entre nous'||payload.type!=='coffre'||![1,2].includes(payload.v)||typeof payload.box?.iv!=='string'||typeof payload.box?.ct!=='string'||(payload.v===2&&!payload.w?.code))throw new Error('Ce fichier n’est pas une sauvegarde chiffrée Entre nous.');
  const {app,type,medias={},...record}=payload,mediaEntries=Object.entries(medias);
  const decoded=mediaEntries.map(([id,value])=>{if(!/^[a-z0-9]+$/i.test(id)||typeof value!=='string')throw new Error('Un média de la sauvegarde est invalide.');return ['m:'+id,ub64(value).buffer]});
  const previous=await dbGet(KEY);const writes=[...decoded,[KEY,{...record,at:Date.now()}]];if(previous)writes.push(['restore-previous',previous]);
- await dbWriteEntries(writes);
+ ENROLL.suspended=true;await dbWriteEntries(writes,true);
 }
 
 /* ---------- chiffrement ---------- */
@@ -268,16 +269,19 @@ window.__P=()=>{const r=LIVE.rg&&LIVE.rg.o;const nick=String(r&&r.petit||'').rep
 window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis']){M.ls['en-depuis']=String(Date.now());touch()}};
 window.__enDepuis=()=>{const t=+M.ls['en-depuis']||Date.now();const d=new Date(t);return ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'][d.getMonth()]+' '+d.getFullYear()};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
-function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});return st}
+function enrollmentMeta(){const {restoring,suspended,...data}=ENROLL;return JSON.parse(JSON.stringify(data));}
+function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});if(ENROLL.startedAt)st['inscription-progress-v1']=enrollmentMeta();return st}
 let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
 function save(force){
- const perform=async()=>{if(!DEK||!W.code||globalThis.__enWiping)return;const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;
+ const perform=async()=>{if(!DEK||(!W.code&&!ENROLL.active)||globalThis.__enWiping)return;globalThis.__enCaptureEnrollment?.();const st=snapshot();const s=JSON.stringify({ls:M.ls,st});if(s===last&&!dirty&&!force)return;
   const chosenName=st['lifeform-approved-v1']?.answers?.surnom;
   const rg=st.rg,approvedName=chosenName?.state==='answered'&&chosenName.verified===true?chosenName.rows?.[0]?.name:'';
   const greetingName=String((rg?.appellation!==0&&String(rg?.petit||'').trim())||rg?.prenom||(!rg&&approvedName)||META.nm||'').replace(/[<>"&]/g,'').trim().slice(0,50);
-  const rec={v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:greetingName};
-  await dbPut(KEY,rec);last=s;M.st=st;dirty=JSON.stringify({ls:M.ls,st:snapshot()})!==s;CLOUD.push(rec)};
+  const rec=W.code?{v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:greetingName}:null;
+  const writes=rec?[[KEY,rec]]:[];
+  if(ENROLL.active&&!ENROLL.suspended){const owner=(await CLOUD.session())?.user?.id||null;const draft=await enrollmentStore.encode({progress:enrollmentMeta(),data:{ls:M.ls,st},dek:DEKRAW,wraps:W,name:greetingName,vaultAt:rec?.at??null},owner);writes.push([ENROLL_KEY,draft]);}
+  if(ENROLL.startedAt||ENROLL.suspended)await dbWriteEntries(writes,!ENROLL.active||ENROLL.suspended);else if(rec)await dbPut(KEY,rec);last=s;M.st=st;dirty=JSON.stringify({ls:M.ls,st:snapshot()})!==s;if(rec)CLOUD.push(rec);};
  saving=(saving||Promise.resolve()).catch(()=>{}).then(perform);
  saving.catch(()=>{dirty=true;const t=document.createElement('div');t.className='en-toast on';t.setAttribute('role','alert');t.textContent='La sauvegarde a échoué. Garde cette page ouverte et réessaie.';document.body.appendChild(t);setTimeout(()=>t.remove(),6000)});
  return saving;
@@ -312,7 +316,7 @@ window.__vaultCheck=async code=>{try{await unwrap(W.code,code);return true}catch
 window.__vaultMakeSecours=async()=>{const c=genSec();W.sec=await wrap(normSec(c));dirty=true;await save(true);return c};
 window.__vaultHasSecours=()=>!!W.sec;
 window.__vaultName=n=>{META.nm=String(n||'').replace(/[<>"&]/g,'').trim().slice(0,50);dirty=true};
-window.__vaultLock=()=>{save().finally(()=>location.reload())};
+window.__vaultLock=async()=>{ENROLL.suspended=true;await save(true);location.reload()};
 window.__vaultExport=async()=>{await save(true);const v=await dbGet(KEY);const blob=new Blob([JSON.stringify(await backupPayload(v))],{type:'application/json'});
  const d=new Date(),n='entre-nous-sauvegarde-'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'.json';
  const f=new File([blob],n,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Sauvegarde Entre nous'});return 'ok'}catch(e){if(e&&e.name==='AbortError')return 'declined'}}
@@ -348,7 +352,7 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   async signIn(email,password){const j=await auth('token?grant_type=password',{email,password});await keep(j);return {ok:true}},
   async recover(email){await auth('recover',{email});return true},
   async resend(email){await auth('resend',{type:'signup',email});return true},
-  async signOut(){try{const t=await token();if(t)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t}})}catch(e){}await keep(null)},
+  async signOut(){try{const t=await token();if(t)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t}})}catch(e){}await keep(null);ENROLL.suspended=true;await dbDel(ENROLL_KEY)},
   async pull(){await load();if(!S)return null;const r=await rest('GET','coffres?select=coffre,maj&user_id=eq.'+S.user.id);return r&&r[0]?r[0].coffre:null},
   push(rec){clearTimeout(pt);pt=setTimeout(async()=>{try{await load();if(!S||!navigator.onLine)return;await rest('POST','coffres?on_conflict=user_id',{user_id:S.user.id,coffre:rec,maj:new Date(rec.at).toISOString()},{Prefer:'resolution=merge-duplicates,return=minimal'});window.__enCloudOk=Date.now()}catch(e){window.__enCloudErr=e.message}},2500)},
   async deleteAccount(){await load();if(!S)return {ok:true,local:true};const t=await token();if(!t)throw new Error('Connecte-toi d’abord pour supprimer ton compte en ligne.');
@@ -381,8 +385,13 @@ window.__enCloud=CLOUD;
 window.__enWipeLocal=async()=>{globalThis.__enWiping=true;try{const d=await idb();await new Promise(r=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=t.onerror=t.onabort=()=>r()});d.close()}catch(e){}try{sessionStorage.clear()}catch(e){}};
 window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.email}).catch(()=>{});
 /* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
-window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;await dbPut(KEY,rec);location.reload();return true};
+window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;ENROLL.suspended=true;await dbWriteEntries([[KEY,rec]],true);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
+window.__enEnrollmentState=()=>ENROLL;
+window.__enEnrollmentReady=()=>{ENROLL.restoring=false;if(ENROLL.active){window.__enCaptureEnrollment?.();touch();}};
+window.__enEnrollmentUpdate=patch=>{if(!ENROLL.active||ENROLL.restoring)return;Object.assign(ENROLL,patch);touch();};
+window.__enEnrollmentChanged=()=>{if(ENROLL.active)touch();};
+window.__enCompleteEnrollment=async reason=>{if(!ENROLL.active)return true;if(!W.code){ENROLL.pendingFinish=reason;window.__enOnboardingSetStep?.(2);window.__enShow('onb');return false;}const before=enrollmentMeta();ENROLL.active=false;ENROLL.finishedAt=Date.now();ENROLL.finishedReason=reason;try{await save(true);return true;}catch(error){delete ENROLL.finishedAt;delete ENROLL.finishedReason;Object.assign(ENROLL,before);return false;}};
 
 /* Couleur visible au-dessus de la page : les volets assombrissent aussi la zone système. */
 function chromeRGBA(value){
@@ -454,7 +463,7 @@ function fit(){const z=innerWidth/BASE;document.documentElement.style.setPropert
 addEventListener('resize',fit);fit();
 function show(ph){if(!ph||ph===cur)return;if(ph.id==='open'){window.__vaultLock();return}if(ph.classList.contains('en-off'))return;
  document.querySelectorAll('#en-app .phone').forEach(p=>{const on=p===ph;p.classList.toggle('en-on',on);p.toggleAttribute('inert',!on);p.setAttribute('aria-hidden',on?'false':'true')});
- cur=ph;window.__enSetAuthLayout(ph.id==='onb'&&(ph.dataset.enStep||'0')==='0');try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
+ cur=ph;if(ENROLL.active&&!ENROLL.restoring&&window.__enEnrollmentTools?.ROUTES.includes(ph.id)){ENROLL.screen=ph.id;touch();}window.__enSetAuthLayout(ph.id==='onb'&&(ph.dataset.enStep||'0')==='0');try{sessionStorage.setItem('en-ecran',ph.id)}catch(e){}
  window.__enSyncChrome();
 }
 window.__enShow=id=>show(typeof id==='string'?document.getElementById(id):id);
@@ -472,7 +481,7 @@ Element.prototype.scrollIntoView=function(o){if(o&&typeof o==='object'&&o.inline
 /* ---------- lancer les écrans (après déverrouillage) ---------- */
 function runScripts(){const L=[...document.querySelectorAll('script[type="text/x-en"]')];
  L.forEach(s=>{const n=document.createElement('script');n.textContent=s.textContent;s.replaceWith(n)});
- document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel();if(window.__enInitConnexion)window.__enInitConnexion();if(window.__enInitIdentity)window.__enInitIdentity()}
+ document.dispatchEvent(new Event('DOMContentLoaded'));dispatchEvent(new Event('load'));window.__enReel();if(window.__enInitConnexion)window.__enInitConnexion();if(window.__enInitIdentity)window.__enInitIdentity();window.__enInitEnrollmentUI?.();window.__enInitBirthDropdowns?.()}
 function mount(first){
  const app=document.createElement('div');app.id='en-app';document.body.appendChild(app);
  const HIDE=new Set(['wdgp','wdge','open']);
@@ -480,7 +489,7 @@ function mount(first){
  document.documentElement.classList.add('en-ready');
  /* La fin de l’inscription ouvre directement « Faire connaissance ». */
  const nm=document.getElementById('o2in');if(nm)nm.addEventListener('input',()=>window.__vaultName(window.__P()));
- const start=first?'onb':'home';
+ const start=ENROLL.active&&window.__enEnrollmentTools.ROUTES.includes(ENROLL.screen)?ENROLL.screen:first?'onb':'home';
  show(document.getElementById(start)||document.getElementById('home'));
  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
@@ -592,8 +601,11 @@ async function boot(){
  let v=null;try{v=await dbGet(KEY)}catch(e){}
  /* connectée : si le coffre en ligne est plus récent (autre appareil), on le prend */
  try{if(navigator.onLine&&await CLOUD.session()){const r=await Promise.race([CLOUD.pull(),new Promise(res=>setTimeout(()=>res(null),4000))]);if(r&&r.box&&(!v||(r.at||0)>(v.at||0))){v=r;await dbPut(KEY,r)}}}catch(e){}
- if(!v){/* premier lancement : l'inscription choisit le code */mount(true);window.__profil=window.__enKeep('profil',{});runScripts();return}
- const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);setTimeout(()=>MED.flush(),5000);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
+ enrollmentStore=window.__enEnrollmentTools.createDraftStore({crypto,get:dbGet,put:dbPut});
+ const owner=(await CLOUD.session())?.user?.id||null;let draft=null;try{draft=await enrollmentStore.read(owner,v);}catch(error){console.warn('Le brouillon d’inscription ne peut pas être repris.');}
+ if(draft){await useDek(draft.dek);W=draft.wraps||{code:null,sec:null};M.ls=draft.data.ls||{};M.st=draft.data.st||{};META.nm=draft.name||'';Object.assign(ENROLL,draft.progress,{restoring:true,suspended:false});mount(false);window.__profil=window.__enKeep('profil',{});runScripts();return;}
+ if(!v){/* premier lancement : brouillon local avant le choix du code */await newDek();Object.assign(ENROLL,{active:true,screen:'onb',step:0,startedAt:Date.now(),restoring:true});mount(true);window.__profil=window.__enKeep('profil',{});runScripts();await save(true);return}
+ const go=(data,migr)=>{M.ls=data.ls||{};M.st=data.st||{};const progress=M.st['inscription-progress-v1'];if(progress?.active===true)Object.assign(ENROLL,progress,{restoring:true,suspended:false});META.nm=v.nm||'';last=JSON.stringify(data);mount(false);window.__profil=window.__enKeep('profil',{});runScripts();if(migr)save(true);setTimeout(()=>MED.flush(),5000);if(!W.sec)setTimeout(()=>window.__enSecours&&window.__enSecours(),1500)};
  lockUI(v,async code=>{try{const data=await unlockCode(v,code);go(data,v.v!==2);return true}catch(e){DEK=null;return false}},
   async sec=>{try{const data=await unlockSec(v,sec);go(data,false);setTimeout(()=>window.__enCodeSheet&&window.__enCodeSheet({nouveau:true}),900);return true}catch(e){DEK=null;return false}},
   async()=>{try{const data=await unlockFid(v);go(data,false);return true}catch(e){DEK=null;return false}});
@@ -696,16 +708,21 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <link rel="stylesheet" href="recovery-sheet.css">
 <script src="recovery-sheet.js" defer></script>
 <script src="onboarding-code-recovery.js" defer></script>
+<link rel="stylesheet" href="inscription-reprise.css">
+<script src="inscription-reprise.js" defer></script>
 <script src="auth-connexion.js" defer></script>
 <link rel="stylesheet" href="ma-vie-validee.css">
 <link rel="stylesheet" href="ma-vie-pages.css">
-<link rel="stylesheet" href="psy-preparation.css">
-<script src="psy-preparation-store.js" defer></script>
-<script src="psy-preparation.js" defer></script>
 <script src="ma-vie-pages.js" defer></script>
 <script src="ma-vie-validee.js" defer></script>
 <link rel="stylesheet" href="accueil-valide.css">
 <script src="accueil-valide.js" defer></script>
+<link rel="stylesheet" href="psy-approved.css">
+<script src="vendor/lucide.min.js" defer></script>
+<script src="psy-premiere-validee.js" defer></script>
+<script src="psy-suivi-recap.js" defer></script>
+<script src="psy-suivi-valide.js" defer></script>
+<script src="psy-approved.js" defer></script>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -4898,14 +4915,15 @@ new MutationObserver(sw).observe(h,{subtree:true,childList:true,attributes:true,
 (function(){const o=document.getElementById('onb'),src=document.getElementById('open'),tr=document.getElementById('otrack'),bk=document.getElementById('obk'),go=document.getElementById('ogo'),dots=[...document.querySelectorAll('#odots i')];let k=0,codePage=null;
 function sync(){['--sbg','--sink','--smuted','--sacc','--sline','--scard'].forEach(v=>{const x=src.style.getPropertyValue(v);if(x)o.style.setProperty(v,x)});o.classList.toggle('nuit',/2A1E26/i.test(src.style.getPropertyValue('--sbg')))}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});sync();
-o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.dataset.enStep=String(k);if(o.classList.contains('en-on'))window.__enSetAuthLayout(k===0);o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent='Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.disabled=(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&(!codePage||!codePage.ready||codePage.busy));go.classList.toggle('dim',go.disabled);bk.disabled=k===2&&!!codePage?.busy}
+o.addEventListener('scroll',()=>{o.scrollLeft=0;o.scrollTop=0});function show(){o.dataset.enStep=String(k);if(o.classList.contains('en-on'))window.__enEnrollmentUpdate?.({step:k,codePhase:codePage?.phase||'entry'});if(o.classList.contains('en-on'))window.__enSetAuthLayout(k===0);o.scrollLeft=0;tr.style.transform=`translateX(${-k*100}%)`;tr.querySelectorAll(':scope > .ost').forEach((step,i)=>{step.toggleAttribute('inert',i!==k);step.setAttribute('aria-hidden',i===k?'false':'true')});dots.forEach((d,i)=>d.classList.toggle('on',i===k));bk.classList.toggle('off',k===0);bk.tabIndex=k===0?-1:0;go.textContent='Continuer';go.classList.toggle('off',k===0);document.querySelector('#onb .obar').classList.toggle('off',k===0);go.disabled=(k===1&&!document.getElementById('o2in').value.trim())||(k===2&&(!codePage||!codePage.ready||codePage.busy));go.classList.toggle('dim',go.disabled);bk.disabled=k===2&&!!codePage?.busy}
 go.onclick=()=>{if(go.disabled)return;if(k===2){codePage.continue();return}k++;show();if(k===2)codePage.enter()};bk.onclick=()=>{if(k===2){if(codePage.busy)return;codePage.leave()}if(k>0){k--;show()}};
 window.__enOnboardingAdvance=()=>{k=1;show()};document.getElementById('o1guest').onclick=()=>{k=1;show()};const o2in=document.getElementById('o2in'),o2ph=document.getElementById('o2ph');
 o2ph.onclick=()=>{const on=!o2ph.classList.contains('has');o2ph.classList.toggle('has',on);o2ph.style.backgroundImage=on?'url(illus/matin-ete.jpg)':'';document.getElementById('o2phl').textContent=on?'changer la photo':'ajouter une photo'};
 document.querySelectorAll('#onb .o2pills button').forEach(b=>b.onclick=()=>{const on=!b.classList.contains('set');b.classList.toggle('set',on);b.textContent=on?b.dataset.v:({26:'jour',mars:'mois',1994:'année'})[b.dataset.v]});
 o2in.oninput=()=>show();document.querySelectorAll('#onb .o2psy button').forEach(b=>b.onclick=()=>document.querySelectorAll('#onb .o2psy button').forEach(x=>x.classList.toggle('on',x===b)));
-codePage=window.__enInitCode({onChange:show,isActive:()=>k===2&&o.classList.contains('en-on')});
-function finish(){if(!o.classList.contains('en-on'))return;codePage.leave();window.__enShow('mvintro')}document.getElementById('o3later').onclick=finish;let sx=null;o.addEventListener('pointerdown',e=>{const r=o.getBoundingClientRect();sx=(e.clientX-r.left<28)?e.clientX:null});
+codePage=window.__enInitCode({onChange:show,isActive:()=>k===2&&o.classList.contains('en-on'),resumePhase:window.__enEnrollmentState?.().active&&window.__vaultReady?.()?(window.__enEnrollmentState().codePhase==='face'?'face':'success'):null});
+window.__enOnboardingSetStep=value=>{k=[0,1,2].includes(Number(value))?Number(value):0;show();if(k===2)codePage.enter();};window.__enOnboardingReturnIdentity=()=>{codePage.leave();k=1;window.__enShow('onb');show();};
+async function finish(){if(!o.classList.contains('en-on'))return;codePage.leave();const pending=window.__enEnrollmentState?.().pendingFinish;if(pending){if(await window.__enCompleteEnrollment(pending))window.__enShow('home');}else window.__enShow('mvintro')}document.getElementById('o3later').onclick=finish;let sx=null;o.addEventListener('pointerdown',e=>{const r=o.getBoundingClientRect();sx=(e.clientX-r.left<28)?e.clientX:null});
 o.addEventListener('pointerup',e=>{if(sx!==null&&e.clientX-sx>50&&k>0){bk.click()}sx=null});show();})();
 </script>
 
@@ -6854,38 +6872,12 @@ reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);
  S.msNotes=saved.msNotes||null;S.msCk=saved.msCk||{};S.msDone=!!saved.msDone;S.sessionDate=saved.sessionDate;S.msSubjects=saved.msSubjects||[];
 }}
 /* une seule liste de petits pas : ceux de la psy sont ceux de « Mes petits pas », famille PSY */
+const PSYP=x=>x&&(x.f==='psy'||x.fam==='psy');
 function enBridge(S){let tmp=Array.isArray(S.pas)?S.pas:[];delete S.pas;
  const pp=()=>{const P=window.__PP;if(P&&tmp.length){tmp.forEach(x=>{x.f='psy';x.fam='psy';if(!P.items.some(y=>y.id===x.id))P.items.push(x)});tmp=[]}return P};
  Object.defineProperty(S,'pas',{configurable:true,enumerable:true,get(){const P=pp();return P?P.items.filter(PSYP):tmp},set(a){a=a||[];const P=pp();if(!P){tmp=a;return}a.forEach(x=>{x.f='psy';x.fam='psy'});const rest=P.items.filter(x=>!PSYP(x));P.items.splice(0,P.items.length,...rest,...a);P.emit&&P.emit()}})}
 function enPushPas(o){o.f='psy';o.fam='psy';const P=window.__PP;if(P){P.items.unshift(o);P.emit&&P.emit()}else S.pas=[o,...S.pas]}
 function sessionLabel(upper){const d=S.sessionDate?new Date(S.sessionDate+'T12:00:00'):new Date();const t=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});return upper?t.toUpperCase():t}
-/* Première séance validée : module partagé, coffre et personnes canoniques. */
-const preparationStore=window.__enKeep('psy-preparation-v1',window.__enPsyPreparationStore.createPreparation(S.first));
-let preparation=null,preparationRoot=null,preparationWaiting=false;
-const emptyLife={};
-function preparationLife(){return window.__enPsyPreparationStore.ensureLife(window.__enGet('lifeform-approved-v1')||emptyLife)}
-function renderPreparation(){
- ph.classList.add('preparation-active');
- if(!window.__enLifeV3Ready){if(!preparationWaiting){preparationWaiting=true;document.addEventListener('DOMContentLoaded',()=>{preparationWaiting=false;if(['intro','firstr','firsthub','fpage'].includes(cur().v))renderPreparation()},{once:true})}return}
- if(!preparation){
-  const wrapper=document.createElement('div');wrapper.innerHTML=window.__enPsyPreparationTemplate;preparationRoot=wrapper.firstElementChild;B.replaceChildren(preparationRoot);
-  preparation=window.__enMountPsyPreparation(preparationRoot,{
-   stored:preparationStore,life:preparationLife,
-   title:title=>{TT.textContent=title},scrollTop:()=>{ph.scrollTop=0},
-   save:async()=>{await window.__vaultPushNow()},
-   peopleChanged:()=>document.dispatchEvent(new Event('en-life-people-changed')),
-   avatar:root=>{const night=ph.classList.contains('nuit')||document.documentElement.classList.contains('en-nuit'),pet=['chat','panda','lapin','chien'].includes(window.__pet)?window.__pet:'chat';root.style.setProperty('--psy-avatar',`url("illus/avatars-compagnons/${pet}-${night?'nuit':'jour'}.svg")`);},
-   ongoing:()=>go('raconter'),later:()=>act('skipintro')
-  });
- }else if(!B.contains(preparationRoot))B.replaceChildren(preparationRoot);
- preparation.refreshContext();
-}
-new MutationObserver(()=>{if(ph.classList.contains('preparation-active'))preparation?.refreshContext()}).observe(ph,{attributes:true,attributeFilter:['class']});
-document.addEventListener('en-life-people-changed',()=>preparation?.refreshContext());
-window.addEventListener('pagehide',()=>preparation?.flush());
-
-const PSYP=x=>x&&(x.f==='psy'||x.fam==='psy');
-
 const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
 const go=(v,o)=>{S.stack.push(Object.assign({v},o||{}));render(1)};
 const back=()=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro'))S.stack.pop();render(1)};
@@ -6987,7 +6979,7 @@ function msHTML(){const m=S.ms,p=S.prep;const subj=[...S.notes].sort((a,b)=>(p.s
   const sec=(t,arr)=>arr.filter(Boolean).length?`<div class="h">${t}</div>`+arr.filter(Boolean).map(x=>`<div class="rd" style="margin-bottom:8px">${esc(x)}</div>`).join(''):'';
   h+=sec('POURQUOI JE VIENS',[(f.pq_th||[]).join(', '),f.pq_a,f.pq_b,f.pq_c])+sec('CE QUE J\'ATTENDS',[(f.at_th||[]).join(', '),f.at_a,f.at_b,f.at_c])+sec('MON HISTOIRE EN BREF',[...(f.hi_tl||[]).map(e=>e.y+' · '+e.t),f.hi_a]);
   if(f.pe_j==='je le lui dis'||f.pe_j==='je le lui lis')h+=sec('CE QUE J\'AI PEUR DE DIRE',[f.pe_a,f.pe_b]);
-  const qs=pratQ().filter(q=>f['pr_'+q.k]);h+=`<div class="h">MES QUESTIONS</div>`+(qs.length?qs.map(q=>`<div class="sj"><div class="tt"><button class="ck${m.qck[q.k]?' on':''}" data-a="msq" data-k="${q.k}"></button><span class="nm" style="font-size:17px">${esc(q.t)}</span></div><div class="nt">sa réponse : ${esc(f['prr_'+q.k]||'…')}</div></div>`).join(''):'<div class="rd" style="font-size:15px;color:#B99AA6">Aucune question cochée.</div>');
+  h+=sec('POUR ME SENTIR BIEN',[f.approvedComfort]);const qs=pratQ().filter(q=>f['pr_'+q.k]);h+=`<div class="h">MES QUESTIONS</div>`+(qs.length?qs.map(q=>`<div class="sj"><div class="tt"><button class="ck${m.qck[q.k]?' on':''}" data-a="msq" data-k="${q.k}"></button><span class="nm" style="font-size:17px">${esc(q.t)}</span></div><div class="nt">sa réponse : ${esc(f['prr_'+q.k]||'…')}</div></div>`).join(''):'<div class="rd" style="font-size:15px;color:#B99AA6">Aucune question cochée.</div>');
   if(!h.includes('class="rd"'))h+=`<p class="rd" style="font-size:15px;color:#B99AA6;margin-top:18px">Prépare tes cinq rubriques pour les retrouver ici.</p>`}
  else{if(p.start)h+=`<div class="h">POUR COMMENCER</div><div class="rd">« ${esc(p.start)} »</div>`;
   h+=`<div class="h">MES SUJETS</div>`+subj.map(x=>sj(x.id,x.t,p.stars.has(x.id),p.feel[x.id],p.by[x.id],0,KW(x))).join('')+sj('me','Ce qui me vient',0,null,null,1);
@@ -7135,7 +7127,7 @@ function vFirstR(){return`<div style="height:6px"></div>${bub('Une première sé
 const FP=[['pq','Pourquoi je viens','ce qui m\'amène'],['at','Ce que j\'attends','ce que j\'espère de ce suivi'],['hi','Mon histoire en bref','les grandes étapes'],['pe','Ce que j\'ai peur de dire','facultatif'],['pr','Mes questions pratiques','prix, durée, confidentialité…']];
 function fpDone(k){const f=S.first.p;return Object.keys(f).some(x=>x.startsWith(k+'_')&&(Array.isArray(f[x])?f[x].length:f[x]))}
 function vFirstHub(){return`<p class="ps-s" style="margin-top:16px">Écris à ton rythme, dans l'ordre que tu veux.</p>`+FP.map(p=>`<button class="ps-row" data-a="fpage" data-k="${p[0]}"><span class="ic" style="width:30px;height:30px;font-size:13px;color:var(--sacc)">✦</span><span class="tx"><span class="tt" style="display:block">${p[1]}</span><span class="st" style="display:block">${fpDone(p[0])?'écrit':p[0]==='pe'?'facultatif':'à écrire'}</span></span><span class="go">${fpDone(p[0])?'✓':'›'}</span></button>`).join('')+`<button class="ps-btn" data-a="ms">OUVRIR LE MODE SÉANCE</button>`}
-const pratQ=()=>[{k:'q1',g:'L\'ARGENT',t:'Combien coûte une séance ?'},{k:'q2',g:'L\'ARGENT',t:'Est-ce remboursé ?'},{k:'q3',g:'LE CADRE',t:'Combien de temps dure une séance ?'},{k:'q4',g:'LE CADRE',t:'Ce que je dis reste entre nous ?'},{k:'q5',g:'LE CADRE',t:'Comment annuler un rendez-vous ?'}].concat((S.first.p.pr_own||[]).map((t,i)=>({k:'o'+i,g:'LES MIENNES',t})));
+const pratQ=()=>[{k:'q1',g:'L\'ARGENT',t:'Combien coûte une séance ?'},{k:'q2',g:'L\'ARGENT',t:'Est-ce remboursé ?'},{k:'q3',g:'LE CADRE',t:'Combien de temps dure une séance ?'},{k:'q4',g:'LE CADRE',t:'Ce que je dis reste entre nous ?'},{k:'q5',g:'LE CADRE',t:'Comment annuler un rendez-vous ?'}].concat((S.first.p.pr_own||[]).map((t,i)=>({k:'o'+i,g:'LES MIENNES',t}))).concat((S.first.approvedQuestions||[]).map((q,i)=>({k:'a'+i,g:'MA PRÉPARATION',t:q.t})));
 function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
  const lines=(pre,L)=>L.map((l,i)=>{const id=pre+'_'+'abc'[i];return`<p class="ps-lab">${l[0]}${idea(id)}</p>${S.sv.hint[id]?`<div class="ps-hint ps-fadein">« ${l[2]} »</div>`:''}${fld('first.'+id,l[1],f[id])}`}).join('');
  const pills=(id,arr)=>`<div>${arr.map(x=>`<button class="ps-pl${(f[id]||[]).includes(x)?' on':''}" data-a="fpill" data-k="${id}" data-t="${esc(x)}">${x}</button>`).join('')}<span class="ps-pl dash">+ autre</span></div>`;
@@ -7149,9 +7141,7 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
 
 /* ---------- rendu ---------- */
 const TITLES={tabs:'MON ESPACE PSY',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
-function render(top){const c=cur();let h='';
- if(['intro','firstr','firsthub','fpage'].includes(c.v)&&window.__enMountPsyPreparation){renderPreparation();return}
- if(preparation){preparation.snapshot();preparation.flush()}ph.classList.remove('preparation-active');
+function render(top){const c=cur();if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='';
  if(c.v==='tabs'){const T=[['avant','AVANT'],['apres','APRÈS'],['pas','PETITS PAS'],['seances','MES SÉANCES'],['evol','ÉVOLUTION']];
   h=`<div class="ps-tabs" id="pstabs">${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-k="${t[0]}">${t[1]}</button>`).join('')}</div>`+({avant:tAvant,apres:tApres,pas:tPas,seances:tSeances,evol:tEvol}[S.tab])()}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
@@ -7182,7 +7172,7 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t)});
 ph.addEventListener('keydown',e=>{if(e.target.id==='msin'&&e.key==='Enter')act('msadd')});
-BK.addEventListener('click',e=>{if(ph.classList.contains('preparation-active')&&preparation?.back()){e.stopImmediatePropagation();return}if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
+BK.addEventListener('click',e=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
 
 /* ---------- actions ---------- */
 function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
@@ -7364,6 +7354,20 @@ window.__psyAbord=(t,pg,txt)=>{S.notes.push({id:'n'+Date.now(),k:'JOURNAL',t,o:'
 window.__psyMode=m=>{closeSheet(1);const o=ph.querySelector('.ms');o&&o.remove();unlock();reset(m);render(1)};
 document.querySelectorAll('[data-psymode]').forEach(b=>b.addEventListener('click',()=>{window.__psyMode(b.dataset.psymode);document.querySelectorAll('[data-psymode]').forEach(x=>x.classList.toggle('on',x===b))}));
 const msb=document.querySelector('[data-psyms]');if(msb)msb.addEventListener('click',()=>{if(S.mode==='first'){S.stack=[{v:'firsthub'}];render(1)}openMS()});
+window.__enPsyBridge={root:ph,body:B,snapshot:psySnapshot,redraw:()=>render(1),openEntry(){S.stack=[{v:'intro'}];render(1)},exit(){S.stack=[];render(1)},
+ syncPreparation(items,first){
+  const keys={topics:'pq_a','attentes:attentes':'at_a','histoire:meaning':'hi_a',confort:'pe_a'};
+  for(const item of items){const key=keys[item.key];if(key)S.first.p[key]=item.text;}
+  const detail=items.filter(item=>item.key.startsWith('topic:')||item.key.startsWith('person:')||item.key.startsWith('family:')).map(item=>item.title+'\n'+item.text).join('\n\n');
+  if(detail)S.first.p.pq_b=detail;
+  if(first.timeline?.length)S.first.p.hi_tl=first.timeline.map(item=>({y:item.period,t:item.label}));
+  const practical=first.questions?.pratique,selected=new Set(practical?.selected||[]),drafts=new Map(practical?.drafts||[]);
+  S.first.approvedQuestions=(practical?.entries||[]).filter(entry=>selected.has(entry.id)).map(entry=>({t:entry.answer,note:drafts.get(entry.id)||''}));
+  if(practical?.free?.trim())S.first.approvedQuestions.push({t:practical.free.trim(),note:''});
+  S.first.approvedQuestions.forEach((q,i)=>{S.first.p['pr_a'+i]=1;S.first.p['prr_a'+i]=q.note;});
+  S.first.p.approvedComfort=items.find(item=>item.key==='confort')?.text||'';
+  for(const id of ['pq','at','hi','pe','pr'])S.first.done[id]=1;
+ }};
 new MutationObserver(()=>{if(B.querySelector('img[src*="illus/apres/"],img[src*="eveil-"]'))render()}).observe(ph,{attributes:true,attributeFilter:['class']});
 render(1);
 })();
@@ -9390,7 +9394,7 @@ new MutationObserver(()=>{if(!window.__enGoogle)return;const a=document.getEleme
 /* revenue de Google à la première ouverture : on passe directement à « Comment t'appelles-tu ? » */
 /* Le retour OAuth est vérifié par auth-connexion.js avant de poursuivre. */
 })();</script>
-<script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();window.__enInitAccueil&&window.__enInitAccueil();</script>
+<script type="text/x-en">window.__enInitLifeV3&&window.__enInitLifeV3();window.__enInitAccueil&&window.__enInitAccueil();window.__enPsyApprovedReady=true;window.__enApprovedPsy&&window.__enApprovedPsy.init();</script>
 </body>
 </html>
 

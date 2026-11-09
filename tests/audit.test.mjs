@@ -154,7 +154,7 @@ test('la restauration du coffre et des vocaux garde un retour au carnet précéd
   const previous = { v: 2, w: { code: {} }, box: { iv: 'ancien', ct: 'ancien-chiffré' } };
   const writes = [];
   const api = runInNewContext(`${source};({restoreVaultRecord})`, {
-    KEY: 'v1', ub64: value => Uint8Array.from(Buffer.from(value, 'base64')),
+    ENROLL: {},KEY: 'v1', ub64: value => Uint8Array.from(Buffer.from(value, 'base64')),
     dbGet: async () => previous,
     dbWriteEntries: async entries => writes.push(entries),
   });

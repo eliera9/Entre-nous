@@ -62,8 +62,10 @@ test('le contexte décliné ou importé sans validation ne personnalise pas les 
 });
 test('fichiers chargés avant les contrôleurs, inclus dans build et cache, sans fixtures ni dépendance distante',()=>{
  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),build=fs.readFileSync(new URL('../scripts/build.mjs',import.meta.url),'utf8'),sw=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
- for(const name of ['psy-preparation.js','psy-preparation-store.js','psy-preparation.css']){assert(html.includes(name));assert(build.includes(name));assert(sw.includes(name));}
- assert(!source.includes('fiction:'));assert(!source.includes('Tweak'));assert(!source.includes('profils fictifs'));assert(html.includes('ongoing:()=>go(\'raconter\')'));
+ for(const name of ['psy-approved.js','psy-premiere-validee.js','psy-suivi-valide.js','psy-suivi-recap.js','psy-approved.css']){assert(html.includes(name));assert(build.includes(name));assert(sw.includes(name));}
+ const current=fs.readFileSync(new URL('../psy-approved.js',import.meta.url),'utf8');
+ assert(current.includes("__enKeep('psy-preparation-v1',{})"));assert(current.includes('importPreparation(previous)'));
+ assert(!html.includes('src="psy-preparation.js"'));assert(!source.includes('fiction:'));assert(!source.includes('Tweak'));assert(!source.includes('profils fictifs'));
 });
 test('un changement de partenaire ne réattribue pas une note déjà rédigée à une autre personne',async()=>{
  const e=environment(),saved=e.window.__enPsyPreparationStore.createPreparation(),life=e.window.__enPsyPreparationStore.ensureLife({pagesV2:{answers:{},people:{partner:{selected:['couple'],activeId:'one',pools:{partner:[{uid:'one',name:'Personne A',verified:true}]}}}}});

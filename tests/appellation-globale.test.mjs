@@ -42,7 +42,7 @@ test('le verrou enregistre le même nom que les écrans, même si une ancienne r
  const source=html.slice(html.indexOf('function save(force){'),html.indexOf('setInterval(()=>{if(DEK)save()}'));
  const rg={prenom:'Camille',petit:'Mon petit cœur',appellation:1},f=fixture(rg),records=[];
  const state={rg,'lifeform-approved-v1':{answers:{surnom:answer('Ancien surnom')}}};
- const save=runInNewContext(`let DEK={},W={code:{}},META={nm:'Ancien prénom'},M={ls:{}},last='',dirty=true,saving=null;${source};save`,{
+ const save=runInNewContext(`let ENROLL={active:false},DEK={},W={code:{}},META={nm:'Ancien prénom'},M={ls:{}},last='',dirty=true,saving=null;${source};save`,{
   snapshot:()=>state,seal:async()=>({}),dbPut:async(key,rec)=>records.push(rec),KEY:'v1',CLOUD:{push(){}},setTimeout:()=>0,
   document:{createElement:()=>({setAttribute(){},remove(){}}),body:{appendChild(){}}}
  });

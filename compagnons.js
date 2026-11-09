@@ -140,7 +140,7 @@ window.__enInitCompanions=()=>{
    state.bySpecies[animal]={name:input.value,traits:[...chosen[animal]].sort()};state.deferred=!!window.__mvLater;
    try{await confirmCompanion(state,animal,input.value,flush);
     syncAvatars();
-    video.pause();window.__enShow(state.deferred?'home':'mv2');
+    video.pause();if(state.deferred&&window.__enEnrollmentState?.().active){if(await window.__enCompleteEnrollment('later'))window.__enShow('home');}else window.__enShow(state.deferred?'home':'mv2');
    }catch{error.textContent='Ton choix n’a pas pu être enregistré. Garde cette page ouverte et réessaie.';error.hidden=false;}
    finally{button.disabled=false;}
   });

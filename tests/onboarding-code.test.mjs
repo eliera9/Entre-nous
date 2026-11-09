@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext,Script} from 'node:vm';
 const source=await readFile(new URL('../onboarding-code-recovery.js',import.meta.url),'utf8');
-function fixture(save=async()=>{}){
+function fixture(save=async()=>{},resumePhase=null){
  const elements={},timers=[];let active=true,haptics=0;
  const element=id=>elements[id]||=( {hidden:true,textContent:'',children:[],dataset:{},classList:{add(){},remove(){},toggle(){}},setAttribute(){},addEventListener(name,fn){this[name]=fn},querySelectorAll(){return []},getBoundingClientRect(){return {}},getAnimations(){return []},focus(){}} );
  element('o3d').children=Array.from({length:4},()=>element(Symbol()));
  const document={hidden:false,getElementById:element,addEventListener(name,fn){this[name]=fn}};
  const window={__vaultSetCode:save,__vaultHasSecours:()=>false,__enSecours:close=>{window.recoveryClose=close}};
  runInNewContext(source,{window,document,navigator:{vibrate(ms){assert.equal(ms,20);haptics++}},setTimeout(fn,ms){const t={fn,ms};timers.push(t);return t},clearTimeout(t){if(t)t.cancel=true}});
- const api=window.__enInitCode({onChange(){},isActive:()=>active});
+ const api=window.__enInitCode({onChange(){},isActive:()=>active,resumePhase});
  const click=key=>element('o3p').click({target:{closest:()=>({dataset:{key}})}});
  const tick=async()=>{const t=timers.shift();if(t&&!t.cancel)await t.fn()};
  const enter=async code=>{for(const key of code)click(key);await tick()};
@@ -55,4 +55,10 @@ test('la pause de deux secondes commence après la vraie fin des animations',asy
 test('revenir en arrière annule l’ouverture différée et revenir sur la page la relance',async()=>{
  const f=fixture();await f.enter('1234');await f.enter('1234');f.api.leave();await f.tick();await f.tick();assert.equal(f.window.recoveryClose,undefined);
  f.api.enter();await Promise.resolve();await Promise.resolve();await f.tick();await f.tick();assert.equal(typeof f.window.recoveryClose,'function');
+});
+test('la reprise après choix du code ne demande pas de le choisir une seconde fois',async()=>{
+ let calls=0;const f=fixture(async()=>calls++,'success');assert.equal(f.api.phase,'success');assert.equal(f.elements.o3a.hidden,true);assert.equal(f.elements.o3success.hidden,false);for(const key of '1234')f.click(key);await f.tick();assert.equal(calls,0);
+});
+test('la fermeture sur Face ID reprend cette étape sans conserver les chiffres du code',()=>{
+ const f=fixture(async()=>{},'face');assert.equal(f.api.phase,'face');assert.equal(f.elements.o3b.hidden,false);assert.equal(f.elements.o3a.hidden,true);assert.equal(f.elements.o3success.hidden,true);assert.equal(f.window.recoveryClose,undefined);
 });

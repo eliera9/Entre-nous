@@ -1,11 +1,11 @@
 /* Entre nous · création du code, sans conserver les chiffres dans le DOM. */
 (()=>{
-window.__enInitCode=({onChange,isActive})=>{
+window.__enInitCode=({onChange,isActive,resumePhase=null})=>{
  const $=id=>document.getElementById(id),a=$('o3a'),success=$('o3success'),face=$('o3b'),pad=$('o3p'),title=$('o3t'),sub=$('o3s'),feedback=$('o3feedback'),dots=[...$('o3d').children];
- let first='',current='',confirm=false,busy=false,saved=false,phase='entry',timer,pulse,recoveryTimer,waiting=false,sequence=0;
- const api={get ready(){return phase==='success'&&!waiting},get busy(){return busy},leave,enter,continue:next};
+ let first='',current='',confirm=false,busy=false,saved=['success','face'].includes(resumePhase),phase=['success','face'].includes(resumePhase)?resumePhase:'entry',timer,pulse,recoveryTimer,waiting=false,sequence=0;
+ const api={get ready(){return phase==='success'&&!waiting},get busy(){return busy},get phase(){return phase},leave,enter,continue:next};
  function render(){
-  a.hidden=phase!=='entry';success.hidden=phase!=='success';
+  a.hidden=phase!=='entry';success.hidden=phase!=='success';face.hidden=phase!=='face';
   title.textContent=confirm?'Encore une fois':'Un code, rien qu’à toi';
   sub.textContent=confirm?'Confirme les 4 chiffres que tu viens de choisir.':'4 chiffres pour retrouver ton espace.';
   dots.forEach((dot,i)=>dot.classList.toggle('on',i<current.length));

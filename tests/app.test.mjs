@@ -54,7 +54,7 @@ test('les sauvegardes concurrentes se rangent dans l’ordre et reprennent aprè
   const saveCode = html.slice(html.indexOf('function save(force){'), html.indexOf('setInterval(()=>{if(DEK)save()}'));
   const writes = [];
   let current = 'premier', failNext = false;
-  const save = runInNewContext(`let DEK={},W={code:{}},META={},M={ls:{}},last='',dirty=true,saving=null;
+  const save = runInNewContext(`let ENROLL={active:false},DEK={},W={code:{}},META={},M={ls:{}},last='',dirty=true,saving=null;
     ${saveCode};save`, {
     snapshot: () => ({ texte: current }),
     seal: async (key, data) => { await new Promise(r => setTimeout(r, 5)); return { texte: data.st.texte }; },
