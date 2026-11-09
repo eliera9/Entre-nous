@@ -8,9 +8,9 @@
 #en-app #onb .o3b .o3on,#en-app #onb .o3b .o3later{min-height:44px;font-size:16px;display:flex;align-items:center;justify-content:center}
 #en-app #mvintro{box-sizing:border-box;overflow-y:auto;padding:clamp(32px,9vh,90px) max(24px,calc((100% - 460px)/2)) 32px!important;gap:0;justify-content:safe center!important}
 #en-app #mvintro>*{flex-shrink:0}
-#en-app #mvintro>.k{font-size:12px;margin:0 0 14px}
-#en-app #mvintro>.t{font:italic 500 31px/1.2 'Cormorant Garamond',Georgia,serif;margin:18px 0;text-wrap:balance}
-#en-app #mvintro>.p{font:400 19px/1.4 'Cormorant Garamond',Georgia,serif;margin:0 0 28px}
+#en-app #mvintro>.k,#en-app #mvintro>.fl{display:none}
+#en-app #mvintro>.t{font:500 12px/1.3 'Cormorant SC',Georgia,serif;letter-spacing:.22em;color:var(--smuted);margin:0 0 20px;white-space:nowrap;text-wrap:nowrap}
+#en-app #mvintro>.p{font:400 16px/1.4 'Cormorant Garamond',Georgia,serif;margin:0 0 28px}
 #en-app #mvintro .c{box-sizing:border-box;width:100%;min-height:90px;margin:0 0 12px;padding:16px 18px;gap:15px}
 #en-app #mvintro .c b{font:500 22px/1.2 'Cormorant Garamond',Georgia,serif}
 #en-app #mvintro .c small{font:400 italic 17px/1.3 'Cormorant Garamond',Georgia,serif;margin-top:6px}
