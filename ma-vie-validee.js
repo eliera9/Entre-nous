@@ -693,7 +693,12 @@ function mergePortrait(existing,incoming,replaceKeys){
  }
  return out;
 }
-window.__enLifeTools={parsePortrait,mergePortrait,toggleChoice,refused,unknown};
+async function finishKnowledge({saveDraft,isEnrollmentActive,completeEnrollment,show,reason}){
+ if(await saveDraft()===false)return false;
+ if(isEnrollmentActive()&&!await completeEnrollment(reason))return false;
+ show('home');return true;
+}
+window.__enLifeTools={parsePortrait,mergePortrait,toggleChoice,refused,unknown,finishKnowledge};
 window.__enInitLifeV3=function(){
  if(window.__enLifeV3Ready)return;
  const model=window.__enLifeModel;
@@ -712,12 +717,23 @@ window.__enInitLifeV3=function(){
  const form=$('mv3'),overview=$('mv2'),aiPage=$('mvai');
  [overview,form,aiPage].forEach(p=>p.classList.add('en-life-page'));
  const back=overview.querySelector('.mvbk');back.innerHTML='<span>'+CHEV+'</span>';back.classList.add('lv-back');back.onclick=()=>go('mv');
- const later=overview.querySelector('.mvlat2');later.textContent='Je reviendrai plus tard';later.onclick=async()=>{if(window.__enEnrollmentState?.().active){if(await window.__enCompleteEnrollment('later'))go('home');}else{safeSave();go('home');}};
+ const later=overview.querySelector('.mvlat2');later.textContent='Je reviendrai plus tard';
  const access=document.createElement('details');access.className='lv-access';access.innerHTML='<summary>Me raconter avec une IA</summary>';
  const aiLinks=overview.querySelector('.mvai');aiLinks.replaceChildren();
  ['chatgpt','claude'].forEach((who,i)=>{if(i)aiLinks.append(document.createTextNode(' · '));const b=document.createElement('button');b.type='button';b.dataset.ai=who;b.textContent=who==='chatgpt'?'ChatGPT':'Claude';b.onclick=()=>openAI(who,null);aiLinks.append(b);});
  aiLinks.before(access);access.append(aiLinks);
  const approvedForm=mountApprovedForm(form,{keep,profile:P,previous:S,overview,pet,show:go,save,hasImportPreview:()=>['preview','editing'].includes(importState.review?.stage),openImportPreview:()=>openAI(importState.review?.provider||'chatgpt',importState.review?.scope),addStory:model.addStory,onOpen:id=>{chapter=id;session={};},onLeave:()=>{session=null;}});
+ const actions=document.createElement('footer');actions.className='lv-confirm-actions';actions.setAttribute('aria-label','Valider Faire connaissance');
+ const confirm=document.createElement('button');confirm.type='button';confirm.className='lv-overview-confirm';confirm.dataset.confirmKnowledge='';confirm.textContent='Confirmer';
+ const confirmationStatus=document.createElement('p');confirmationStatus.className='lv-confirm-status';confirmationStatus.setAttribute('role','status');confirmationStatus.hidden=true;
+ const previousActions=later.closest('.mvgorow');overview.querySelector('#mvcards').after(actions);actions.append(confirm,later,confirmationStatus);if(previousActions)previousActions.hidden=true;let confirming=false;
+ async function finishOverview(reason){
+  if(confirming)return;confirming=true;confirm.disabled=later.disabled=true;actions.setAttribute('aria-busy','true');confirmationStatus.hidden=true;
+  try{const ok=await finishKnowledge({saveDraft:()=>approvedForm.saveDraft(),isEnrollmentActive:()=>!!window.__enEnrollmentState?.().active,completeEnrollment:reason=>window.__enCompleteEnrollment(reason),show:go,reason});if(!ok)throw new Error('Enregistrement incomplet');}
+  catch{confirmationStatus.textContent='Tes réponses restent ici. L’enregistrement n’a pas abouti ; tu peux réessayer.';confirmationStatus.hidden=false;}
+  finally{confirming=false;confirm.disabled=later.disabled=false;actions.removeAttribute('aria-busy');}
+ }
+ confirm.onclick=()=>finishOverview('completed');later.onclick=()=>finishOverview('later');
  const openChapter=(id)=>approvedForm.openChapter(id);
  window.__mvopen=openChapter;window.__mvstart=()=>openChapter(chapter);window.__mvselected=()=>chapter;window.__mvchapter=()=>chapter;
  overview.querySelector('#mvcards').onclick=e=>{const card=e.target.closest('.mvc');if(card)openChapter(card.dataset.c);};

@@ -28,7 +28,10 @@
   const pencil=()=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.innerHTML='<path d="m16 3 5 5L8 21H3v-5L16 3Z M13 6l5 5"/>';return svg;};
   let active=CHAPTERS.some(chapter=>chapter.id===state.recapTab)?state.recapTab:'commencement',visible=false,editing=false,anchors=[];
   const screen=el('section','psy-recap');screen.hidden=true;screen.setAttribute('aria-label','Le récapitulatif de mon suivi');screen.dataset.followupRecap='';paper.append(screen);
-  const opener=el('button','psy-recap-open cursor-interaction','Voir mon récapitulatif');opener.type='button';opener.dataset.openFollowupRecap='';themes.querySelector('[data-chapters]').after(opener);
+  const actions=el('footer','psy-hub-actions');actions.setAttribute('aria-label','Actions de mon suivi');
+  const opener=el('button','psy-recap-open cursor-interaction','Confirmer');opener.type='button';opener.dataset.openFollowupRecap='';
+  const later=el('button','psy-hub-later cursor-interaction','Je reviendrai plus tard');later.type='button';later.dataset.followupLater='';later.addEventListener('click',()=>{(options.onLater||options.onExit)();});
+  actions.append(opener,later);themes.querySelector('[data-chapters]').after(actions);
   opener.addEventListener('click',()=>options.saveThen(()=>open()));
   function selectTab(id,focus=false){active=id;state.recapTab=id;for(const button of screen.querySelectorAll('[data-recap-tab]')){const selected=button.dataset.recapTab===id;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;if(selected){if(focus)button.focus();button.scrollIntoView({inline:'nearest',block:'nearest'});}}
    for(const panel of screen.querySelectorAll('[data-recap-panel]'))panel.hidden=panel.dataset.recapPanel!==id;
