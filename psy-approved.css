@@ -915,8 +915,8 @@
 #psy :is(#psy-plus-tard-centre,#psy-date-app) .psy-question-page .fq-avatar{display:block;background-position:center;background-size:contain;background-repeat:no-repeat}
 #psy :is(#psy-plus-tard-centre,#psy-date-app) .psy-question-page .fh-top img.day{display:block}
 #psy :is(#psy-plus-tard-centre,#psy-date-app) .psy-question-page .fh-top img.night{display:none}
-#psy.nuit .psy-question-page .fh-top img.day{display:none}
-#psy.nuit .psy-question-page .fh-top img.night{display:block}
+#psy.nuit :is(#psy-plus-tard-centre,#psy-date-app) .psy-question-page .fh-top img.day{display:none}
+#psy.nuit :is(#psy-plus-tard-centre,#psy-date-app) .psy-question-page .fh-top img.night{display:block}
 #psy #psy-plus-tard-centre .psy-question-page .pp-question{width:100%;max-width:none;padding:0;background:transparent;border-radius:0}
 #psy #psy-plus-tard-centre .psy-question-page .ac-question{position:relative;display:flex;align-items:flex-start;gap:2px;margin-bottom:3px}
 #psy #psy-plus-tard-centre .psy-question-page .ac-prompt,#psy #psy-date-app .psy-question-page :is(.psyf-period-question,.psyf-question>label){flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;font:italic 500 19px/1.3 'Cormorant Garamond',Georgia,serif;color:var(--ec-ink);margin:0;padding-top:9px;overflow-wrap:anywhere}
