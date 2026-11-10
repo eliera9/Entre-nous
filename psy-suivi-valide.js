@@ -723,12 +723,13 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
   };
   function updateProgress() {
     dynamicChoiceHelpers.forEach(sync => sync());
-    const answered = [
+    const commencementAnswers = [
       forgot.checked || Boolean(month.value || year.value),
       Boolean(reasonOptions.querySelector('input:checked') || reasonText.value.trim()),
       hopesQuestion.answered(),
       feelingsQuestion.answered()
-    ].filter(Boolean).length;
+    ];
+    const answered = commencementAnswers.filter(Boolean).length;
     const percent = answered * 25;
     progressTrack.setAttribute('aria-valuenow', String(percent));
     progressTrack.setAttribute('aria-valuetext', answered + (answered > 1 ? ' questions renseignées sur quatre' : ' question renseignée sur quatre'));
@@ -755,6 +756,7 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
     syncMainProgress('parcours', parcoursAnswered, 2);
     syncMainProgress('present', presentAnswered, 2);
     syncMainProgress('next', nextPercent ? 1 : 0, 1);
+    questionHeader.update({completed:[commencementAnswers.slice(0,2).every(Boolean),commencementAnswers.slice(2).every(Boolean),parcoursAnswered===2,presentAnswered===2,!!nextPercent]});
   }
   root.addEventListener('input', updateProgress);
   root.addEventListener('change', updateProgress);
@@ -781,8 +783,16 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
   const paper = root.querySelector('.psyf-paper');
   let currentStep = 1;
   let activeChapter = 'next';
+  const questionHeader=globalThis.__enMountPsyQuestionHeader(paper,{document,journey:'J’ai déjà un suivi',title:'Quand tout a commencé',intro:'Tes premiers pas dans ce suivi.',position:0,total:5,onBack:()=>headerBack.click(),onHome:()=>returnToThemes()});
+  function hideQuestionHeader(){questionHeader.node.hidden=true;paper.classList.remove('psy-question-page');paper.closest('#psy')?.classList.remove('psy-question-view');}
+  function renderQuestionHeader(key,step=1){
+    const pages={commencement:['Quand tout a commencé','Tes premiers pas dans ce suivi.',step===2?1:0],parcours:['Le chemin déjà parcouru','Les sujets abordés, les moments qui t’ont marquée.',2],present:['Là où j’en suis','Ce qui avance, ce qui reste difficile.',3],next:['Ce que j’aimerais pour la suite','Tes envies, tes besoins pour la suite.',4]},page=pages[key];
+    paper.classList.add('psy-question-page');paper.closest('#psy')?.classList.add('psy-question-view');questionHeader.node.hidden=false;
+    questionHeader.update({title:page[0],intro:page[1],position:page[2],backLabel:key==='commencement'&&step===2?'Revenir aux questions 01 et 02':'Revenir aux rubriques'});
+  }
   const showStep = (step, moveFocus = true) => {
     currentStep = step === 2 ? 2 : 1;
+    renderQuestionHeader('commencement',currentStep);
     closeMonth();
     closeYear();
     closeReasons();
@@ -796,11 +806,12 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
       answer.style.height = Math.max(48, answer.scrollHeight) + 'px';
     });
     if (moveFocus) {
-      headerBack.focus({preventScroll:true});
-      root.querySelector('header').scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+      questionHeader.backButton.focus({preventScroll:true});
+      questionHeader.node.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
     }
   };
   const returnToThemes = () => config.onFinish(()=>{
+    hideQuestionHeader();
 
     closeMonth();
     closeYear();
@@ -843,13 +854,14 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
     pageTitle.textContent = title.toLocaleUpperCase('fr-FR');
     paper.setAttribute('aria-label', title);
     headerBack.setAttribute('aria-label', 'Revenir aux rubriques');
+    renderQuestionHeader(key);
     screen.querySelectorAll('textarea').forEach(answer => {
       answer.style.height = 'auto';
       answer.style.height = Math.max(48, answer.scrollHeight) + 'px';
     });
     if (moveFocus) {
-      headerBack.focus({preventScroll:true});
-      root.querySelector('header').scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+      questionHeader.backButton.focus({preventScroll:true});
+      questionHeader.node.scrollIntoView({block:'start',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
     }
   };
   const openParcours = (moveFocus = true) => openSingleChapter('parcours', parcoursDetail, 'Le chemin déjà parcouru', moveFocus);
@@ -866,7 +878,7 @@ mount("psy-org-1",[{"id": "commencement", "title": "Quand tout a commencé", "sc
   themes.querySelector('[data-chapter="parcours"]').addEventListener('click', () => openParcours());
   themes.querySelector('[data-chapter="present"]').addEventListener('click', () => openPresent());
   themes.querySelector('[data-chapter="next"]').addEventListener('click', () => openNext());
-  if(config.initialPage==='main'){root.hidden=true;themes.hidden=false;}else if(config.initialPage==='commencement'){openCommencement(false);if(config.state.step===2)showStep(2,false);}else if(config.initialPage==='parcours')openParcours(false);else if(config.initialPage==='present')openPresent(false);else openNext(false);
+  if(config.initialPage==='main'){hideQuestionHeader();root.hidden=true;themes.hidden=false;}else if(config.initialPage==='commencement'){openCommencement(false);if(config.state.step===2)showStep(2,false);}else if(config.initialPage==='parcours')openParcours(false);else if(config.initialPage==='present')openPresent(false);else openNext(false);
   updateProgress();
 
 function snapshot(){const fields={},notes={},menus={};for(const node of root.querySelectorAll('input[id],textarea[id]'))if(node.id&&node.type!=='checkbox')fields[node.id]=node.value;for(const node of root.querySelectorAll('[data-psy-note-key]'))notes[node.dataset.psyNoteKey]=node.value;for(const menu of root.querySelectorAll('.psyf-reason-menu[id]')){const inputs=[...menu.querySelectorAll('input')],label=input=>input.parentElement.querySelector('span')?.textContent||'',available=new Set(inputs.map(label));menus[menu.id]=[...inputs.filter(input=>input.checked).map(label),...(config.state.menus?.[menu.id]||[]).filter(text=>!available.has(text))];}return {fields,notes,menus,recapTab:recap?.tab||config.state.recapTab,unknown:forgot.checked,rememberedDates:{...remembered},step:currentStep,route:recap?.visible?'recap':themes.hidden?activeChapter:'main',aiSummary:themes.querySelector('[data-summary-text]')?.value||'',preferredAI:themes.querySelector('[data-provider][aria-pressed="true"]')?.dataset.provider||config.state.preferredAI||''};}
@@ -874,8 +886,8 @@ if(forgot.checked)forgot.dispatchEvent(new Event('change',{bubbles:true}));
 root.querySelector('[data-approved-menu]')?.addEventListener('click',()=>config.onMenu());
 const summaryInput=themes.querySelector('[data-summary-text]');if(summaryInput)summaryInput.value=config.state.aiSummary||'';
 if(config.state.preferredAI)themes.querySelector('[data-provider="'+config.state.preferredAI+'"]')?.click();
-recap=globalThis.__enMountFollowupRecap({document,root,paper,themes,forms:[detail,parcoursDetail,presentDetail,nextDetail],state:config.state,backButton:headerBack,saveThen:config.onFinish,onExit:config.onExit,onLater:config.onLater,onThemes(){root.hidden=true;themes.hidden=false;updateProgress();themes.querySelector('[data-open-followup-recap]').focus();},title(text){pageTitle.textContent=text;paper.setAttribute('aria-label',text);headerBack.setAttribute('aria-label','Revenir aux rubriques');},onViewChange(){}});
+recap=globalThis.__enMountFollowupRecap({document,root,paper,themes,forms:[detail,parcoursDetail,presentDetail,nextDetail],state:config.state,backButton:headerBack,saveThen:config.onFinish,onExit:config.onExit,onLater:config.onLater,onThemes(){hideQuestionHeader();root.hidden=true;themes.hidden=false;updateProgress();themes.querySelector('[data-open-followup-recap]').focus();},title(text){pageTitle.textContent=text;paper.setAttribute('aria-label',text);headerBack.setAttribute('aria-label','Revenir aux rubriques');},onViewChange(){hideQuestionHeader();}});
 if(config.initialPage==='recap')recap.open(false);
-return {snapshot,host:container,recap,show(page){if(page==='recap'){recap.open();return;}recap.close();if(page==='main'){root.hidden=true;themes.hidden=false;updateProgress();}else ({commencement:openCommencement,parcours:openParcours,present:openPresent,next:openNext}[page]||openNext)();}};
+return {snapshot,host:container,recap,show(page){if(page==='recap'){recap.open();return;}recap.close();if(page==='main'){hideQuestionHeader();root.hidden=true;themes.hidden=false;updateProgress();}else ({commencement:openCommencement,parcours:openParcours,present:openPresent,next:openNext}[page]||openNext)();}};
 
 };})();

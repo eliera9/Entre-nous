@@ -31,6 +31,36 @@
  global.__enPsyModel={activityFromLife,preparationText,mergeSnapshot,importPreparation};
  /* Ne remplacer que les nouvelles icônes du formulaire ouvert, une seule fois. */
  global.__enPsyIcons=function(root,size=16){const library=global.lucide;if(!library||!root)return 0;let count=0;for(const node of root.querySelectorAll('i[data-lucide]')){const name=node.getAttribute('data-lucide').replace(/(^|-)(\w)/g,(_,dash,letter)=>letter.toUpperCase()),icon=library.icons[name];if(!icon)continue;const attrs=Object.fromEntries([...node.attributes].map(attr=>[attr.name,attr.value]));node.replaceWith(library.createElement([icon[0],{...icon[1],...attrs,width:size,height:size},icon[2]]));count++;}return count;};
+
+ /* En-tête des questions : composition commune avec Faire connaissance. */
+ global.__enMountPsyQuestionHeader=function(parent,options){
+  const doc=options.document||global.document;
+  const make=(tag,className,text)=>{const element=doc.createElement(tag);element.className=className;if(text!==undefined)element.textContent=text;return element;};
+  const node=make('header','psy-question-header'),top=make('div','fh-top');
+  top.innerHTML="<button type=\"button\" class=\"cursor-interaction\" data-action=\"back\" aria-label=\"Retour à Faire connaissance\" data-tooltip=\"Retour à Faire connaissance\"><span><img class=\"day\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODA2Qjc1IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJtMTUgNi02IDYgNiA2Ii8+PC9zdmc+\" alt=\"\"><img class=\"night\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjQkZBOEI2IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJtMTUgNi02IDYgNiA2Ii8+PC9zdmc+\" alt=\"\"></span></button><button type=\"button\" class=\"cursor-interaction\" data-action=\"home\" aria-label=\"Enregistrer et revenir à Faire connaissance\" data-tooltip=\"Enregistrer et revenir à Faire connaissance\"><span><img class=\"day\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODA2Qjc1IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNCAxMWw4LTYgOCA2TTYgMTB2OWgxMnYtOU0xMCAxOXYtNWg0djUiLz48L3N2Zz4=\" alt=\"\"><img class=\"night\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjQkZBOEI2IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNCAxMWw4LTYgOCA2TTYgMTB2OWgxMnYtOU0xMCAxOXYtNWg0djUiLz48L3N2Zz4=\" alt=\"\"></span></button>";
+  const back=top.querySelector('[data-action="back"]'),home=top.querySelector('[data-action="home"]');
+  back.classList.add('en-journey-back');back.removeAttribute('data-tooltip');home.removeAttribute('data-tooltip');
+  home.setAttribute('aria-label','Enregistrer et revenir aux rubriques');
+  back.addEventListener('click',()=>options.onBack());home.addEventListener('click',()=>options.onHome());
+  const chapter=make('p','np-chapter'),title=make('h2','np-title'),position=make('p','np-position'),bar=make('div','np-progress');
+  position.setAttribute('aria-live','polite');bar.setAttribute('role','progressbar');
+  const dialogue=make('div','fq-dialogue'),avatar=make('span','fq-avatar pp-avatar'),intro=make('p','fq-question');
+  dialogue.setAttribute('aria-label','Introduction du sujet et compagnon');avatar.setAttribute('role','img');avatar.setAttribute('aria-label',global.__petName||'Ton compagnon');
+  const pet=global.__pet||global.__enCompanionState?.selected||'chat',night=!!parent.closest?.('.nuit');
+  avatar.style.setProperty('background-image','url("illus/avatars-compagnons/'+pet+'-'+(night?'nuit':'jour')+'.svg")');
+  dialogue.append(avatar,intro);node.append(top,chapter,title,position,bar,dialogue);parent.prepend(node);
+  let state={journey:'',title:'',intro:'',position:0,total:1,completed:[],backLabel:'Revenir aux rubriques',...options};
+  function update(patch={}){
+   state={...state,...patch};const total=Math.max(1,Math.trunc(Number(state.total)||1)),index=Math.max(0,Math.min(total-1,Math.trunc(Number(state.position)||0)));
+   chapter.textContent=state.journey;title.textContent=state.title;const pageLabel='Page '+(index+1)+' sur '+total;if(position.textContent!==pageLabel)position.textContent=pageLabel;
+   back.setAttribute('aria-label',state.backLabel);node.setAttribute('aria-label',state.journey+' — '+state.title);
+   intro.textContent=state.intro;dialogue.hidden=!state.intro;bar.replaceChildren();
+   for(let i=0;i<total;i++){const tick=make('span',i===index||state.completed?.[i]?'is-current':'');tick.setAttribute('aria-hidden','true');bar.append(tick);}
+   bar.setAttribute('aria-label',position.textContent);bar.setAttribute('aria-valuemin','1');bar.setAttribute('aria-valuemax',String(total));bar.setAttribute('aria-valuenow',String(index+1));bar.setAttribute('aria-valuetext',position.textContent);
+  }
+  update();return {node,backButton:back,homeButton:home,update};
+ };
+
  if(!global.document)return;
  let initialized=false,state,bridge,body,phone,view=null,first=null,ongoing=null,active='',signature='',timer,pending=null,disposed=[];
  const clean=()=>{for(const dispose of disposed)dispose();disposed=[];};
@@ -43,11 +73,11 @@
  async function leave(callback){try{await save();}catch{return;}try{callback();}catch(error){console.error('Ouverture du parcours Psy impossible',error);status('Le formulaire n’a pas pu s’ouvrir. Tes réponses sont conservées.',true,()=>{deactivate();if(bridge.openEntry)bridge.openEntry();else bridge.redraw();});}}
  function chrome(){if(!view)return;const night=phone.classList.contains('nuit');view.style.colorScheme=night?'dark':'light';const selected=global.__pet||global.__enCompanionState?.selected||'chat',name=global.__petName||'ton compagnon';for(const node of view.querySelectorAll('.pp-avatar,.se-avatar,.psyf-avatar')){node.style.setProperty('background-image','url("illus/avatars-compagnons/'+selected+'-'+(night?'nuit':'jour')+'.svg")','important');node.setAttribute('aria-label',name);} }
  function select(kind){active=kind;state.active=kind;view.querySelector('[data-psy-first]').hidden=kind!=='first';view.querySelector('[data-psy-ongoing]').hidden=kind!=='ongoing';chrome();phone.scrollTop=0;}
- function showFirst(page='entry'){if(!first)first=global.__enMountFirstPsy(view.querySelector('[data-psy-first]'),{document:scopedDocument(view.querySelector('[data-psy-first]')),state:state.first,life:life(),initialPage:page,onExit:()=>leave(()=>{deactivate();bridge.exit();}),onOngoing:()=>leave(()=>showOngoing('main')),onNavigate:id=>navigate(id),onPeopleChanged:()=>document.dispatchEvent(new Event('en-life-people-changed')),onConfirm:async data=>{state.first=mergeSnapshot(state.first,data);bridge.syncPreparation(preparationText(state.first),state.first);await save();}});else first.show(page);select('first');later();}
+ function showFirst(page='entry'){if(!first)first=global.__enMountFirstPsy(view.querySelector('[data-psy-first]'),{document:scopedDocument(view.querySelector('[data-psy-first]')),state:state.first,life:life(),initialPage:page,onExit:()=>leave(()=>{deactivate();bridge.exit();}),onOngoing:()=>leave(()=>showOngoing('main')),onNavigate:id=>navigate(id),onPeopleChanged:()=>document.dispatchEvent(new Event('en-life-people-changed')),onSaveThen:callback=>leave(callback),onConfirm:async data=>{state.first=mergeSnapshot(state.first,data);bridge.syncPreparation(preparationText(state.first),state.first);await save();}});else first.show(page);select('first');later();}
  function menu(){let panel=view.querySelector('.psy-floating-menu');if(panel){panel.remove();return;}panel=document.createElement('nav');panel.className='psy-floating-menu';panel.setAttribute('aria-label','Menu');for(const [label,id] of [['Fermer','close'],['Accueil','home'],['Mon journal','mj'],['Faire connaissance','mvfiche'],['Psy','psy']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=()=>{panel.remove();if(id==='psy')leave(()=>showFirst('entry'));else if(id!=='close')navigate(id);};panel.append(button);}view.append(panel);panel.querySelector('button').focus();}
  function showOngoing(page='main'){if(!ongoing)ongoing=global.__enMountFollowupPsy(view.querySelector('[data-psy-ongoing]'),{document:scopedDocument(view.querySelector('[data-psy-ongoing]')),state:state.ongoing,activity:activityFromLife(life()),initialPage:page,onFinish:callback=>leave(()=>{callback();later();}),onExit:()=>leave(()=>showFirst('entry')),onLater:()=>leave(()=>{deactivate();bridge.exit();}),onNavigate:id=>navigate(id),onMenu:menu});else ongoing.show(page);select('ongoing');later();}
  function navigate(id){leave(()=>{deactivate();global.__enShow(id);});}
- function deactivate(){if(!view)return;synchronize();clean();phone.classList.remove('psy-approved-active');view.remove();view=null;first=null;ongoing=null;active='';signature='';}
+ function deactivate(){if(!view)return;synchronize();clean();phone.classList.remove('psy-approved-active','psy-question-view');view.remove();view=null;first=null;ongoing=null;active='';signature='';}
  function migrate(){
   const previous=global.__enKeep('psy-preparation-v1',{});if(!state.preparationMigrationVersion){if(previous.questions){state.preparationArchive=clone(previous);const imported=importPreparation(previous);state.first={...imported,...state.first,questions:{...imported.questions,...state.first.questions},timeline:state.first.timeline?.length?state.first.timeline:imported.timeline,unknown:state.first.unknown||imported.unknown};}state.preparationMigrationVersion=1;}
   if(state.migrationVersion)return;const old=bridge.snapshot();state.legacyArchive=clone({first:old.first,sv:old.sv});const p=old.first?.p||{},q=state.first.questions;

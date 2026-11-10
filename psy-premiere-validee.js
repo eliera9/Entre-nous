@@ -321,6 +321,7 @@ const questions=new Map(),screens=new Map(),topicSections=new Map(),familySectio
 let path=['entry',...(config.initialPage&&config.initialPage!=='entry'?[config.initialPage]:[])],sequence=10000,timeline=null,peopleQuestion=null,familyQuestion=null,topicsQuestion=null,freeUnknown=null,closeActivePerson=null;
 const chapterInfo=[['traverse','Ce que je traverse'],['attentes','Ce que j’aimerais changer'],['histoire','Un peu de moi'],['pratique','Ce que j’aimerais savoir'],['confort','Pour me sentir bien']];
 const chapterSubtitles={traverse:'ce qui t’amène à faire ce premier pas',attentes:'tes besoins, tes envies, tes espoirs',histoire:'ton histoire, les moments qui comptent',pratique:'ce que tu aimerais demander à ta psy',confort:'tes besoins, ce qui te rassure'};
+const questionHeaders=new Map();
 function el(tag,className='',text){const node=document.createElement(tag);node.className=className;if(text!==undefined)node.textContent=text;return node}
 function icon(name){const i=el('i');i.dataset.lucide=name;i.setAttribute('aria-hidden','true');return i}
 function icons(){globalThis.__enPsyIcons?.(host,16)}
@@ -501,7 +502,17 @@ function renderRecap(screen){
  const back=quiet(returnLabel,()=>{path=['entry'];show('entry',false);app.scrollIntoView({block:'start'});host.querySelector('[data-start]')?.focus({preventScroll:true})});back.dataset.returnPsy='';back.classList.add('rc-back');screen.append(back);screen.querySelector('.rc-theme-tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'nearest'});
 }
 
-function createScreen(id,title,intro){const section=el('section','pp-screen');section.dataset.pageKey=id;section.hidden=true;section.append(el('p','pp-section-title',title.toUpperCase()));if(intro)welcome(section,intro);pages.append(section);screens.set(id,section);return section}
+function createScreen(id,title,intro){
+ const section=el('section','pp-screen');section.dataset.pageKey=id;section.hidden=true;
+ const index=chapterInfo.findIndex(([key])=>key===id);
+ if(index>=0){
+  section.classList.add('psy-question-page');
+  const home=()=>{path=['entry','hub'];show('hub',false);app.scrollIntoView({block:'start'});chapterRows.get(id)?.focus({preventScroll:true});};
+  const heading=globalThis.__enMountPsyQuestionHeader(section,{document,journey:'Ma première séance',title,intro,position:index,total:chapterInfo.length,onBack:()=>host.querySelector('[data-back]').click(),onHome:()=>config.onSaveThen?config.onSaveThen(home):home()});
+  questionHeaders.set(id,heading);
+ }else{section.append(el('p','pp-section-title',title.toUpperCase()));if(intro)welcome(section,intro);}
+ pages.append(section);screens.set(id,section);return section;
+}
 function ensureScreen(id){
  if(screens.has(id))return screens.get(id);
  if(id==='recap')return createScreen(id,'Ma préparation');
@@ -524,7 +535,7 @@ function progress(id){
 }
 function updateHub(){for(const [id,row] of chapterRows){const {answered,total,percent}=progress(id),track=row.querySelector('[data-progress-track]');row.querySelector('[data-progress-fill]').style.width=percent+'%';track.setAttribute('aria-valuenow',String(percent));track.setAttribute('aria-valuetext',answered+' / '+total+' questions renseignées');row.querySelector('[data-progress-value]').textContent=answered+' / '+total}}
 function closeChrome(){if(closeActivePerson)closeActivePerson();host.querySelector('#'+instanceId+'-menu').hidden=true;host.querySelector('[data-menu-scrim]').hidden=true;host.querySelector('[data-menu-button]').setAttribute('aria-expanded','false');host.querySelector('#'+instanceId+'-pet-bubble').hidden=true;host.querySelector('[data-pet]').setAttribute('aria-expanded','false');pages.inert=false}
-function show(id,push=true){config.state.route=id;if(recapInlineEditor)finishRecapEdit(false);const screen=ensureScreen(id)||screens.get(id);if(!screen)return;closeChrome();if(push&&path.at(-1)!==id)path.push(id);for(const [key,node] of screens)node.hidden=key!==id;host.querySelector('[data-app-title]').textContent=id==='entry'?'MON ESPACE PSY':'MA PREMIÈRE SÉANCE';if(id==='hub')updateHub();if(id==='recap')renderRecap(screen);icons();status.textContent=id==='recap'?'Le récapitulatif de ma préparation.':id==='hub'?'Les rubriques de préparation.':id==='entry'?'Mon espace Psy.':chapterInfo.find(([key])=>key===id)?.[1]||'Ma première séance.'}
+function show(id,push=true){config.state.route=id;if(recapInlineEditor)finishRecapEdit(false);const screen=ensureScreen(id)||screens.get(id);if(!screen)return;const isQuestion=questionHeaders.has(id);app.classList.toggle('psy-question-layout',isQuestion);app.closest('#psy')?.classList.toggle('psy-question-view',isQuestion);if(isQuestion)questionHeaders.get(id).update({completed:chapterInfo.map(([key])=>progress(key).percent===100)});closeChrome();if(push&&path.at(-1)!==id)path.push(id);for(const [key,node] of screens)node.hidden=key!==id;host.querySelector('[data-app-title]').textContent=id==='entry'?'MON ESPACE PSY':'MA PREMIÈRE SÉANCE';if(id==='hub')updateHub();if(id==='recap')renderRecap(screen);if(isQuestion){app.scrollIntoView({block:'start'});questionHeaders.get(id).backButton.focus({preventScroll:true});}icons();status.textContent=id==='recap'?'Le récapitulatif de ma préparation.':id==='hub'?'Les rubriques de préparation.':id==='entry'?'Mon espace Psy.':chapterInfo.find(([key])=>key===id)?.[1]||'Ma première séance.'}
 
 
 pages.querySelectorAll('[data-page-key]').forEach(node=>screens.set(node.dataset.pageKey,node));
