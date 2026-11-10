@@ -36,6 +36,8 @@
 #en-app #mv .cf-name-label{display:block;margin:0 0 6px;font:500 italic 21px 'Cormorant Garamond',Georgia,serif}
 #en-app #mv .cf-name{display:block;width:100%;max-width:290px;margin:auto;padding:9px 8px;border:0;border-bottom:1px solid var(--cf-line);border-radius:0;background:transparent;color:var(--cf-ink);text-align:center;font:400 21px 'Cormorant Garamond',Georgia,serif}
 #en-app #mv .cf-name::placeholder{color:var(--cf-placeholder);opacity:1;font-style:italic}
+#en-app #mv .cf-name,#en-app #mv .cf-name:focus,#en-app #mv .cf-name:focus-visible{outline:none!important;box-shadow:none!important;border:0;border-bottom:1px solid var(--cf-line);border-radius:0;background:transparent}
+#en-app #mv .cf-name:focus{border-bottom-color:var(--cf-accent)}
 #en-app #mv .cf-suggestions{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin:3px 0 10px}
 #en-app #mv .cf-suggestion{min-height:44px;padding:5px 9px;border:0;background:transparent;color:var(--cf-muted);font:400 17px 'Cormorant Garamond',Georgia,serif}
 #en-app #mv .cf-suggestion[aria-pressed=true]{color:var(--cf-ink);text-decoration:underline;text-underline-offset:4px}

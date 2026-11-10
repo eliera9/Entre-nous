@@ -9,7 +9,7 @@
 #en-app #mvintro{--mvi-heading:#865e6c;--mvi-line:#cda5ab;box-sizing:border-box;overflow-y:auto;padding:calc(var(--en-safe-top,0px) + 10px) max(24px,calc((100% - 460px)/2)) 32px!important;gap:0;justify-content:flex-start!important}
 #en-app #mvintro.nuit,html.en-nuit #en-app #mvintro{--mvi-heading:#c9a7b6;--mvi-line:#805e70}
 #en-app #mvintro>*{flex-shrink:0}
-#en-app #mvintro>.k{display:block;font:500 9.292px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.2em;color:var(--mvi-heading);margin:0;text-align:center}
+#en-app #mvintro>.k{display:block;font:500 12px/1 'Cormorant SC',Georgia,serif;letter-spacing:.2em;color:var(--mvi-heading);margin:0;text-align:center}
 #en-app #mvintro>.fl{display:flex;align-items:center;gap:5.421px;align-self:stretch;width:100%;margin:5.421px 0 0;color:var(--mvi-line);font:400 6.969px/1 Georgia,serif}
 #en-app #mvintro>.fl i{flex:1;height:.5421px;background:currentColor}
 #en-app #mvintro>.t{font:italic 400 18px/1.4 'Cormorant Garamond',Georgia,serif;letter-spacing:normal;color:var(--mvi-heading);margin:20px 0 12px;white-space:nowrap;text-wrap:nowrap}
