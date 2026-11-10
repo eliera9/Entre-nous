@@ -25,7 +25,7 @@
  global.__enEnrollmentTools={DRAFT_KEY,ROUTES,createDraftStore};
  if(!global.document)return;
  let installed=false,restoring=false;
- function capture(){
+ function capture(flushLife=true){
   const progress=global.__enEnrollmentState?.();if(!progress?.active||restoring)return;
   const onb=document.getElementById('onb'),current=document.querySelector('#en-app .phone.en-on');
   if(current&&ROUTES.includes(current.id))progress.screen=current.id;
@@ -33,7 +33,7 @@
   const name=document.getElementById('o2in'),nickname=document.getElementById('o2nick');
   progress.identity={name:name?.value||'',nickname:nickname?.value||'',nicknameOpen:!!document.getElementById('o2nick-details')?.open,birth:[...document.querySelectorAll('#onb .o2pills select')].map(input=>input.value)};
   const life=global.__enGet?.('lifeform-approved-v1');if(life){progress.chapter=life.selected||'moi';progress.page=life.pagesV2?.lastPage?.[progress.chapter]||null;}
-  global.__enCaptureLifeDraft?.();
+  if(flushLife)global.__enCaptureLifeDraft?.();
  }
  function backButton(id,label,action){
   const page=document.getElementById(id);if(!page||page.querySelector(':scope > [data-journey-back]'))return;
@@ -58,7 +58,7 @@
    if(screen==='onb')global.__enOnboardingSetStep?.(step);
    restoring=false;global.__enEnrollmentReady?.();
   }
-  const update=event=>{if(!global.__enEnrollmentState?.().active)return;if(event?.target?.closest?.('#o3p,input[type="password"]'))return;capture();global.__enEnrollmentChanged?.();};
+  const update=event=>{if(!global.__enEnrollmentState?.().active)return;if(event?.target?.closest?.('#o3p,input[type="password"]'))return;capture(false);global.__enEnrollmentChanged?.();};
   for(const type of ['input','change','click'])document.addEventListener(type,update);
   document.addEventListener('visibilitychange',()=>{if(document.hidden){capture();global.__vaultPushNow?.();}});
   global.addEventListener('pagehide',capture);
