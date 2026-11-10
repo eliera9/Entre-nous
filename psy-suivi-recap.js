@@ -32,14 +32,14 @@
   const opener=el('button','psy-recap-open cursor-interaction','Confirmer');opener.type='button';opener.dataset.openFollowupRecap='';
   const later=el('button','psy-hub-later cursor-interaction','Je reviendrai plus tard');later.type='button';later.dataset.followupLater='';later.addEventListener('click',()=>{(options.onLater||options.onExit)();});
   actions.append(opener,later);themes.querySelector('[data-chapters]').after(actions);
-  opener.addEventListener('click',()=>options.saveThen(()=>open()));
+  opener.addEventListener('click',()=>(options.confirmThen||options.saveThen)(()=>open()));
   function selectTab(id,focus=false){active=id;state.recapTab=id;for(const button of screen.querySelectorAll('[data-recap-tab]')){const selected=button.dataset.recapTab===id;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;if(selected){if(focus)button.focus();button.scrollIntoView({inline:'nearest',block:'nearest'});}}
    for(const panel of screen.querySelectorAll('[data-recap-panel]'))panel.hidden=panel.dataset.recapPanel!==id;
   }
   function answerList(parent,answers){if(!answers.length)return;const list=el('ul','psy-recap-answers');for(const answer of answers)list.append(el('li','',answer));parent.append(list);}
   function note(parent,text){if(!text)return;const paragraph=el('p','psy-recap-note'),label=el('span','psy-recap-note-label','Mes notes');paragraph.append(label,document.createTextNode(text));parent.append(paragraph);}
   function restoreForms(){if(!editing)return;for(const {node,anchor,hidden} of anchors){anchor.replaceWith(node);node.hidden=hidden;}anchors=[];editing=false;screen.classList.remove('psy-recap-editing');}
-  function heading(isEditing){const head=el('div','psy-recap-head'),title=el('h3','psy-recap-title',isEditing?'MODIFIER MON SUIVI':'MON RÉCAPITULATIF'),button=el('button','psy-recap-pencil cursor-interaction');button.type='button';button.dataset.editFollowupRecap='';button.setAttribute('aria-label',isEditing?'Enregistrer les modifications':'Modifier tout mon suivi');button.append(pencil());button.addEventListener('click',()=>isEditing?finishEdit():edit());head.append(title,button);screen.append(head);}
+  function heading(isEditing){options.backButton.setAttribute('aria-label',isEditing?'Enregistrer les modifications et revenir au récapitulatif':'Retour à mon espace psy');const head=el('div','psy-recap-head'),title=el('h3','psy-recap-title',isEditing?'MODIFIER MON SUIVI':'MON RÉCAPITULATIF'),button=el('button','psy-recap-pencil cursor-interaction');button.type='button';button.dataset.editFollowupRecap='';button.setAttribute('aria-label',isEditing?'Enregistrer les modifications':'Modifier tout mon suivi');button.append(pencil());button.addEventListener('click',()=>isEditing?finishEdit():edit());head.append(title,button);screen.append(head);}
   function render(){
    screen.replaceChildren();heading(false);
    const tabs=el('div','psy-recap-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Rubriques du récapitulatif');screen.append(tabs);
@@ -60,7 +60,7 @@
    const done=el('button','psy-recap-save cursor-interaction','Enregistrer les modifications');done.type='button';done.addEventListener('click',finishEdit);screen.append(done);screen.querySelector('[data-edit-followup-recap]').focus({preventScroll:true});
   }
   function finishEdit(){options.saveThen(()=>{restoreForms();open(false);screen.querySelector('[data-edit-followup-recap]').focus({preventScroll:true});});}
-  options.backButton.addEventListener('click',event=>{if(!visible)return;event.preventDefault();event.stopImmediatePropagation();if(editing)finishEdit();else options.saveThen(()=>{close();options.onThemes();});},true);
+  options.backButton.addEventListener('click',event=>{if(!visible)return;event.preventDefault();event.stopImmediatePropagation();if(editing)finishEdit();else options.onExit();},true);
   return {open,close,get visible(){return visible;},get editing(){return editing;},get tab(){return active;},collect:()=>collect(root)};
  };
 })(globalThis);

@@ -823,6 +823,11 @@
 
 
 /* Intégration dans le téléphone natif de l’app : proportions validées et thème choisi. */
+#psy .ps-form-shortcut{position:relative;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;height:30px;padding:0 9px;border:1px solid color-mix(in srgb,var(--sacc) 55%,var(--sbg));border-radius:22px;background:color-mix(in srgb,var(--sacc) 16%,var(--sbg));color:var(--sacc);font:400 15px/1 'Cormorant Garamond',Georgia,serif;white-space:nowrap}
+#psy .ps-form-shortcut:before{content:'';position:absolute;inset:-7px -3px}
+#psy .ps-form-shortcut svg{width:15px;height:15px;stroke-width:1.35;flex:none}
+#psy .ps-form-shortcut:focus-visible{outline:2px solid var(--sacc);outline-offset:4px}
+@media(max-width:360px){#psy .pdsbr:has(.ps-form-shortcut){gap:9px}#psy .ps-form-shortcut{padding-inline:8px}}
 #psy.psy-approved-active>.mvhd,#psy.psy-approved-active>.sbhas{display:none!important}
 #psy.psy-approved-active #psyb{padding:0!important;margin:0!important;overflow:visible}
 #psy .psy-approved-host{position:relative;width:100%;padding:0 0 12px;min-width:0;color-scheme:light}
