@@ -691,6 +691,11 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 #en-app .onb .o3{padding-top:clamp(28px,10vh,90px)}
 #en-app .onb input,#en-app .onb select{font-size:16px}
 #en-app .phone :focus-visible{outline:2px solid var(--sacc);outline-offset:3px}
+/* Les champs d’écriture gardent leur bordure de repos, sans contour de saisie. */
+:is(textarea,[contenteditable]:not([contenteditable="false"]),input:not([type]),input:is([type="text"],[type="search"],[type="email"],[type="password"],[type="url"],[type="tel"],[type="number"],[type="date"],[type="datetime-local"],[type="time"],[type="month"],[type="week"])) {
+  outline:none!important;
+  -webkit-tap-highlight-color:transparent;
+}
 
 </style>
 <link rel="stylesheet" href="auth-connexion.css">
@@ -1369,7 +1374,7 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .pdj .ftabs{display:flex;justify-content:center;gap:12px;margin:2px 0 10px}.pdj .ftabs button{all:unset;cursor:pointer;font:500 10.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.08em;color:var(--smuted);padding-bottom:3px}.pdj .ftabs button.on{color:var(--sacc);border-bottom:.6px solid var(--sacc)}
 .pdj .fprev{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow:auto}.pdj .fprev[hidden]{display:none}
 .pdj .gform .fh{margin:6px 0 0;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.12em;color:var(--smuted)}
-.pdj .gform .fp{margin:0;font:15px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--sink);outline:none}.pdj .gform .fp:focus{background:color-mix(in srgb,var(--sacc) 6%,transparent)}
+.pdj .gform .fp{margin:0;font:15px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--sink)}
 .pdj .gform .fr{font-style:italic;min-height:1.4em;border-bottom:.6px dashed var(--sline)}.pdj .gform .fr:empty::before{content:attr(data-ph);color:var(--smuted);opacity:.7}
 .pdj .fai,.pdj .fme{font:13.5px/1.35 'Cormorant Garamond',Georgia,serif;padding:4px 8px;max-width:85%}.pdj .fai{align-self:flex-start;font-style:italic;color:var(--sacc);border-left:.6px solid var(--sline)}.pdj .fme{align-self:flex-end;background:color-mix(in srgb,var(--sacc) 12%,transparent);border-radius:9px}
 .pdj .gform .fnote{margin:6px 0 0;text-align:center;font:italic 11.5px/1 'Cormorant Garamond',Georgia,serif;color:var(--smuted)}
@@ -1563,7 +1568,7 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .mv .mvsug2 .mvchips button.on{border-style:solid!important;border-color:var(--sacc)!important;background:color-mix(in srgb,var(--sacc) 10%,transparent)!important}
 .mv .mvsug2 .mvchips .mvother{color:var(--smuted)!important}
 .mv .mvmore{all:unset;cursor:pointer;align-self:flex-start;font:italic 12.5px/1 'Cormorant Garamond',Georgia,serif;color:var(--smuted);margin-top:1px}
-.mv .mvme[data-id]{cursor:pointer}.mv .mvme.ed{outline:1.5px dashed var(--sbg);outline-offset:-4px}
+.mv .mvme[data-id]{cursor:pointer}
 .mv .mvme .mved{font:italic 11px/1 'Cormorant Garamond',Georgia,serif;opacity:.7}
 .mv .mvedok{all:unset;cursor:pointer;align-self:flex-end;font:italic 13px/1 'Cormorant Garamond',Georgia,serif;color:var(--sacc);border-bottom:.5px solid var(--sacc);margin-top:-2px}
 .mv .mvai{display:flex;gap:18px;justify-content:center;margin:0 0 10px}
@@ -1615,7 +1620,7 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .pdj .gring img{width:40px;margin-top:4px}.pdj .gring.gh{visibility:hidden}
 .pdj .gb.gai{background:color-mix(in srgb,var(--sacc) 13%,var(--sbg))!important;border:0!important;color:var(--sacc)!important;border-radius:16px 16px 16px 4px!important;max-width:78%!important}
 .pdj .gb.gme{background:var(--sacc)!important;color:var(--sbg)!important;border-radius:16px 16px 4px 16px!important;font-style:normal}
-.pdj .gb.gme[data-ed]{cursor:pointer}.pdj .gb.gme.ed{outline:1.5px dashed var(--sbg);outline-offset:-4px}
+.pdj .gb.gme[data-ed]{cursor:pointer}
 .pdj .gb.gai.wt{display:flex;gap:4px;padding:12px 14px}.pdj .gb.gai.wt i{width:5px;height:5px;border-radius:50%;background:var(--sacc);opacity:.6;animation:mvdot 1s infinite}.pdj .gb.gai.wt i:nth-child(2){animation-delay:.15s}.pdj .gb.gai.wt i:nth-child(3){animation-delay:.3s}
 .pdj .gcard{margin-left:46px;padding:9px 11px 11px;background:color-mix(in srgb,var(--sacc) 7%,var(--sbg));border-left:2px solid #D3A6AE;border-radius:0 14px 14px 0;display:flex;flex-direction:column;gap:8px;animation:invin .4s ease}
 .pdj .gcard .gct{display:flex;justify-content:space-between;align-items:center;padding-bottom:6px;border-bottom:.6px solid var(--sline);font:500 10.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.16em;color:var(--smuted)}
@@ -2038,7 +2043,7 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .mv .fbl .c-etiquette span{font-size:14px}
 .mv .fbl>div{position:relative}
 .mv .fbpage.edit .fbl>div{cursor:pointer}
-.mv .fbl>div.sel{outline:1.1px dashed var(--sacc);outline-offset:3px;border-radius:6px}
+.mv .fbl>div.sel b{color:var(--sacc)}
 .mv .fbbar{position:absolute;left:10px;right:10px;z-index:3;display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));box-shadow:0 8px 18px -8px rgba(60,30,45,.5)}
 .mv .fbbar button{all:unset;cursor:pointer;padding:6px 9px;border-radius:999px;font:italic 13.5px/1 'Cormorant Garamond',Georgia,serif;color:var(--sacc)}
 .mv .fbbar button.on{background:var(--sacc);color:var(--sbg)}
@@ -2047,7 +2052,7 @@ button.fl:focus-visible{outline:2px solid var(--sacc);outline-offset:2px;border-
 .mv .fbadd b{font:500 9.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.16em;color:var(--smuted)}
 .mv .fbadd .fap{font-size:13px;padding:5px 10px}
 .mv .fbpage.edit #fbmeta,.mv .fbpage.edit #fbt,.mv .fbpage.edit #fbx{cursor:pointer}
-.mv #fbmeta.sel,.mv #fbt.sel,.mv #fbx.sel,.mv #fbph.sel{outline:1.1px dashed var(--sacc);outline-offset:4px;border-radius:4px}
+.mv #fbph.sel{outline:1.1px dashed var(--sacc);outline-offset:4px;border-radius:4px}
 .mv #fbmeta.s-italique{font:italic 14px/1.2 'Cormorant Garamond',Georgia,serif;letter-spacing:0;text-transform:lowercase}
 .mv #fbmeta.s-manuscrit{font:17px/1.2 var(--font-hand,'Dancing Script'),cursive;letter-spacing:0;text-transform:lowercase;color:var(--sacc)}
 .mv #fbt.s-centre{text-align:center}
