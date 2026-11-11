@@ -114,24 +114,27 @@
       </div>
       <section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
         <header class="en-recap-header">
-          <p class="en-reading-date"><time data-reading-date></time></p>
+          <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
           <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
+          <details class="en-recap-title-wrap" data-reading-title-wrap hidden>
+            <summary class="en-recap-return-title"><span data-reading-title></span></summary>
+            <p class="en-recap-full-title" data-full-title></p>
+          </details>
         </header>
         <div class="en-context en-recap-context" data-recap-context hidden>
-          <section class="en-note-fold" data-recap-notes hidden>
-            <h4 class="en-recap-caption">Mes notes</h4>
-          </section>
-          <section class="en-topic-group" data-recap-topics hidden>
-            <h4 class="en-recap-caption">Mes sujets préparés</h4>
-          </section>
+          <details class="en-note-fold" data-recap-notes hidden>
+            <summary><h4 class="en-recap-caption">Mes notes</h4><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
+          </details>
+          <details class="en-topic-group" data-recap-topics hidden>
+            <summary><h4 class="en-recap-caption">Mes sujets préparés</h4><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
+          </details>
         </div>
         <section class="en-recap-return" data-recap-return hidden>
-          <h4 class="en-recap-return-title" data-reading-title>Mon retour sur la séance</h4>
           <div data-reading-content></div>
         </section>
         <div class="en-actions en-review-actions">
-          <button type="button" class="en-main-action cursor-interaction" data-finish hidden>Terminer mon retour</button>
-          <button type="button" class="en-main-action en-edit-return cursor-interaction" data-edit>Continuer à écrire</button>
+          <button type="button" class="en-main-action en-edit-return cursor-interaction" data-edit>Modifier mon retour</button>
+          <button type="button" class="en-main-action cursor-interaction" data-finish hidden>Valider ma séance</button>
         </div>
       </section>
 </div>`,
@@ -177,7 +180,7 @@
         <div class="en-format-color-group">
           <p>Couleur du texte</p>
           <div class="en-format-swatches" role="group" aria-label="Couleur du texte">
-            <button type="button" class="cursor-interaction" data-special="default-ink" data-value="default" style="--tone:#f2dfe5" aria-label="Couleur d’origine" data-tooltip="Couleur d’origine"></button>
+            <button type="button" class="cursor-interaction" data-special="default-ink" data-value="default" style="--tone:var(--en-response-ink)" aria-label="Couleur d’origine" data-tooltip="Couleur d’origine"></button>
             <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#ddb2ba" style="--tone:#ddb2ba" aria-label="Rose boisé" data-tooltip="Rose boisé"></button>
             <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#c9b9e2" style="--tone:#c9b9e2" aria-label="Lilas" data-tooltip="Lilas"></button>
             <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#e4c797" style="--tone:#e4c797" aria-label="Sable doré" data-tooltip="Sable doré"></button>
@@ -287,6 +290,7 @@
   </div>`,
   };
 
+  const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
   const rubrics = [
     {
       id: 'aborde',
@@ -919,7 +923,6 @@
     function controls() {
       personalTitle.closest('.en-title-centered').classList.toggle('en-has-title', Boolean(session.title.trim()));
       finish.hidden = Boolean(session.completed) || !hasContent(session);
-      edit.textContent = session.completed ? 'Modifier mon retour' : 'Continuer à écrire';
       later.textContent = session.completed ? 'Retour à l’accueil Après' : 'Reprendre plus tard';
     }
     function update() {
@@ -975,16 +978,45 @@
       if (session.extras.length) sections.push({ title: 'Mes petits pas', paragraphs: session.extras, choices: [], bullets: true });
       const content = get('[data-reading-content]');
       content.replaceChildren();
-      get('[data-recap-return]').hidden = !sections.length && !session.title.trim();
-      get('[data-reading-title]').textContent = session.title.trim() || 'Mon retour sur la séance';
+      const title = session.title.trim();
+      const titleWrap = get('[data-reading-title-wrap]');
+      titleWrap.hidden = !sections.length && !title;
+      titleWrap.open = false;
+      get('[data-recap-notes]').open = false;
+      get('[data-recap-topics]').open = false;
+      get('[data-recap-return]').hidden = !sections.length;
+      get('[data-reading-title]').textContent = title || 'Mon retour sur la séance';
+      get('[data-full-title]').textContent = title || 'Mon retour sur la séance';
       for (const entry of sections) {
-        const section = element('section', 'en-reading-section');
-        section.append(element('h5', '', entry.title));
-        if (entry.choices.length) section.append(element('p', '', entry.choices.join(' · ')));
-        const body = entry.bullets ? element('ul', 'en-reading-bullets') : section;
+        const section = element('section', 'en-recap-rubric');
+        const heading = element('h4');
+        const numeral = romanNumerals[rubrics.findIndex(rubric => rubric.id === entry.id)];
+        if (numeral) {
+          heading.className = 'en-recap-numbered-heading';
+          const number = element('span', 'en-recap-rubric-number', numeral);
+          number.setAttribute('aria-hidden', 'true');
+          heading.append(number, element('span', '', entry.title));
+        } else {
+          heading.textContent = entry.title;
+        }
+        section.append(heading);
+        if (entry.choices.length) {
+          const choices = element('ul', 'en-recap-reperes');
+          choices.setAttribute('aria-label', 'Repères retenus');
+          choices.setAttribute('role', 'list');
+          for (const choice of entry.choices) {
+            const item = element('li');
+            item.append(element('span', 'en-recap-repere-label', choice));
+            choices.append(item);
+          }
+          section.append(choices);
+        }
+        const body = entry.bullets ? element('ul', 'en-recap-words') : section;
+        if (entry.bullets) body.setAttribute('role', 'list');
         entry.paragraphs.forEach((paragraph, index) => {
           const html = entry.rich?.[index];
-          const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', html ? 'en-formatted' : '');
+          const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', entry.bullets ? '' : 'en-recap-words');
+          if (html) node.classList.add('en-formatted');
           richWriting.write(node, paragraph, html, true);
           body.append(node);
         });
