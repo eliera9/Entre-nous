@@ -47,11 +47,11 @@ test('plusieurs changements pendant la même image ne bouclent pas',()=>{
 test('le code conserve Bonjour et Bonsoir suivis du prénom du carnet',()=>{
  const a=html.indexOf(' el.innerHTML=`',html.indexOf('function lockUI(')),b=html.indexOf('`;\n document.body.appendChild(el)',a);
  const template=html.slice(a+' el.innerHTML='.length,b+1);
- const render=new Function('nuit','nm','meta','onFid','mo','sa','J','d','MO','return '+template);
+ const render=new Function('h','nm','meta','onFid','sa','J','d','MO','return '+template);
  const date={getDay:()=>4,getDate:()=>5,getMonth:()=>10};
- const args=[{},null,'soir','automne',['','','','','jeudi'],date,Array.from({length:12},(_,i)=>i===10?'novembre':'')];
- assert.match(render(true,' Camille',...args),/Bonsoir, Camille<\/p>/);assert.match(render(false,' Camille',...args),/Bonjour, Camille<\/p>/);
- assert.match(render(true,'',...args),/>Bonsoir<\/p>/);assert.ok(!template.includes('Te revoilà'));
+ const args=[{},null,'automne',['','','','','jeudi'],date,Array.from({length:12},(_,i)=>i===10?'novembre':'')];
+ assert.match(render(20,' Camille',...args),/Bonsoir, Camille<\/p>/);assert.match(render(11,' Camille',...args),/Bonjour, Camille<\/p>/);
+ assert.match(render(20,'',...args),/>Bonsoir<\/p>/);assert.match(render(11,'',...args),/illus\/nuit-automne\.jpg/);assert.ok(!template.includes('Te revoilà'));
 });
 test('l’accueil du code reprend l’appellation explicitement vérifiée dans le formulaire',async()=>{
  const saveCode=html.slice(html.indexOf('function save(force){'),html.indexOf('setInterval(()=>{if(DEK)save()}'));

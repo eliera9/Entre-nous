@@ -5,9 +5,9 @@ window.__enOpenRecovery=({onClose}={})=>{
  if(current)return current;
  const el=document.createElement('div');el.id='en-sec';el.className='en-sh en-recovery-sheet';
  const screen=document.querySelector('#en-app .phone.en-on'),style=screen&&getComputedStyle(screen);
- const colors={'--recovery-bg':style?.getPropertyValue('--sbg').trim()||'#F5E0D3','--recovery-ink':style?.getPropertyValue('--sink').trim()||'#6B3F55','--recovery-muted':style?.getPropertyValue('--smuted').trim()||'#7A5566','--recovery-line':style?.getPropertyValue('--sline').trim()||'#D9B0B5'};
+ const colors={'--recovery-bg':style?.getPropertyValue('--sbg').trim()||'#2A1E26','--recovery-ink':style?.getPropertyValue('--sink').trim()||'#F1DDE0','--recovery-muted':style?.getPropertyValue('--smuted').trim()||'#C9A2AF','--recovery-line':style?.getPropertyValue('--sline').trim()||'#5A4250'};
  for(const [key,value] of Object.entries(colors))el.style.setProperty(key,value);
- el.style.setProperty('--recovery-accent',screen?.classList.contains('nuit')?'#C6A0B1':'#7C536A');
+ el.style.setProperty('--recovery-accent','#C6A0B1');
  el.innerHTML=`<section class="in" role="dialog" aria-modal="true" aria-labelledby="en-sect" aria-describedby="en-secs"><span class="en-sec-grip" aria-hidden="true"></span><h2 class="t" id="en-sect" tabindex="-1">Un oubli, ça arrive</h2><p class="s" id="en-secs">Ton code de secours te permettra de retrouver ton journal si tu oublies tes 4 chiffres.</p><p class="k">Code de secours</p><div class="cd" id="en-secv">…</div><p class="en-sec-note">Garde-le dans un endroit sûr, à l’abri des regards.</p><button type="button" class="b ol" id="en-seccp" disabled>Copier mon code</button><button type="button" class="b" id="en-secok" disabled>Je l’ai gardé</button><button type="button" class="lk" id="en-seclt">Je le ferai plus tard</button><p class="en-sec-status" id="en-secstatus" role="status" aria-live="polite">Préparation de ton code…</p><button type="button" class="b ol" id="en-secretry" hidden>Réessayer</button></section>`;
  document.body.appendChild(el);
  const $=id=>el.querySelector('#'+id),app=document.getElementById('en-app'),previousInert=app?.inert,previousFocus=document.activeElement;

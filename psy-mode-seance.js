@@ -21,8 +21,8 @@
         <details class="en-notes">
           <summary class="en-notes-summary"><span id="en-mode-note-label">Mes notes</span>${icon('m6 9 6 6 6-6')}</summary>
           <div class="en-note-content">
-            <textarea class="en-note-field" rows="4" aria-labelledby="en-mode-note-label" aria-describedby="en-mode-note-hint" placeholder="Quelques mots, si j’en ai envie…"></textarea>
-            <p class="en-note-hint" id="en-mode-note-hint">Je pourrai les organiser plus tard, dans Après.</p>
+            <textarea class="en-note-field" rows="4" aria-labelledby="en-mode-note-label" placeholder="Quelques mots, si j’en ai envie…"></textarea>
+
           </div>
         </details>
         <footer class="en-footer">

@@ -22,12 +22,22 @@
   <article class="en-session-leaf">
     <div class="en-leaf-meta">
       <span class="en-leaf-calendar"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-session-date></time></span>
-      <span class="en-session-status" data-session-status>À écrire</span>
+      <span class="en-leaf-status">
+        <span class="en-session-status" data-session-status>À écrire</span>
+        <button type="button" class="en-delete-session" data-delete-session aria-label="Supprimer la séance" aria-expanded="false">
+          <i data-lucide="trash-2" aria-hidden="true"></i>
+        </button>
+      </span>
     </div>
     <h4 class="en-session-title">Revenir sur ma séance</h4>
     <button type="button" class="en-leaf-action cursor-interaction" data-open-return>
       <span data-return-label>Commencer à écrire</span><i data-lucide="arrow-right" aria-hidden="true"></i>
     </button>
+    <div class="en-delete-confirm" data-delete-confirm hidden>
+      <p>Supprimer cette séance et les mots qui lui sont associés dans Après ?</p>
+      <button type="button" class="en-quiet-action" data-cancel-delete>Annuler</button>
+      <button type="button" class="en-quiet-action en-confirm-remove" data-confirm-delete>Supprimer</button>
+    </div>
   </article>
 </li>`,
     editor: `<div data-session-editor hidden>
@@ -623,8 +633,10 @@
   function syncCalendar(state, calendar, now) {
     const occurrences = calendarOccurrences(calendar, now);
     const active = new Set(occurrences.map(item => item.key));
+    const deleted = new Set(state.deletedCalendarKeys || []);
     let changed = false;
     for (const { date, key } of occurrences) {
+      if (deleted.has(key)) continue;
       const current = state.sessions.find(item => item.calendarKey === key);
       if (current) {
         if (current.date === current.calendarDate && current.date !== date && !current.completed) {
@@ -698,6 +710,21 @@
     const index = history.findIndex(item => item.id === record.id);
     if (index < 0) history.unshift(record);
     else history[index] = record;
+  }
+
+  function deleteSession(state, history, session) {
+    const index = state.sessions.findIndex(item => item.id === session.id);
+    if (index === -1) return false;
+    if (session.calendarKey) {
+      state.deletedCalendarKeys ||= [];
+      if (!state.deletedCalendarKeys.includes(session.calendarKey)) state.deletedCalendarKeys.push(session.calendarKey);
+    }
+    state.sessions.splice(index, 1);
+    const historyId = session.historyId || 'apres-' + session.id;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].id === historyId || history[i].afterId === session.id) history.splice(i, 1);
+    }
+    return true;
   }
 
   function renderContext(editor, session) {
@@ -900,7 +927,9 @@
       get('[data-empty]').hidden = Boolean(state.sessions.length);
       list.hidden = !state.sessions.length;
       let focus;
-      for (const session of [...state.sessions].sort((a, b) => b.date.localeCompare(a.date))) {
+      let closeDelete;
+      const sessions = [...state.sessions].sort((a, b) => b.date.localeCompare(a.date));
+      for (const [index, session] of sessions.entries()) {
         const card = template('card').firstElementChild;
         const time = card.querySelector('[data-session-date]');
         const button = card.querySelector('[data-open-return]');
@@ -912,6 +941,33 @@
         card.querySelector('[data-session-status]').textContent = session.completed ? 'Retour terminé' : started ? 'Retour commencé' : 'À écrire';
         card.querySelector('[data-return-label]').textContent = session.completed ? 'Mes mots à revoir' : started ? 'Reprendre mon retour' : 'Commencer à écrire';
         button.addEventListener('click', () => open(session.id, session.completed));
+        const remove = card.querySelector('[data-delete-session]');
+        const confirm = card.querySelector('[data-delete-confirm]');
+        const cancel = confirm.querySelector('[data-cancel-delete]');
+        confirm.id = time.id + '-delete';
+        remove.setAttribute('aria-controls', confirm.id);
+        remove.setAttribute('aria-label', 'Supprimer la séance du ' + time.textContent.toLocaleLowerCase('fr-FR'));
+        function dismiss(restoreFocus) {
+          confirm.hidden = true;
+          remove.setAttribute('aria-expanded', 'false');
+          closeDelete = undefined;
+          if (restoreFocus) remove.focus();
+        }
+        remove.addEventListener('click', () => {
+          if (!confirm.hidden) { dismiss(true); return; }
+          closeDelete?.(false);
+          confirm.hidden = false;
+          remove.setAttribute('aria-expanded', 'true');
+          closeDelete = dismiss;
+          cancel.focus();
+        });
+        cancel.addEventListener('click', () => dismiss(true));
+        confirm.addEventListener('keydown', event => { if (event.key === 'Escape') dismiss(true); });
+        confirm.querySelector('[data-confirm-delete]').addEventListener('click', () => {
+          if (!deleteSession(state, history, session)) return;
+          save();
+          home(sessions[index + 1]?.id || sessions[index - 1]?.id || 'add');
+        });
         list.append(card);
         if (focusId === session.id) focus = button;
       }
@@ -933,7 +989,7 @@
         home(session.id);
       });
       globalThis.__enPsyIcons?.(host);
-      focus?.focus({ preventScroll: true });
+      (focusId === 'add' ? add : focus)?.focus({ preventScroll: true });
     }
     function open(id, recap = false) {
       const session = state.sessions.find(item => item.id === id);

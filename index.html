@@ -1,11 +1,10 @@
 <!doctype html>
-<html lang="fr" class="en-ready">
+<html lang="fr" class="en-ready en-nuit" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' https://aoafqsipzymeehcswzto.supabase.co https://noembed.com; worker-src 'self'; manifest-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <script src="ma-vie-parcours.js"></script>
-<script>(function(){var h=new Date().getHours();if(h>=18||h<6)document.documentElement.classList.add('en-nuit')})()</script>
 <title>Entre nous</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>/* Même viewport sur toutes les pages, y compris après l'accueil. */
@@ -16,8 +15,7 @@ document.documentElement.classList.toggle('en-standalone',navigator.standalone==
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Entre nous">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#F5E0D3">
-<script>if(document.documentElement.classList.contains('en-nuit')){document.documentElement.style.backgroundColor='#2A1E26';document.querySelector('meta[name=theme-color]').content='#2A1E26'}</script>
+<meta name="theme-color" content="#2A1E26">
 <meta name="description" content="Ton journal, rien qu’à toi.">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
@@ -25,7 +23,7 @@ document.documentElement.classList.toggle('en-standalone',navigator.standalone==
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
 /* Entre nous · app : un écran à la fois, à la taille de l'iPhone */
-html,body{margin:0;height:100%;overflow:hidden;background:#F5E0D3;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#2A1E26;color-scheme:dark;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-toast):not(script):not(style){display:none!important}
 #en-app{position:fixed;inset:0;width:min(100%,600px);margin-inline:auto;overflow:hidden;box-sizing:border-box;background:inherit}
 #en-app .phone{position:absolute!important;left:0;top:0;margin:0!important;width:100%!important;height:100%!important;max-width:none!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;border:0!important;border-radius:0!important;box-shadow:none!important;outline:0!important;visibility:hidden;pointer-events:none;z-index:0;translate:200vw 0}
@@ -75,40 +73,40 @@ html.en-ready body>*:not(#en-app):not(#en-lock):not(#en-cc):not(.en-sh):not(.en-
 /* changer mon code */
 #en-cc{position:fixed;inset:0;z-index:90;background:rgba(42,30,38,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .3s}
 #en-cc.on{opacity:1}
-#en-cc .in{width:100%;box-sizing:border-box;background:#F7E6DC;color:#6B3F55;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s}
+#en-cc .in{width:100%;box-sizing:border-box;background:#352630;color:#DDB3BB;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s}
 #en-cc.on .in{transform:none}
-#en-cc .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566}
+#en-cc .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#C9A2AF}
 #en-cc .t{margin:10px 0 0;font:italic 500 24px/1.1 'Cormorant Garamond',serif}
-#en-cc .s{margin:4px 0 0;font:italic 500 14px/1.2 'Cormorant Garamond',serif;color:#7A5566}
+#en-cc .s{margin:4px 0 0;font:italic 500 14px/1.2 'Cormorant Garamond',serif;color:#C9A2AF}
 #en-cc .dots{display:flex;gap:12px;margin:14px 0 14px}
-#en-cc .dots i{width:10px;height:10px;border-radius:50%;border:1.2px solid #6B3F55}
-#en-cc .dots i.on{background:#6B3F55}
+#en-cc .dots i{width:10px;height:10px;border-radius:50%;border:1.2px solid #DDB3BB}
+#en-cc .dots i.on{background:#DDB3BB}
 #en-cc .dots.shake{animation:enshake .5s}
 #en-cc .pad{display:grid;grid-template-columns:repeat(3,48px);gap:8px 20px;justify-items:center}
-#en-cc .pad button{all:unset;box-sizing:border-box;width:48px;height:48px;border-radius:50%;border:1px solid #D9B0B5;display:flex;align-items:center;justify-content:center;font:400 21px/1 'Cormorant Garamond',serif;color:#6B3F55;cursor:pointer}
+#en-cc .pad button{all:unset;box-sizing:border-box;width:48px;height:48px;border-radius:50%;border:1px solid #846574;display:flex;align-items:center;justify-content:center;font:400 21px/1 'Cormorant Garamond',serif;color:#DDB3BB;cursor:pointer}
 #en-cc .pad button.del{border:0;font-size:18px}
-#en-cc .lk{all:unset;margin-top:10px;padding:8px;font:italic 500 14px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
+#en-cc .lk{all:unset;margin-top:10px;padding:8px;font:italic 500 14px/1 'Cormorant Garamond',serif;color:#C9A2AF;cursor:pointer}
 @media (prefers-reduced-motion:reduce){#en-cc,#en-cc .in{transition:none}}
 #en-lock .sh .sec{display:flex;flex-direction:column;gap:6px;margin-top:4px}
-#en-lock .sh .sec input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;font:500 16px/1 'Cormorant SC',serif;letter-spacing:.12em;color:#6B3F55;text-align:center}
-#en-lock .sh .er{color:#8A3B4E!important;font-size:14px!important}
+#en-lock .sh .sec input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #846574;font:500 16px/1 'Cormorant SC',serif;letter-spacing:.12em;color:#DDB3BB;text-align:center}
+#en-lock .sh .er{color:#ECC0CC!important;font-size:14px!important}
 /* volets de l'app (code de secours, compte) */
 .en-sh{position:fixed;inset:0;z-index:95;background:rgba(42,30,38,.4);display:flex;align-items:flex-end;opacity:0;transition:opacity .3s}
 .en-sh.on{opacity:1}
-.en-sh .in{width:100%;box-sizing:border-box;background:#F7E6DC;color:#6B3F55;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:9px;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s;max-height:92%;overflow:auto}
+.en-sh .in{width:100%;box-sizing:border-box;background:#352630;color:#DDB3BB;border-radius:22px 22px 0 0;padding:20px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:9px;font-family:'Cormorant Garamond',Georgia,serif;transform:translateY(30px);transition:transform .3s;max-height:92%;overflow:auto}
 .en-sh.on .in{transform:none}
-.en-sh .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#7A5566;text-align:center}
+.en-sh .k{margin:0;font:500 11px/1 'Cormorant SC',serif;letter-spacing:.16em;color:#C9A2AF;text-align:center}
 .en-sh .t{margin:2px 0 0;font:italic 500 20px/1.2 'Cormorant Garamond',serif;text-align:center}
-.en-sh .s{margin:0;font:500 15px/1.35 'Cormorant Garamond',serif;color:#7A5566;text-align:center}
+.en-sh .s{margin:0;font:500 15px/1.35 'Cormorant Garamond',serif;color:#C9A2AF;text-align:center}
 .en-sh .cd{width:auto;flex:none;align-self:stretch;margin:6px 0;padding:14px 6px;border:1px dashed #B97E8E;border-radius:14px;text-align:center;font:500 17px/1.2 'Cormorant SC',Georgia,serif;letter-spacing:.06em;white-space:nowrap;user-select:all;-webkit-user-select:all}
-.en-sh .b{all:unset;box-sizing:border-box;text-align:center;padding:13px;border-radius:26px;background:#6B3F55;color:#F7E6DC;font:500 13px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
-.en-sh .b.ol{background:transparent;color:#6B3F55;border:1px solid #6B3F55}
-.en-sh .lk{all:unset;text-align:center;padding:6px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
-.en-sh input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:rgba(255,255,255,.35);font:500 16px/1.2 'Cormorant Garamond',serif;color:#6B3F55}
-.en-sh .tb{display:flex;border:1px solid #D9B0B5;border-radius:20px;padding:3px}
-.en-sh .tb button{all:unset;flex:1;text-align:center;padding:8px 4px;border-radius:16px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#7A5566;cursor:pointer}
-.en-sh .tb button.on{background:#EBCFCB;color:#6B3F55}
-.en-er{color:#8A3B4E!important}
+.en-sh .b{all:unset;box-sizing:border-box;text-align:center;padding:13px;border-radius:26px;background:#DDB3BB;color:#352630;font:500 13px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
+.en-sh .b.ol{background:transparent;color:#DDB3BB;border:1px solid #DDB3BB}
+.en-sh .lk{all:unset;text-align:center;padding:6px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#C9A2AF;cursor:pointer}
+.en-sh input{all:unset;box-sizing:border-box;width:100%;padding:12px 14px;border-radius:14px;border:1px solid #846574;background:#2A1E26;font:500 16px/1.2 'Cormorant Garamond',serif;color:#DDB3BB}
+.en-sh .tb{display:flex;border:1px solid #846574;border-radius:20px;padding:3px}
+.en-sh .tb button{all:unset;flex:1;text-align:center;padding:8px 4px;border-radius:16px;font:italic 500 15px/1 'Cormorant Garamond',serif;color:#C9A2AF;cursor:pointer}
+.en-sh .tb button.on{background:#513443;color:#DDB3BB}
+.en-er{color:#ECC0CC!important}
 .en-acc{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
 .en-acc .st{margin:0;font:italic 500 13px/1.35 'Cormorant Garamond',serif;color:var(--smuted,#7A5566);text-align:center}
 .en-acc .b{all:unset;box-sizing:border-box;text-align:center;padding:11px;border-radius:22px;background:var(--sacc,#6B3F55);color:var(--sbg,#F7E6DC);font:500 11px/1 'Cormorant SC',serif;letter-spacing:.12em;cursor:pointer}
@@ -422,9 +420,9 @@ window.__enSyncChrome=function(){
  const el=lock&&!lock.classList.contains('out')?lock:ph;if(!el)return;
  let bg=getComputedStyle(el).backgroundColor;
  if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent'){
-  bg=el.classList.contains('nuit')||document.documentElement.classList.contains('en-nuit')?'rgb(42, 30, 38)':'rgb(245, 224, 211)';
+  bg='rgb(42, 30, 38)';
  }
- bg=chromeVisibleBackground(el,bg);
+ bg=document.getElementById('en-app')?.classList.contains('en-mode-open')&&!lock?'#2A1E26':chromeVisibleBackground(el,bg);
  for(const node of [document.documentElement,document.body,document.getElementById('en-app')])if(node&&node.style.backgroundColor!==bg)node.style.backgroundColor=bg;
  const meta=document.querySelector('meta[name="theme-color"]');if(meta&&meta.content!==bg)meta.content=bg;
 };
@@ -537,11 +535,11 @@ function createUnlockController(options){
 
 function lockUI(meta,onOk,onSec,onFid){
  window.__enSetAuthLayout(false);
- const h=new Date().getHours(),mo=h<12?'matin':h<18?'aprem':h<22?'soir':'nuit',m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
- const nuit=h>=18||h<6;const nm=meta&&meta.nm?' '+meta.nm:'';
+ const h=new Date().getHours(),m=new Date().getMonth(),sa=m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne';
+ const nm=meta&&meta.nm?' '+meta.nm:'';
  const J=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
- const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className=(nuit?'nuit ':'')+'en-code-screen';
- el.innerHTML=`<img class="sc" src="illus/${mo}-${sa}.jpg" alt=""><div class="lock-fade" aria-hidden="true"></div><img class="branch-tail" src="illus/lock-branche-rose.webp" alt="" aria-hidden="true"><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${nuit?'Bonsoir':'Bonjour'}${nm?', '+nm.trim():''}</p><p class="sb" id="en-lsb" role="status" aria-live="polite">Ton code, rien que pour toi</p><div class="dots" id="en-ld" role="img" aria-label="0 chiffres saisis sur 4"><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n==='⌫'?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H8L1 12l7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m18 9-6 6m0-6 6 6"/></svg>':n}</button>`).join('')}</div><button type="button" class="fg" id="en-lockretry" hidden>Réessayer</button><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
+ const d=new Date();const el=document.createElement('div');el.id='en-lock';el.className='nuit en-code-screen';
+ el.innerHTML=`<img class="sc" src="illus/nuit-${sa}.jpg" alt=""><div class="lock-fade" aria-hidden="true"></div><img class="branch-tail" src="illus/lock-branche-rose.webp" alt="" aria-hidden="true"><div class="ui"><p class="dt">${J[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}</p><p class="hi">${h>=18||h<6?'Bonsoir':'Bonjour'}${nm?', '+nm.trim():''}</p><p class="sb" id="en-lsb" role="status" aria-live="polite">Ton code, rien que pour toi</p><div class="dots" id="en-ld" role="img" aria-label="0 chiffres saisis sur 4"><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(n=>n===''?(meta&&meta.w&&meta.w.fid&&onFid?'<button type="button" class="fid" aria-label="Ouvrir avec Face ID"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg></button>':'<span></span>'):`<button type="button" ${n==='⌫'?'class="del" aria-label="Effacer"':''}>${n==='⌫'?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H8L1 12l7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/><path d="m18 9-6 6m0-6 6 6"/></svg>':n}</button>`).join('')}</div><button type="button" class="fg" id="en-lockretry" hidden>Réessayer</button><button type="button" class="fg" id="en-fg">Code oublié ?</button></div>
  <div class="sh" id="en-sh" hidden><div class="in" role="dialog" aria-modal="true" aria-labelledby="en-lockrecoverytitle"><p class="k" id="en-lockrecoverytitle">CODE OUBLIÉ</p><p>Tes pages sont chiffrées avec ton code : sans lui, personne ne peut les ouvrir, pas même moi. Ton code de secours, lui, peut les rouvrir.</p><div class="sec"><input id="en-secin" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Code de secours"><button type="button" class="b" id="en-secgo">OUVRIR AVEC MON CODE DE SECOURS</button><p class="er" id="en-secer" role="status" aria-live="polite" hidden></p></div><button type="button" class="b ol" id="en-restore">REPRENDRE UNE SAUVEGARDE</button><input type="file" accept="application/json,.json" hidden id="en-rf"><button type="button" class="b ol" id="en-wipe">TOUT EFFACER ET RECOMMENCER</button><p class="s" style="font-size:13px;opacity:.8">Efface le journal de ce téléphone et te déconnecte. Ce qui est gardé dans ton compte en ligne n’est pas touché : pour le supprimer, ouvre l’app puis Réglages › Mon compte › supprimer mon compte.</p><button type="button" class="lk" id="en-shx">finalement, je réessaie</button></div></div>`;
  document.body.appendChild(el);window.__enSyncChrome();
  const dots=[...el.querySelectorAll('#en-ld i')],sb=el.querySelector('#en-lsb'),dd=el.querySelector('#en-ld'),sh=el.querySelector('#en-sh'),ui=el.querySelector('.ui'),sec=el.querySelector('#en-secin'),er=el.querySelector('#en-secer'),wipe=el.querySelector('#en-wipe');
@@ -594,7 +592,7 @@ async function recoveryPage(){/* liens des mails (confirmation, mot de passe oub
   el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">${ok?'C’est confirmé ✦':'Oups'}</p><p class="sb">${ok?'Ton adresse e-mail est confirmée. Tu peux fermer cette page et retourner dans l’app Entre nous : elle se connecte toute seule.':'Ce lien n’est plus valable : demande un nouveau mail depuis l’app.'}</p></div>`;document.body.appendChild(el);history.replaceState(null,'',location.pathname);return true}
  if(!ty&&h.get('access_token')&&h.get('refresh_token')){try{await CLOUD.adopt({access_token:h.get('access_token'),refresh_token:h.get('refresh_token'),expires_in:h.get('expires_in')});window.__enOAuthReturn=true}catch(e){window.__enOAuthError='La connexion Google n’a pas pu être confirmée. Réessaie.'}history.replaceState(null,'',location.pathname);return false}
  if(ty!=='recovery'||!h.get('access_token'))return false;const t=h.get('access_token');
- const el=document.createElement('div');el.id='en-lock';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
+ const el=document.createElement('div');el.id='en-lock';el.className='nuit';el.innerHTML=`<div class="ui" style="margin:auto 0"><p class="hi">Nouveau mot de passe</p><p class="sb">pour ton compte Entre nous</p><input id="en-np" type="password" placeholder="8 caractères minimum" autocomplete="new-password" style="margin-top:18px;width:100%;box-sizing:border-box;padding:12px 14px;border-radius:14px;border:1px solid #D9B0B5;background:transparent;font:500 16px 'Cormorant Garamond',serif;color:inherit"><button type="button" id="en-npgo" class="fg" style="margin-top:16px;font-style:normal;font-family:'Cormorant SC',serif;letter-spacing:.14em">ENREGISTRER</button><p class="sb" id="en-npm"></p></div>`;
  document.body.appendChild(el);el.querySelector('#en-npgo').onclick=async()=>{const m=el.querySelector('#en-npm');try{await CLOUD.setPassword(t,el.querySelector('#en-np').value);m.textContent='C’est noté. Tu peux revenir dans l’app et te connecter.';history.replaceState(null,'',location.pathname)}catch(e){m.textContent=e.message}};return true}
 async function boot(){
  if(await recoveryPage())return;
@@ -918,7 +916,6 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 }
 </style>
 <style>
-.mvmom button{font:inherit;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer}.mvmom button.on{font-weight:600}
 /* Mise en page : sélecteurs en haut, puis les deux écrans (ouverture, accueil) côte à côte sur grand écran, empilés sur téléphone ; galeries ensuite */
 :root{
   --bg:#F6ECEC; --card:#FFF8F7; --ink:#3D2A33; --muted:#8C6B78; --line:#EBD6D9; --accent:#6B3F55; --on-accent:#FFF8F7;
@@ -952,7 +949,7 @@ section{display:flex;flex-direction:column;gap:14px}
 /* Téléphones */
 *{-webkit-tap-highlight-color:transparent}
 button:focus:not(:focus-visible){outline:none}
-.phone{--sbg:#F5E0D3;--sink:#6B3F55;--stext:#7A5263;--smuted:#7A5566;--sacc:#6B3F55;--sline:#D9B0B5;--scard:rgba(255,248,247,.82);
+.phone{--sbg:#2A1E26;--sink:#F1DDE0;--stext:#F1DDE0;--smuted:#B88E9C;--sacc:#DDB3BB;--sline:#5A4250;--scard:rgba(58,42,52,.85);
   width:100%;max-width:300px;aspect-ratio:9/18.5;border-radius:34px;overflow:hidden;position:relative;background:var(--sbg);color:var(--sink);
   border:1px solid var(--line);transition:background .5s ease}
 .scene{transition:filter .4s ease, opacity .4s ease}
@@ -2759,7 +2756,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 #psy .ps-s{font:italic 14px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted);text-align:center}
 #psy .ps-h{display:flex;align-items:center;gap:8px;margin:20px 0 6px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.18em;color:var(--sacc)}
 #psy .ps-h:after{content:"";flex:1;height:.7px;background:var(--sline)}
-#psy :where(.rgbody,.ms,.ps-sheet) button{all:unset;cursor:pointer;box-sizing:border-box}
+#psy :where(.rgbody,.ms,.ps-sheet) button:where(:not([data-psy-after] *)){all:unset;cursor:pointer;box-sizing:border-box}
 #psy .ps-tabs{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin:14px -18px 0;padding:0 18px}
 #psy .ps-tabs button{flex:none;padding:0 0 8px;font:500 10.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.16em;color:var(--smuted);padding-bottom:7px;border-bottom:1.3px solid transparent}
 #psy .ps-tabs button.on{color:var(--sink);border-bottom-color:var(--sacc)}
@@ -4187,7 +4184,6 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
   <section aria-labelledby="h-situ">
     <h2 id="h-situ">En situation</h2>
     <div class="ctrls">
-      <div class="grp"><span>Moment</span><div class="chips" id="c-moment" role="group" aria-label="Moment"></div></div>
       <div class="grp"><span>Saison</span><div class="chips" id="c-season" role="group" aria-label="Saison"></div></div>
       <div class="grp"><span>Humeur</span><div class="chips" role="group" aria-label="Humeur">
         <button class="chip" id="m-normal" aria-pressed="true">Jour normal</button>
@@ -4220,7 +4216,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
     <div class="screens">
       <div class="screen">
         <div class="phone open" id="open">
-          <img class="scene" id="scene" alt="" src="illus/aprem-automne.jpg">
+          <img class="scene" id="scene" alt="" src="illus/nuit-automne.jpg">
           <div class="ui">
             <p class="date" id="date">lundi 26 octobre</p>
             <p class="hello" id="hello">Bonjour</p>
@@ -4234,10 +4230,10 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
       </div>
       <div class="screen">
         <div class="phone home" id="home">
-          <div class="band"><img class="scene" id="hscene" alt="" src="illus/bureau-aprem-automne.jpg"></div>
+          <div class="band"><img class="scene" id="hscene" alt="" src="illus/bureau-nuit-automne.jpg"></div>
           <div class="body">
             <div class="sp"></div>
-            <div class="top"><div class="medal"><img class="scene" id="hscene2" alt="" src="illus/bureau-aprem-automne.jpg"></div><div class="tt"><span class="tape" aria-hidden="true"></span><p class="date" id="hdate">lundi 26 octobre<button type="button" id="hmoon" aria-label="Pleine lune"><img src="illus/lune-pleine.webp" alt=""></button></p><span id="hmoonb" role="status"></span><div class="orn" aria-hidden="true"><i></i><span>✦</span><i></i></div><p class="hello" id="hhello">Bonjour</p></div></div>
+            <div class="top"><div class="medal"><img class="scene" id="hscene2" alt="" src="illus/bureau-nuit-automne.jpg"></div><div class="tt"><span class="tape" aria-hidden="true"></span><p class="date" id="hdate">lundi 26 octobre<button type="button" id="hmoon" aria-label="Pleine lune"><img src="illus/lune-pleine.webp" alt=""></button></p><span id="hmoonb" role="status"></span><div class="orn" aria-hidden="true"><i></i><span>✦</span><i></i></div><p class="hello" id="hhello">Bonjour</p></div></div>
             <div class="card mot"><img class="mcorner" id="mcorner" alt="" src="illus/coin-automne.jpg"><span class="qm" aria-hidden="true">“</span><p id="hmot"><span class="qo" aria-hidden="true">“</span><span id="hmott">Un petit pas aujourd'hui compte plus qu'un grand plan pour demain.</span><span class="qc" aria-hidden="true">”</span></p><button class="heart" id="heart" aria-label="Garder ce mot" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button><span class="tap">touche la carte pour un autre mot</span><span class="sig" id="hsig">pour toi, cet après-midi</span>
               <div class="acts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="Un autre mot"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-label="Garder ce mot"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></div></div><div class="card psyv" id="psyv" hidden><p class="pk">Demain, ta séance · 18&nbsp;h</p><p class="pdone">Tes notes sont prêtes pour demain.</p><p class="pq">Tu veux préparer ce que tu aimerais lui&nbsp;dire&nbsp;?</p><div class="pa"><button type="button" class="pri">Mes notes à partager</button><span aria-hidden="true">·</span><button type="button" class="pri">Faire le point</button></div><button type="button" class="pno" id="pno">Pas maintenant</button></div>
             <div class="humeur" id="humeur"><div class="hin" id="hin"><p class="hq">Comment te sens-tu ?</p><div class="track"><div class="rwrap"><span class="mw" id="mw">Neutre</span><input type="range" id="mood" min="0" max="100" value="50" aria-label="Mon humeur"></div><button class="ok" id="mood-ok" aria-label="Valider mon humeur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12.5l4 4 8-9"/></svg></button></div></div><div class="hres" id="hres" hidden><div class="rl" id="rl"><i id="rdot"></i><span class="rw" id="rw">Tu te sens plutôt bien</span><span class="rt" id="rt">15:46</span><button class="plus" id="mood-new" aria-label="Noter une nouvelle humeur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></button></div><div class="after"><div class="sugg" id="sugg"></div><span class="noted" id="noted"></span></div></div><div class="frise" id="frise" hidden><button class="fl" id="frise-tog" aria-expanded="true">Ma journée en couleurs<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button><div class="ribw" id="ribw"><div class="rib" id="fd"></div><div class="ribl"><span id="rib-start"></span><span>maintenant</span></div></div></div></div>
@@ -4347,7 +4343,6 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 
   <section aria-labelledby="h-mv">
     <h2 id="h-mv">Ma vie</h2>
-    <p class="mvmom" style="margin:-4px 0 14px;font-size:13px">Moment : <button type="button" data-m="matin">matin</button> · <button type="button" data-m="aprem">après-midi</button> · <button type="button" data-m="soir">soir</button> · <button type="button" data-m="nuit">nuit</button></p>
     <div class="screens"><div class="screen">
       <div class="phone mv mvi" id="mvintro">
         <p class="k">FAIRE CONNAISSANCE</p><span class="fl"><i></i>✦<i></i></span>
@@ -4581,7 +4576,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
         <div class="we-row"><div class="wgx we-s" style="margin-top:0"><div class="we" id="we-s" style="width:300px;height:300px"></div></div><div class="wapps"><i></i><i></i><i></i><i></i></div></div>
         <div class="wapps wfull"><i></i><i></i><i></i><i></i></div>
       </div>
-      <p id="wdgecap">Widgets d’écriture · <button type="button" data-wn="0" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">jour</button> · <button type="button" data-wn="1" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">nuit</button> · <button type="button" data-ww="1" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">déjà écrit / pas encore</button></p>
+      <p id="wdgecap">Widgets d’écriture · <button type="button" data-ww="1" style="font:inherit;font-size:12px;background:none;border:0;border-bottom:.5px solid currentColor;color:inherit;padding:0;cursor:pointer">déjà écrit / pas encore</button></p>
     </div></div>
   </section>
 
@@ -4627,26 +4622,15 @@ window.__DLONG=d=>fmt(d||new Date(),'{wd} {d} {mo}');
 </script>
 <script type="text/x-en">
 (function(){
-const MOMENTS={
-  matin:{n:"Matin",d:"L'aube se lève",hello:"Bonjour",doux:"Une nouvelle page s'ouvre.",
-    bg:"#F3E0D6",ink:"#6B3F55",muted:"#7A5566",acc:"#6B3F55",line:"#D9B0B5",card:"rgba(107,63,85,.07)"},
-  aprem:{n:"Après-midi",d:"Soleil haut",hello:"Bonjour",doux:"Aujourd'hui, un petit pas suffit.",
-    bg:"#F5E0D3",ink:"#6B3F55",muted:"#7A5566",acc:"#6B3F55",line:"#D9B0B5",card:"rgba(107,63,85,.07)"},
-  soir:{n:"Soir",d:"Lune et dernière lumière",hello:"Bonsoir",doux:"Alors, on se raconte quoi ce soir ?",
-    bg:"#2A1E26",ink:"#F1DDE0",muted:"#B88E9C",acc:"#DDB3BB",line:"#5A4250",card:"rgba(58,42,52,.85)"},
-  nuit:{n:"Nuit",d:"Lune et étoiles",hello:"Bonne nuit",doux:"Les pensées pèsent moins une fois écrites.",
-    bg:"#2A1E26",ink:"#F1DDE0",muted:"#B88E9C",acc:"#DDB3BB",line:"#5A4250",card:"rgba(58,42,52,.85)"}
+const NIGHT={
+  bg:"#2A1E26",ink:"#F1DDE0",muted:"#B88E9C",acc:"#DDB3BB",line:"#5A4250",card:"rgba(58,42,52,.85)"
 };
-const HOMEBG={matin:"#F1DCD3",aprem:"#F2DCD0",soir:"#2A1E26",nuit:"#2A1E26"};
-const LABEL={matin:"rgba(241,220,211,.78)",aprem:"rgba(242,220,208,.78)",soir:"rgba(42,30,38,.66)",nuit:"rgba(42,30,38,.66)"};
 const TAPE={printemps:"#E8A9A0",ete:"#E58A72",automne:"#C8794F",hiver:"#7E9483"};
-const WARM={matin:"#ECD3C9",aprem:"#EDD4C7",soir:"#3A2A34",nuit:"#3A2A34"};
-const SIG={matin:"pour toi, ce matin",aprem:"pour toi, cet après-midi",soir:"pour toi, ce soir",nuit:"pour toi, cette nuit"};
+const greeting=()=>{const hour=new Date().getHours();return hour>=18||hour<6?"Bonsoir":"Bonjour"};
 const SEASONS={printemps:["Printemps","mardi 14 avril"],ete:["Été","samedi 18 juillet"],automne:["Automne",(__DF('2026-10-28','{wd} {d} {mo}','l','2026-10-28'))],hiver:["Hiver","jeudi 17 décembre"]};
 
-const now=new Date(),h=now.getHours(),mo=now.getMonth();
+const mo=new Date().getMonth();
 const state={
-  m: h>=5&&h<12?"matin":h>=12&&h<18?"aprem":h>=18&&h<22?"soir":"nuit",
   s: [2,3,4].includes(mo)?"printemps":[5,6,7].includes(mo)?"ete":[8,9,10].includes(mo)?"automne":"hiver",
   bas:false, down:false, f:"band", z:"v1", t:"label", page:false
 };
@@ -4657,7 +4641,6 @@ function chips(el,obj,key,label){
   el.innerHTML=Object.keys(obj).map(k=>`<button class="chip" data-k="${k}" aria-pressed="false">${label(k)}</button>`).join("");
   el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state[key]=b.dataset.k;render();});
 }
-chips(document.getElementById("c-moment"),MOMENTS,"m",k=>MOMENTS[k].n);
 chips(document.getElementById("c-season"),SEASONS,"s",k=>SEASONS[k][0]);
 const on=(id,fn)=>document.getElementById(id).addEventListener("click",()=>{fn();render();});
 on("m-normal",()=>state.bas=false);on("m-bas",()=>state.bas=true);
@@ -4670,49 +4653,41 @@ on("f-band",()=>state.f="band");on("f-arch",()=>state.f="arch");on("f-round",()=
 const phones=[document.getElementById("open"),document.getElementById("home")];
 const press=(id,v)=>document.getElementById(id).setAttribute("aria-pressed",String(v));
 function render(){
-  const M=MOMENTS[state.m];
-  document.documentElement.classList.toggle("en-nuit",state.m==="nuit"||state.m==="soir");
+  const M=NIGHT;
   for(const p of phones){
-    p.style.setProperty("--sbg",M.bg);p.style.setProperty("--sink",M.ink);p.style.setProperty("--stext",M.bg==="#2A1E26"?M.ink:"#7A5263");p.style.setProperty("--smuted",M.muted);
+    p.style.setProperty("--sbg",M.bg);p.style.setProperty("--sink",M.ink);p.style.setProperty("--stext",M.ink);p.style.setProperty("--smuted",M.muted);
     p.style.setProperty("--sacc",M.acc);p.style.setProperty("--sline",M.line);p.style.setProperty("--scard",M.card);
-    p.classList.toggle("bas",state.bas);
+    p.classList.add("nuit");p.classList.toggle("bas",state.bas);
   }
   phones[1].classList.toggle("down",state.down);
   requestAnimationFrame(fitCards);
   document.getElementById("wc1t").textContent=state.page?"Me raconter encore":"Me raconter";document.getElementById("wc1s").textContent=state.page?"La suite de ma page":"Tout ce qui vient";press("p-no",!state.page);press("p-yes",state.page);
   for(const v of ["sep","fade","label"]){phones[1].classList.toggle("t-"+v,state.t===v);press("t-"+v,state.t===v);}
-  phones[1].style.setProperty("--slabel",LABEL[state.m]);phones[1].style.setProperty("--stape",TAPE[state.s]);
-  phones[1].style.setProperty("--swarm",WARM[state.m]);
-  {const hx=c=>c.match(/\w\w/g).map(x=>parseInt(x,16)),mix=(a,b,k)=>"#"+hx(a).map((v,i)=>Math.round(v*(1-k)+hx(b)[i]*k).toString(16).padStart(2,"0")).join("");
-   const PB={matin:"#F9EFE9",aprem:"#FBF4EF",soir:"#F6E6E2",nuit:"#3E2D37"},PT={printemps:["#EDB9C2","#8E5A6A"],ete:["#F0BFA3","#8E5F55"],automne:["#DDB48E","#85614A"],hiver:["#C9D3CF","#5B6A6A"]};
-   const n=state.m==="nuit"||state.m==="soir";phones[1].style.setProperty("--polbg",mix(HOMEBG[state.m],n?"#5A4250":"#E3B9B8",n?.3:.17));}phones[1].style.setProperty("--sbg",HOMEBG[state.m]);phones[1].classList.toggle("nuit",state.m==="nuit"||state.m==="soir");
+  phones[1].style.setProperty("--slabel","rgba(42,30,38,.66)");
+  phones[1].style.setProperty("--stape",TAPE[state.s]);
+  phones[1].style.setProperty("--swarm","#3A2A34");
+  phones[1].style.setProperty("--polbg","#382933");
   for(const v of ["v1","v2","v3"]){phones[1].classList.toggle("z-"+v,state.z===v);press("z-"+v,state.z===v);}
   document.getElementById("mcorner").src=`illus/coin-${state.s}.jpg`;const calf=document.getElementById("calf");calf.src=`illus/coin-${state.s}.jpg`;calf.style.transform=(state.s==="printemps"||state.s==="automne")?"scaleX(-1)":"none";
-  document.getElementById("hsig").textContent=SIG[state.m];
+  document.getElementById("hsig").textContent="pour toi";
   phones[1].classList.toggle("f-arch",state.f==="arch");phones[1].classList.toggle("f-round",state.f==="round");
-  document.getElementById("hscene2").src=`illus/bureau-${state.m}-${state.s}.jpg`;
+  document.getElementById("hscene2").src=`illus/bureau-nuit-${state.s}.jpg`;
   press("f-band",state.f==="band");press("f-arch",state.f==="arch");press("f-round",state.f==="round");
-  document.getElementById("scene").src=`illus/${state.m}-${state.s}.jpg`;
-  document.getElementById("hscene").src=`illus/bureau-${state.m}-${state.s}.jpg`;
+  document.getElementById("scene").src=`illus/nuit-${state.s}.jpg`;
+  document.getElementById("hscene").src=`illus/bureau-nuit-${state.s}.jpg`;
   document.getElementById("date").textContent=SEASONS[state.s][1];
   document.getElementById("hdate").firstChild.nodeValue=SEASONS[state.s][1];
-  document.getElementById("hello").textContent=M.hello+(window.__P()?" "+window.__P():"");
-  document.getElementById("hhello").textContent=M.hello+(window.__P()?" "+window.__P():"");
-  document.getElementById("doux").textContent=state.bas?"Tu fais de ton mieux, et c'est déjà beaucoup.":M.doux;
-  document.querySelectorAll("#c-moment .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.m)));
+  document.getElementById("hello").textContent=greeting()+(window.__P()?" "+window.__P():"");
+  document.getElementById("hhello").textContent=greeting()+(window.__P()?" "+window.__P():"");
+  document.getElementById("doux").textContent=state.bas?"Tu fais de ton mieux, et c'est déjà beaucoup.":"Les pensées pèsent moins une fois écrites.";
   document.querySelectorAll("#c-season .chip").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===state.s)));
   press("m-normal",!state.bas);press("m-bas",state.bas);press("s-top",!state.down);press("s-down",state.down);
 }
 
 function gallery(id,prefix){
-  let g="";
-  for(const m of Object.keys(MOMENTS)){
-    g+=`<div class="row"><h3>${MOMENTS[m].n}</h3><p>${MOMENTS[m].d}</p><div class="grid">`;
-    for(const s of Object.keys(SEASONS)) g+=`<figure><button data-m="${m}" data-s="${s}" aria-label="Voir ${MOMENTS[m].n}, ${SEASONS[s][0]} sur les écrans"><img loading="lazy" src="illus/${prefix}${m}-${s}.jpg" alt="${MOMENTS[m].n}, ${SEASONS[s][0]}"></button><figcaption>${SEASONS[s][0]}</figcaption></figure>`;
-    g+=`</div></div>`;
-  }
-  const el=document.getElementById(id);el.innerHTML=g;
-  el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.m=b.dataset.m;state.s=b.dataset.s;render();document.getElementById("h-situ").scrollIntoView({behavior:"smooth",block:"start"});});
+  const el=document.getElementById(id);
+  el.innerHTML='<div class="grid">'+Object.keys(SEASONS).map(s=>`<figure><button data-s="${s}" aria-label="Voir la scène de nuit, ${SEASONS[s][0]}"><img loading="lazy" src="illus/${prefix}nuit-${s}.jpg" alt=""></button><figcaption>${SEASONS[s][0]}</figcaption></figure>`).join('')+'</div>';
+  el.addEventListener("click",e=>{const b=e.target.closest("button[data-s]");if(!b)return;state.s=b.dataset.s;render();});
 }
 gallery("gallery2","bureau-");
 gallery("gallery","");
@@ -5712,12 +5687,10 @@ const RX=/((?:illus\/)(?:eveil|dort)-[a-z]+|illus\/ronds\/[a-z-]+?|illus\/souven
 const fix=(el,n)=>{const a=el.getAttribute('src');if(a){const m=a.match(RX);if(m){const w=a.replace(RX,m[1]+(n?'-nuit':'')+'.'+m[3]);if(w!==a)el.setAttribute('src',w)}}
  const bg=el.style&&el.style.backgroundImage;if(bg){const m=bg.match(RX);if(m){const w=bg.replace(RX,m[1]+(n?'-nuit':'')+'.'+m[3]);if(w!==bg)el.style.backgroundImage=w}}};
 const phs=()=>[...document.querySelectorAll('.phone.mv')];
-function sync(){const n=/2A1E26/i.test(src.style.getPropertyValue('--sbg'));phs().forEach(p=>{V.forEach(v=>{const x=src.style.getPropertyValue(v);if(x)p.style.setProperty(v,x)});p.classList.toggle('nuit',n);
- [p,...p.querySelectorAll('img,[style*="background-image"]')].forEach(e=>fix(e,n))});
- const mm=document.querySelector('#c-moment [aria-pressed="true"]');document.querySelectorAll('.mvmom button').forEach(b=>b.classList.toggle('on',!!mm&&mm.dataset.k===b.dataset.m))}
+function sync(){phs().forEach(p=>{V.forEach(v=>{const x=src.style.getPropertyValue(v);if(x)p.style.setProperty(v,x)});p.classList.add('nuit');
+ [p,...p.querySelectorAll('img,[style*="background-image"]')].forEach(e=>fix(e,true))})}
 new MutationObserver(sync).observe(src,{attributes:true,attributeFilter:['style']});
 phs().forEach(p=>new MutationObserver(ms=>{const n=p.classList.contains('nuit');ms.forEach(m=>{if(m.type==='attributes')fix(m.target,n);else m.addedNodes.forEach(x=>{if(x.nodeType===1){fix(x,n);x.querySelectorAll&&x.querySelectorAll('img').forEach(i=>fix(i,n))}})})}).observe(p,{subtree:true,childList:true,attributes:true,attributeFilter:['src','style']}));
-document.querySelectorAll('.mvmom button').forEach(b=>b.onclick=()=>{const c=document.querySelector('#c-moment [data-k="'+b.dataset.m+'"]');if(c)c.click()});
 sync();})();</script>
 <script type="text/x-en">(()=>{const $=id=>document.getElementById(id),ph=$('mvfiche'),L=$('ffil'),B=$('ffbtn'),SH=$('fmsh'),DM=$('fdim'),POP=$('fmpop');
 const MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],NOW={y:new Date().getFullYear(),m:new Date().getMonth()+1};
@@ -6080,9 +6053,6 @@ function render(rows,box,ph){
 function closeOthers(box,keep){[...box.children].forEach(c=>{if(c.classList&&c.classList.contains('rgx')&&c!==keep&&!c.hidden){c.hidden=true;const p=c.previousElementSibling;p&&p.__paint&&p.__paint()}});
  box.querySelectorAll('.ed').forEach(e=>e.blur())}
 /* ---------- contenus des pages ---------- */
-const sun=()=>'Aujourd’hui à Paris : soir à 17 h 32, nuit à 19 h 10.';
-function moment(k){const b=document.querySelector('#c-moment [data-k="'+k+'"]');b&&b.click()}
-function autoK(){const h=new Date().getHours();return h<6?'nuit':h<12?'matin':h<18?'aprem':h<22?'soir':'nuit'}
 const FONTS=["'Cormorant Garamond'","'EB Garamond'","'Lora'","'Caveat'"],FSZ=[16,15,14,19];
 function stateConf(){const t=(window.__fidOn&&window.__fidOn())?'Ton journal est protégé par ton code et Face ID.':S.code!==false?'Ton journal est protégé par un code.':'Ton journal n’est pas verrouillé.';const e=$('rgcst');if(e)e.textContent=t}
 function stateNotif(){const e=$('rgnst');if(e)e.textContent='Tes préférences sont gardées ici. Les rappels automatiques ne sont pas encore disponibles dans cette version web.'}
@@ -6147,12 +6117,7 @@ compte:{t:'mon compte',r:()=>[
    $('rgdel').onclick=()=>plume(ph,'Tu es '+(S.accord===1?'sûr':S.accord===2?'sûr·e':'sûre')+' ? '+(S.petnom||'Plume')+' et tout ton journal disparaîtront.','supprimer',async()=>{toast(ph,'J’efface tout…');let res={};try{res=await window.__enCloud.deleteAccount()}catch(e){toast(ph,e.message);return}await window.__enWipeLocal();if(res.account===false){alert('Ton journal est effacé, ici et en ligne. Ton adresse e-mail n’a pas pu être retirée : il manque un réglage dans Supabase (voir le message de Claude).')}location.reload()})}}
 ]},
 apparence:{t:'apparence',ic:'apparence',r:()=>[
- {t:'html',h:'<div class="rgvg" id="rgvg"><button type="button" data-v="auto"><div style="background-image:linear-gradient(90deg,transparent 50%,transparent 50%),url(illus/aprem-automne.jpg);position:relative;overflow:hidden"><span style="position:absolute;inset:0 0 0 50%;background:url(illus/nuit-automne.jpg) center/cover"></span></div>auto</button><button type="button" data-v="aprem"><div style="background-image:url(illus/aprem-automne.jpg)"></div>jour</button><button type="button" data-v="soir"><div style="background-image:url(illus/soir-automne.jpg)"></div>soir</button><button type="button" data-v="nuit"><div style="background-image:url(illus/nuit-automne.jpg)"></div>nuit</button></div>',
-  init:()=>{const g=$('rgvg');const mark=()=>g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===(S.amb||'auto')));mark();g.onclick=e=>{const b=e.target.closest('button');if(!b)return;S.amb=b.dataset.v;mark();moment(S.amb==='auto'?autoK():S.amb)}}},
- {t:'x',k:'heures',l:'Heures',kw:'ambiance jour soir nuit soleil',v:()=>S.soleil===false?'soir '+tfmt(...(S.wSoir||[18,0])).replace(' 00','')+' · nuit '+tfmt(...(S.wNuit||[22,0])).replace(' 00',''):'suivre le soleil',
-  fill:(x,ph,paint)=>{const draw=()=>{x.innerHTML='';render([{t:'toggle',k:'soleil',l:'Suivre le soleil',v:true,on:()=>{draw();paint()}}],x,ph);
-   if(S.soleil!==false)render([{t:'h',l:sun()}],x,ph);
-   else{const sub=document.createElement('div');x.appendChild(sub);render([{t:'wheel',k:'wSoir',l:'Le soir commence',d:[18,0],cols:()=>[HRS,MIN],fmt:v=>tfmt(...v),on:()=>paint()},{t:'wheel',k:'wNuit',l:'La nuit commence',d:[22,0],cols:()=>[HRS,MIN],fmt:v=>tfmt(...v),on:()=>paint()},{t:'h',l:'Le jour revient à 6 h.'}],sub,ph)}};draw()}},
+ {t:'ro',l:'Ambiance',v:'Monde nuit'},
  {t:'choice',k:'saison',l:'Saisons',kw:'illustrations scènes',o:['suivre l’année','printemps','été','automne','hiver']},
  {t:'choice',k:'taille',l:'Taille du texte',d:1,o:['petite','moyenne','grande'],st:i=>'font-size:'+[13,15.5,18.5][i]+'px'},
  {t:'x',k:'ecr',l:'Écriture de mes pages',kw:'police',v:()=>['Cormorant','Garamond','Lora','Caveat'][S.font||0],
@@ -6279,8 +6244,7 @@ widgets:{t:'widgets',ic:'widgets',r:()=>[
       z.querySelectorAll('button').forEach(b=>b.onclick=()=>{W.cfg.sea=b.dataset.s;W.paintAll();pt()});z.__pt=pt;pt()}},
     {t:'x',k:'wshow',l:'Ce qui s’affiche',v:()=>{const n=Object.values(W.cfg.types).filter(Boolean).length;return n===4?'tout':n+' sur 4'},fill:(x,p,paint)=>render([['rdv','Rendez-vous'],['psy','Séances'],['anniv','Anniversaires'],['moi','Dates à moi']].map(o=>({t:'toggle',k:'wT'+o[0],l:o[1],v:!!W.cfg.types[o[0]],on:v=>{W.cfg.types[o[0]]=v?1:0;W.paintAll();paint()}})),x,p)},
     tab==='v'?{t:'toggle',k:'wDisc',l:'Discrétion',v:W.cfg.disc,on:v=>{W.cfg.disc=v;W.paintAll()}}:null,
-    tab==='v'?{t:'h',l:'Sur l’écran verrouillé : « 17 h · un rendez-vous » au lieu du nom.'}:null,
-    {t:'choice',k:'wNuit',l:'Jour et nuit',o:['comme l’app','comme le téléphone','toujours jour'],d:W.cfg.nuit,on:i=>{W.cfg.nuit=i;W.paintAll();c.querySelectorAll('.wgsea').forEach(z=>z.__pt&&z.__pt())}}];
+    tab==='v'?{t:'h',l:'Sur l’écran verrouillé : « 17 h · un rendez-vous » au lieu du nom.'}:null];
    render(rows,c,ph)}
   tabs.querySelectorAll('button').forEach(t=>t.onclick=()=>{if(t.dataset.t===tab)return;tab=t.dataset.t;tabs.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===t));c.style.opacity=0;setTimeout(()=>{draw();c.style.opacity=1},200)});
   draw()}}
@@ -6475,10 +6439,10 @@ const cw=$('calw');if(cw)cw.addEventListener('click',e=>{if(e.target.closest('bu
 const C={printemps:['#F6E4E6','#2E2128'],ete:['#F4DDD3','#2F2324'],automne:['#EBCFC6','#2A1E26'],hiver:['#E8DCE2','#2A2029']};
 const TC={rdv:'#7FA08F',psy:'#C9766E',anniv:'#D08A5E',moi:'#B97E8E'};
 const TODAY=new Date(),JN=['DIMANCHE','LUNDI','MARDI','MERCREDI','JEUDI','VENDREDI','SAMEDI'],JC=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'],MO=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-const cfg={sea:'auto',nuit:0,types:{rdv:1,psy:1,anniv:1,moi:1},disc:false};const done=new Set();const all=[];
+const cfg={sea:'auto',types:{rdv:1,psy:1,anniv:1,moi:1},disc:false};const done=new Set();const all=[];
 const autoSea=()=>{const m=TODAY.getMonth();return m<2||m===11?'hiver':m<5?'printemps':m<8?'ete':'automne'};
 const sea=()=>cfg.sea==='auto'?autoSea():cfg.sea;
-const night=()=>cfg.nuit===2?false:cfg.nuit===1?matchMedia('(prefers-color-scheme: dark)').matches:/2A1E26/i.test(($('open')||document.body).style.getPropertyValue('--sbg'));
+const night=()=>true;
 const same=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
 const evs=()=>(window.__calE||[]).filter(e=>cfg.types[e.t]);
 function on(dt){return evs().filter(e=>{if(e.t==='anniv'||e.t==='moi')return e.m===dt.getMonth()&&e.d===dt.getDate();
@@ -6700,7 +6664,7 @@ const hum=$('humeur'),omot=H.querySelector('.card.mot');body.insertBefore(hum,om
 const range=$('mood');const th=()=>range.style.setProperty('--thumb',col(+range.value));range.addEventListener('input',th);th();
 /* ---- 4·5 · émotion sélectionnée : phrase qui répond + lien écriture ---- */
 const MOM={matin:'ce matin',aprem:'cet après-midi',soir:'ce soir',nuit:'cette nuit'};
-const moment=()=>{const c=document.querySelector('#c-moment .chip.on, #c-moment [aria-pressed=true]');return MOM[c&&c.dataset.k]||'cet après-midi'};
+const moment=()=>{const h=new Date().getHours();return MOM[h<6?'nuit':h<12?'matin':h<18?'aprem':h<22?'soir':'nuit']};
 const REP=v=>v<15?'Je suis là. On peut juste respirer un moment.':v<30?'Ce n’est pas grave de ne pas aller bien.':v<44?'Doucement. Une chose à la fois.':v<57?'Une journée calme, c’est bien aussi.':v<71?'Garde ce petit élan, il te va bien.':v<86?'Ça fait plaisir à lire.':'Savoure-le, tu le mérites.';
 const box=document.createElement('div');box.className='nhm';$('hres').prepend(box);
 const wr=H.querySelector('.wr'),WC=[...wr.querySelectorAll('.wc')];
@@ -6911,19 +6875,19 @@ function vRead(){const r=S.rd;let h=`<div class="ps-k" style="margin-top:16px">C
 const localSessionDate=(date=new Date())=>date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
 function openMS(){
  const session=window.__enPsyModeSession;
- if(!session||ph.querySelector('[data-psy-mode-session]'))return;
+ const app=ph.closest('#en-app');
+ if(!session||!app||app.classList.contains('en-mode-open'))return;
  const returnFocus=ph.querySelector('.psmsb');
  const first=S.mode==='first'?window.__enApprovedPsy?.getState()?.first:null;
  const questions=S.mode==='first'?pratQ().filter(q=>S.first.p['pr_'+q.k]).map(q=>({id:'question:'+q.k,t:q.t})):[];
  S.msDraft||={...session.newDraft(S.notes,S.prep.stars,first,questions),date:localSessionDate()};
- closeSheet(1);
+ closeSheet(1);unlock();
  const overlay=document.createElement('div');
  overlay.dataset.psyModeSession='';
- const background=[...ph.children].filter(child=>!child.inert);
- background.forEach(child=>{child.inert=true});
- ph.appendChild(overlay);
- lock(overlay);
- const close=()=>{overlay.remove();background.forEach(child=>{child.inert=false});unlock()};
+ app.classList.add('en-mode-open');
+ ph.inert=true;
+ app.appendChild(overlay);
+ const close=()=>{overlay.remove();app.classList.remove('en-mode-open');ph.inert=!ph.classList.contains('en-on')};
  session.mount(overlay,S.msDraft,{
   pause(){close();returnFocus?.focus({preventScroll:true});window.__vaultPushNow?.()?.catch(()=>{})},
   finish(){const draft=S.msDraft;if(!draft)return;
@@ -7111,7 +7075,7 @@ function lock(o){const st=ph.scrollTop,h=ph.clientHeight;o.style.top=st+'px';o.s
 function unlock(){ph.style.overflowY=''}
 function toast(t){const o=document.createElement('div');o.className='ps-toast ps-fadein';o.textContent=t;o.style.top=(ph.scrollTop+ph.clientHeight-86)+'px';ph.appendChild(o);setTimeout(()=>o.remove(),2200)}
 function openSheet(html){closeSheet(1);const d=document.createElement('div');d.className='ps-dim';const s=document.createElement('div');s.className='ps-sheet';s.innerHTML=`<div class="in">${html}</div>`;[d,s].forEach(x=>{lock(x);ph.appendChild(x)});d.onclick=()=>closeSheet();requestAnimationFrame(()=>{d.classList.add('on');s.classList.add('on')});let y0=null;const g=s.querySelector('.ps-grab');g.onpointerdown=e=>{y0=e.clientY};s.onpointerup=e=>{if(y0!=null&&e.clientY-y0>40)closeSheet();y0=null}}
-function closeSheet(now){const d=ph.querySelector('.ps-dim'),s=ph.querySelector('.ps-sheet');if(!d&&!s)return;if(now){d&&d.remove();s&&s.remove();return}d&&d.classList.remove('on');s&&s.classList.remove('on');setTimeout(()=>{d&&d.remove();s&&s.remove();if(!ph.querySelector('[data-psy-mode-session]'))unlock()},300)}
+function closeSheet(now){const d=ph.querySelector('.ps-dim'),s=ph.querySelector('.ps-sheet');if(!d&&!s)return;if(now){d&&d.remove();s&&s.remove();return}d&&d.classList.remove('on');s&&s.classList.remove('on');setTimeout(()=>{d&&d.remove();s&&s.remove();unlock()},300)}
 function setPath(path,val){const p=path.split('.');let o=S;if(p[0]==='first'){o=S.first.p;p.shift()}else if(p[0]==='ed'){o=S.ed;p.shift()}else if(p[0]==='prep'){o=S.prep;p.shift()}else if(p[0]==='sv'){o=S.sv;p.shift()}else if(p[0]==='ap'){o=S.ap;p.shift()}
  for(let i=0;i<p.length-1;i++){if(o[p[i]]==null)o[p[i]]={};o=o[p[i]]}o[p[p.length-1]]=val}
 B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!f)return;if(f==='paste'){S.paste=e.target.value;return}if(f==='convtxt'){S.convTxt=e.target.value;return}if(f==='rdedit'){S.rd.dire[S.rd.i].t=e.target.value;return}setPath(f,e.target.value);
@@ -8256,16 +8220,8 @@ function applyAnim(){H.classList.toggle('ac-still',!animOn())}
 window.__enAnim=v=>{store('en-anim',v?1:0);applyAnim()};
 if(mq&&mq.addEventListener)mq.addEventListener('change',applyAnim);applyAnim();
 
-/* ---------- le « maintenant » de l'accueil ----------
-   La date est celle que montre l'en-tête (elle suit le choix de saison du prototype) ;
-   l'heure est l'heure réelle si le moment choisi est le moment réel, sinon une heure représentative du moment. */
-const REPR={matin:[9,0],aprem:[14,0],soir:[19,30],nuit:[23,0]};
-const momOf=h=>h>=5&&h<12?'matin':h>=12&&h<18?'aprem':h>=18&&h<22?'soir':'nuit';
-function now(){if(window.__acNow)return new Date(window.__acNow);
- const d=+(he.querySelector('.hen')||{}).textContent||28,m=MN.indexOf(((he.querySelector('.km')||{}).textContent||'').trim().toLowerCase());
- const c=document.querySelector('#c-moment [aria-pressed="true"]'),r=new Date(),mom=c&&c.dataset.k||momOf(r.getHours());
- const [h,mi]=mom===momOf(r.getHours())?[r.getHours(),r.getMinutes()]:REPR[mom]||[14,0];
- return new Date(r.getFullYear(),m<0?r.getMonth():m,d,h,mi)}
+/* L’illustration de nuit ne change pas l’heure utilisée par le calendrier. */
+function now(){return window.__acNow?new Date(window.__acNow):new Date()}
 const day0=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate());
 const dayKey=d=>{d=d||now();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const same=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
@@ -8324,7 +8280,7 @@ hev.addEventListener('click',e=>{e.stopPropagation();const p=CUR;if(!p)return;
  if(p.sum){toCal(()=>window.__calDay&&window.__calDay(p.dt));return}
  toCal(()=>{window.__calDay&&window.__calDay(p.dt);setTimeout(()=>window.__calOpen&&window.__calOpen(p.one,p.dt),350)})});
 let evT=0;const evLater=()=>{clearTimeout(evT);evT=setTimeout(drawEv,120)};
-[he.querySelector('.hedt'),$('c-moment')].forEach(n=>n&&new MutationObserver(evLater).observe(n,{subtree:true,childList:true,characterData:true,attributes:true}));
+const headerDate=he.querySelector('.hedt');if(headerDate)new MutationObserver(evLater).observe(headerDate,{subtree:true,childList:true,characterData:true,attributes:true});
 const calp=$('calp');if(calp)new MutationObserver(evLater).observe(calp,{subtree:true,childList:true});
 setInterval(drawEv,30000);window.__acEv=drawEv;drawEv();
 
@@ -8533,8 +8489,8 @@ const $=s=>ph.querySelector(s);
 const FA=[['raconter','ME RACONTER','tout ce qui vient'],['guider','ÊTRE GUIDÉE','une piste à suivre'],['vider','VIDER MON SAC','quelques mots, vite']];
 /* A-14 (03.11.2026) : un mot par jour de l’année (le 29 février reprend celui du 28) */
 const MOTS=["« Une année toute neuve ne te demande rien. Elle s’ouvre, simplement, comme une page qui t’attend. »", "« Tu n’as pas besoin de grandes résolutions. Une petite attention pour toi chaque jour, c’est déjà un chemin. »", "« Il fait froid dehors, alors sois chaude avec toi-même. Une couverture, un thé, quelques mots. »", "« Ce que tu as traversé l’an dernier t’a appris des choses. Tu peux les garder sans garder le poids. »", "« Recommencer n’efface rien de ce que tu as vécu. C’est continuer, avec un peu plus de douceur. »", "« Les jours rallongent déjà d’une minute. Les belles choses aussi arrivent lentement, sans bruit. »", "« Tu as le droit de commencer l’année fatiguée. Personne ne court contre toi, ici on va à ton pas. »", "« Même un tout petit souhait pour cette année compte. Il suffit parfois d’une graine pour tout un jardin. »", "« Le silence de janvier est un bon endroit pour t’entendre penser. Laisse-le t’envelopper un moment. »", "« Tu n’es pas en retard sur ta vie. Tu es exactement là où tu es, et c’est un très bon point de départ. »", "« Prends soin de ce qui pousse en toi, même si on ne le voit pas encore. Les racines travaillent en secret. »", "« Une journée grise peut contenir un moment doré. Cherche-le, il est souvent minuscule et tout près. »", "« Tu peux dire non à ce qui t’épuise. C’est une façon tranquille de dire oui à toi. »", "« Ce que tu ressens aujourd’hui n’est pas ce que tu ressentiras toujours. Les saisons passent, en toi aussi. »", "« Tu mérites la même patience que tu offres aux autres. Garde-en un peu pour toi, aujourd’hui. »", "« Un pas, puis un autre. Les grandes distances sont faites de pas ordinaires, comme celui d’aujourd’hui. »", "« Il y a des jours où exister suffit. Celui-ci peut en être un, et c’est déjà une belle chose. »", "« Laisse tomber ce qui n’est pas à toi de porter. Tes mains ont besoin d’être libres pour accueillir. »", "« Ici, rien n’a besoin d’être joli pour être vrai. Tes mots peuvent arriver tels qu’ils sont. »", "« Tu n’as pas à mériter le repos. Il fait partie de la vie, pas de la récompense. »", "« La lumière d’hiver est basse et dorée. Elle éclaire autrement, comme toi les jours difficiles. »", "« Ce qui te semble lent avance quand même. Les racines poussent sous la neige. »", "« Tu es plus forte que la journée la plus dure que tu as déjà traversée. Tu en es la preuve vivante. »", "« Accueille-toi comme tu accueillerais une amie qui arrive du froid : avec un sourire et quelque chose de chaud. »", "« Personne ne voit tout ce que tu portes. Ici, tu peux le poser un moment, rien ne sera jugé. »", "« Ton rythme est le bon rythme. Il n’y a pas d’autre horloge que la tienne. »", "« Le plus beau des cadeaux, parfois, c’est une heure rien qu’à toi. Tu as le droit de te l’offrir. »", "« Ce que tu as fait aujourd’hui suffit, même si c’était peu. Les petits jours comptent autant que les grands. »", "« Tu peux être en chantier et digne d’amour en même temps. Personne n’attend que tu sois terminée. »", "« Les petites joies de la semaine aiment qu’on se souvienne d’elles. Elles reviennent plus souvent ainsi. »", "« Janvier se termine. Regarde le chemin parcouru, même s’il te paraît court : il est à toi. »", "« Février est court et doux si on le laisse faire. Prends-le comme il vient, sans rien forcer. »", "« Tu as le droit de ne pas avoir de réponse. Les questions aussi ont le droit de vivre un peu. »", "« Ce que tu caches par peur peut se dire ici, tout bas, à la page. Elle sait garder les secrets. »", "« L’amour commence souvent par la façon dont on se parle à soi. Parle-toi doucement aujourd’hui. »", "« Tu n’es pas trop. Tu n’es pas pas assez. Tu es toi, et c’est la bonne mesure. »", "« Les bourgeons attendent leur heure sans s’inquiéter. Tu peux faire pareil, ton tour viendra. »", "« Pense à quelqu’un qui te fait du bien. Ce lien-là est un trésor, même quand il est discret. »", "« Les jours où tout pèse, commence par le plus léger. Le reste peut attendre un peu. »", "« Prends ta tasse à deux mains. Il y a de la chaleur dans les gestes simples, et elle est pour toi. »", "« Tu n’as pas à être forte tout le temps. Même les montagnes ont des brumes. »", "« Une émotion n’est jamais une faute. C’est un message qui frappe à la porte, il suffit d’écouter. »", "« Pardonne-toi ce que tu ne savais pas encore. Tu as fait avec ce que tu avais, et c’était courageux. »", "« Tu as le droit d’aimer à ta façon, même si elle ne ressemble à aucune autre. »", "« Ce que tu donnes aux autres, garde-en un peu pour toi. Tu en as besoin aussi. »", "« Une main sur le cœur, trois respirations. Tu es là, et c’est déjà beaucoup. »", "« Tu n’as pas besoin d’expliquer pourquoi tu as besoin de calme. Ton besoin suffit comme raison. »", "« Ce que tu écris aujourd’hui, la toi de demain sera contente de le relire. »", "« Il y a de la tendresse à prendre soin de ses petites habitudes. Elles te tiennent la main sans bruit. »", "« Tu peux changer d’avis. Grandir, c’est aussi ça, et ça ne fait pas de toi quelqu’un d’instable. »", "« La neige qui fond fait de la place à ce qui va naître. Ce qui s’en va prépare ce qui vient. »", "« Ton corps a fait beaucoup pour toi aujourd’hui, souvent sans que tu le remarques. Il mérite un merci. »", "« Tes doutes ne disent pas que tu as tort. Ils disent que tu réfléchis, et que tu tiens à bien faire. »", "« Ce n’est pas grave de ne pas finir. Commencer était déjà courageux, et tu pourras reprendre demain. »", "« Garde une place dans ta journée pour ne rien faire. Ce n’est pas du temps perdu. »", "« Tu as traversé des hivers avant celui-ci. Tu sais déjà comment on arrive au printemps. »", "« Ta sensibilité est une richesse, pas un défaut à corriger. Elle te fait voir ce que d’autres manquent. »", "« Ce que tu ressens a le droit d’exister, même quand tu ne sais pas encore le dire. »", "« Le mois s’achève. Dis-toi une chose gentille, comme si tu la disais à une amie. »", "« Mars ouvre les fenêtres. Laisse un peu d’air nouveau entrer dans tes pensées. »", "« Les premières fleurs ne demandent pas la permission. Toi non plus, pour fleurir. »", "« Tu peux commencer petit. Une graine n’a jamais honte de sa taille, et pourtant elle devient un arbre. »", "« Tu peux laisser derrière toi, avec l’hiver, ce qui t’a alourdie. Le printemps n’en a pas besoin. »", "« Il y a des jours où l’on se sent renaître sans savoir pourquoi. Profite de celui-ci s’il vient. »", "« Tu n’as pas à tout comprendre de toi aujourd’hui. Tu as toute la vie pour faire connaissance. »", "« Le printemps n’arrive pas d’un coup. Il revient chaque jour un peu plus. Toi aussi. »", "« Ta voix compte. Même quand elle tremble, elle dit des choses importantes. »", "« Ce que tu as semé avec patience finira par pousser, même si la terre semble encore endormie. »", "« Prends le temps de regarder le ciel aujourd’hui. Il change sans se presser. »", "« Tu as le droit de te réjouir de tes progrès, même minuscules. Ils sont la preuve que tu avances. »", "« Laisse les autres avoir leur chemin. Le tien est déjà bien assez beau à suivre. »", "« Une journée de pluie arrose ce qui va grandir. Même les jours mouillés travaillent pour toi. »", "« Tu n’as pas besoin d’aller mieux pour mériter de la douceur. Prends ton temps, la page t’attend. »", "« Imagine un instant ce que tu ferais si tu n’avais peur de rien. Ce rêve-là dit quelque chose de toi. »", "« Il est permis de se reposer au milieu d’un élan. L’élan t’attendra, il sait que tu reviens. »", "« Tu es une personne en mouvement, pas un problème à résoudre. Tu as le droit d’être en route. »", "« Les oiseaux reviennent. Certaines choses reviennent toujours, même après une longue absence. »", "« Fais une chose aujourd’hui juste parce qu’elle te fait plaisir. Ta joie n’a pas besoin d’être utile. »", "« Ce que tu as perdu t’a appris ce qui compte. Ce n’est pas rien, et tu le portes avec toi. »", "« Le jour et la nuit sont presque égaux. Laisse aussi un équilibre entre l’effort et le repos. »", "« Tu n’es pas seule avec ce que tu ressens. Beaucoup d’autres le portent aussi, en silence. »", "« Il y a des souvenirs qui sentent bon le printemps. Laisse l’un d’eux te revenir aujourd’hui. »", "« Tu peux être fière de toi sans attendre que quelqu’un d’autre le soit. »", "« Les branches nues ne sont pas mortes. Elles se préparent, et bientôt elles seront couvertes de vert. »", "« Ralentir n’est pas reculer. C’est parfois la seule façon d’arriver. »", "« Tu as le droit de demander de l’aide. C’est une force, pas une faiblesse. »", "« Ce qui te semblait impossible l’an dernier, tu l’as peut-être déjà fait. »", "« Une fenêtre ouverte, une respiration profonde. Le monde est un peu plus grand que tes soucis. »", "« Il y a une phrase que tu aimerais entendre aujourd’hui. Tu as le droit de te la dire toi-même. »", "« Mars s’en va en laissant des bourgeons partout. Il y en a aussi en toi. »", "« Avril est capricieux, et c’est très bien ainsi. Tu as le droit de changer de ciel dans la journée. »", "« Les cerisiers fleurissent peu de temps, et personne ne leur reproche. Profite de ce qui passe. »", "« Tu n’as pas à être la même qu’hier. Tu peux te découvrir encore, avec curiosité et sans te juger. »", "« Ce qui t’a surprise récemment mérite qu’on s’y attarde. L’étonnement garde le cœur jeune. »", "« Il y a des larmes qui lavent, comme les averses de printemps. Après elles, tout respire mieux. »", "« Tu peux aimer quelqu’un et avoir besoin de distance. Les deux tiennent ensemble. »", "« Une petite victoire reste une victoire. Elle mérite d’être gardée, même si personne ne l’a vue. »", "« Ce n’est pas parce que c’est difficile que tu fais mal. Les belles choses demandent souvent de l’effort. »", "« Tes envies te parlent de toi. Écoute-les, même celles qui semblent folles. »", "« Le vert revient partout. La vie sait recommencer, et elle sait le faire en toi. »", "« Tu n’as pas besoin d’être occupée pour être utile. Ta présence, déjà, a de la valeur. »", "« La petite fille que tu as été serait touchée de voir le chemin que tu as fait jusqu’ici. »", "« Il y a du courage à rester douce dans un monde pressé. Ta douceur est une force tranquille. »", "« Ton chemin peut faire des détours. Les détours aussi montrent des paysages. »", "« Les jours plus longs offrent un peu plus de lumière. Prends-en un morceau pour toi. »", "« Ce que tu ressens dans ton corps a aussi quelque chose à dire. Prends un moment pour l’écouter. »", "« Tu peux te tromper et rester quelqu’un de bien. Une erreur est un passage, pas une définition. »", "« Il y a des endroits où l’on se sent en sécurité. Pense au tien, et garde-le près de toi aujourd’hui. »", "« Le jardin ne pousse pas plus vite si on tire sur les tiges. Ta vie non plus. »", "« Tu as déjà en toi beaucoup de ce que tu cherches ailleurs. Prends le temps de le reconnaître. »", "« Prends soin des liens qui te font du bien. Un simple message suffit parfois à les garder chauds. »", "« Le printemps pardonne les gelées. Pardonne-toi aussi tes jours froids. »", "« Tu peux avoir envie de tout et de rien à la fois. C’est humain, et ça passe comme un nuage. »", "« Ce que tu fais avec amour laisse une trace, même dans les gestes les plus ordinaires de la semaine. »", "« Il n’y a pas de bonne façon de ressentir. Il y a la tienne, et elle mérite d’être accueillie. »", "« Ce qui t’inquiète aujourd’hui sera peut-être léger dans un mois. Note-le, tu verras. »", "« Tu n’as pas à remplir chaque silence. Certains silences reposent, comme une main posée sur l’épaule. »", "« Le monde a besoin de ta façon unique de regarder les choses. Personne ne voit exactement comme toi. »", "« Un rayon de soleil sur la joue, c’est un petit cadeau gratuit. Ne le laisse pas passer. »", "« Avril se termine. Garde une fleur de ce mois dans ta mémoire, celle qui t’a fait sourire. »", "« Mai arrive les bras pleins de fleurs. Tu peux en garder quelques-unes pour toi. »", "« Le muguet porte bonheur, mais le vrai porte-bonheur, c’est la façon dont tu prends soin de toi. »", "« Tu as le droit de te poser au soleil sans rien accomplir. Le soleil, lui, ne te demande rien. »", "« Il y a des personnes qui t’ont fait du bien. Leur gentillesse vit encore en toi aujourd’hui. »", "« Tu fais de ton mieux, et ton mieux change selon les jours. C’est normal. »", "« Il y a des journées faites pour flâner. Laisse celle-ci en être une si elle le veut. »", "« Ce que tu aimes dit qui tu es. Prends le temps de l’aimer pleinement, sans t’en excuser. »", "« Tu peux te sentir perdue et avancer quand même. On trouve souvent le chemin en marchant. »", "« Garde un rêve près de toi, même un tout petit, même un pas réaliste. Les rêves aussi ont besoin d’air. »", "« La nature ne se presse pas, et pourtant tout s’accomplit. Tu peux lui emprunter un peu de sa patience. »", "« Tu n’es pas responsable du bonheur de tout le monde. Le tien compte aussi. »", "« Ton cœur sait parfois avant ta tête. Laisse-le parler ici, il a des choses justes à dire. »", "« Un pique-nique, une promenade, une fenêtre ouverte : les joies simples sont les plus solides. »", "« Tu as le droit de dire « je ne sais pas ». C’est souvent là que commencent les vraies découvertes. »", "« Ce qui te rend légère, même pour cinq minutes, mérite une place dans ta journée. »", "« Ce que tu as construit pierre après pierre tient debout. Regarde-le avec fierté. »", "« Les orages de mai passent vite et laissent l’air plus doux. Les tiens aussi passeront. »", "« Tu peux t’accorder du temps sans te justifier. Ce temps-là te revient de plein droit. »", "« La gentillesse que tu offres revient souvent par des chemins inattendus. »", "« Une odeur peut ramener tout un souvenir. Laisse une odeur douce te rendre visite aujourd’hui. »", "« Il y a de la beauté dans les choses imparfaites. Dans les tiennes aussi. »", "« Tu n’as pas besoin d’être prête pour commencer. On le devient en avançant. »", "« Les jours sont longs : garde un peu de lumière pour le soir, comme une lampe qu’on laisse allumée. »", "« Tu peux rire de toi avec tendresse. C’est une forme de liberté, et ça allège bien des journées. »", "« Il y a des choses de toi que tu aimerais qu’on sache. Elles ont le droit d’exister, ici d’abord. »", "« Ta fatigue est une information, pas un échec. Elle te dit simplement qu’il est temps de souffler. »", "« Le monde est plein de couleurs aujourd’hui. Choisis-en une pour ta journée. »", "« Tu peux être douce et ferme en même temps. Poser une limite peut se faire avec beaucoup d’amour. »", "« Ce qui compte vraiment tient souvent dans très peu de mots. Un seul peut suffire à dire ta journée. »", "« Il y a des choses que tu sais faire mieux qu’avant. C’est la preuve tranquille que tu grandis. »", "« Mai s’achève dans les roses. Tu as aussi fleuri ce mois-ci, à ta façon. »", "« Juin sent l’été qui approche. Laisse-toi gagner par sa légèreté, même un tout petit peu. »", "« Les soirées s’étirent. Offre-toi un moment de calme avant que la nuit tombe. »", "« Tu n’as rien à prouver aujourd’hui. Tu peux juste être là, et c’est déjà une belle présence. »", "« Un souvenir d’été qui te fait sourire peut te tenir compagnie toute la journée. »", "« Il y a de la force à savoir s’arrêter quand c’est trop. C’est une sagesse, pas une défaite. »", "« Tu peux laisser une porte ouverte à ce qui vient, sans savoir ce que c’est. »", "« Le soleil se lève tôt. Toi, tu as le droit de te lever doucement, à ton rythme. »", "« Ce que tu fais quand personne ne te regarde, et que tu aimes, dit beaucoup de la belle personne que tu es. »", "« Tu n’es pas tes erreurs. Tu es ce que tu en fais, et tu en fais souvent quelque chose de beau. »", "« Chaque été apporte son lot de premières fois. Il y en a peut-être une pour toi. »", "« Il n’y a pas de petite journée : il y a ce que tu en gardes, et c’est déjà beaucoup. »", "« Tu peux être fatiguée de tout et pleine d’espoir à la fois. Les deux savent cohabiter. »", "« Il y a un lieu où tu aimerais être en ce moment. Ferme les yeux un instant, et va t’y promener. »", "« La chaleur invite à ralentir. Écoute-la, et laisse ta journée prendre un rythme d’été. »", "« Tu as le droit de prendre de la place. Ta voix, ton temps et tes envies comptent autant que les autres. »", "« Tes émotions sont des vagues : elles montent, puis elles redescendent. »", "« On t’a fait un jour un compliment que tu as eu du mal à croire. Il était sincère, tu sais. »", "« Les fruits mûrissent à leur rythme, et ils sont meilleurs ainsi. Ce que tu prépares aussi. »", "« Tu peux faire une pause dans tes projets sans les abandonner. Ils t’attendront patiemment. »", "« Le jour le plus long de l’année arrive. Prends un morceau de cette lumière et range-le pour l’hiver. »", "« La patience que tu as apprise te sert chaque jour, même quand tu ne t’en rends pas compte. »", "« Tu peux te sentir bien sans raison. Profite, tout simplement, le bonheur n’a pas besoin de motif. »", "« Il y a des amitiés qui sont comme des maisons. Pense à celles qui t’abritent. »", "« Ton histoire est encore en train de s’écrire. Rien n’est figé, chaque page peut tout changer. »", "« Trois mots peuvent suffire à raconter une journée. Et un quatrième pour celle que tu espères. »", "« Tu n’es pas obligée de répondre tout de suite. Le temps de réfléchir t’appartient. »", "« Une glace, une ombre, un livre : parfois le bonheur tient dans une après-midi. »", "« Tu peux te réjouir pour les autres sans t’oublier. Il y a de la joie pour tout le monde, toi comprise. »", "« Emporte dans l’été qui commence ce qui te fait du bien, et laisse le reste au bord du chemin. »", "« Juin se termine. Une moitié d’année est passée, et tu es toujours là, debout et vivante. »", "« Juillet ouvre la saison des pauses. Tu as le droit d’en prendre une, même courte. »", "« Les vacances ne sont pas qu’un lieu. C’est aussi une façon de regarder sa journée. »", "« Une journée entière sans obligation, ça existe. Tu as le droit d’en rêver, et même de t’en offrir une. »", "« Tu peux aimer ta solitude. Elle n’est pas toujours un manque, parfois c’est un vrai refuge. »", "« Le soleil chauffe la peau et le cœur. Laisse-le faire un moment, sans rien lui demander d’autre. »", "« Tu as le droit de ne pas être d’humeur estivale. Chaque saison intérieure est valable. »", "« Les cigales, les vagues, les rires au loin : l’été chante pour qui prend le temps d’écouter. »", "« Il n’y a pas d’âge pour s’émerveiller. Un nuage, une lumière, un rien peuvent encore t’éblouir. »", "« Tu peux t’éloigner de ce qui te fait du mal, même si c’est familier. »", "« Les nuits chaudes sont faites pour regarder les étoiles. Elles brillent pour tout le monde, toi aussi. »", "« Apprendre quelque chose de nouveau peut se faire sans pression, juste pour le plaisir de découvrir. »", "« Ton bien-être n’est pas un luxe. C’est une base, comme les fondations d’une maison. »", "« Il y a des jours pour faire et des jours pour être. Celui-ci te dira lequel il est. »", "« Certains repas ont le goût de quelqu’un qu’on aime. Ils nourrissent bien plus que le corps. »", "« Tu peux te sentir chez toi en toi-même. C’est un endroit qui se construit. »", "« Le temps des vacances passe vite. Savoure plutôt que de compter, chaque instant a sa saveur. »", "« Ce qui t’a fait du bien cette semaine, même par hasard, mérite que tu t’en souviennes. »", "« Tu n’as pas besoin de tout planifier pour que ce soit beau. Le hasard aussi a du talent. »", "« La mer efface les traces sur le sable chaque jour. Chaque jour, tu peux recommencer. »", "« Il y a dans tes gestes de tous les jours une beauté que tu ne vois peut-être plus. Elle est là. »", "« Tu as le droit d’être heureuse sans culpabilité. Ta joie n’enlève rien à personne. »", "« Il y a des souvenirs qui réchauffent pendant des années. Tu en fabriques peut-être un aujourd’hui. »", "« Les mots qu’on n’envoie jamais ont quand même le droit d’être écrits. La page sait les garder. »", "« Ta lenteur a sa propre sagesse. Elle voit des choses que la vitesse fait toujours manquer. »", "« Un coucher de soleil ne se presse jamais. Regarde-en un si tu peux. »", "« Il y a des choix que tu ne regrettes pas. Ils te rappellent que tu sais écouter ce qui est juste. »", "« Tu n’as pas à être utile pour être précieuse. Tu comptes simplement parce que tu es toi. »", "« L’été t’invite à alléger ton sac. Qu’est-ce que tu pourrais poser ? »", "« Ce qui te fait te sentir vivante est un fil précieux. Tiens-le bien, il te guide. »", "« Les fruits d’été sont sucrés parce qu’ils ont pris leur temps au soleil. »", "« Juillet s’en va. Garde dans un coin de ta tête la couleur de ses soirées. »", "« Août est un long soupir chaud. Laisse ta journée respirer avec lui, sans te presser. »", "« Tu as le droit de rêvasser. C’est là que naissent beaucoup de belles idées. »", "« Certains endroits découverts un jour restent en nous longtemps. Ils font partie de ton paysage. »", "« Tu peux te sentir loin de tout et proche de toi. C’est parfois là qu’on se retrouve le mieux. »", "« Les étoiles filantes passent en août. Fais un vœu, même en secret. »", "« Il y a des choses que tu aimes chez toi cette année plus que l’an dernier. Elles méritent ton regard. »", "« Tu n’as pas besoin d’être occupée pour avoir une journée réussie. Une journée douce est réussie. »", "« Il y a des silences qui ressemblent à des câlins. Laisse-en un t’envelopper aujourd’hui. »", "« Il y a eu ces derniers temps un moment où tu étais à ta place. Ce sentiment-là peut revenir. »", "« Tu peux te reposer sans attendre d’être épuisée. Le repos se prend aussi avant la fatigue. »", "« L’herbe sèche reverdit à la première pluie. Toi aussi, tu sais reprendre des forces. »", "« Une journée de plus cette semaine ne viendra pas, mais une heure pour toi, peut-être. Garde-la précieusement. »", "« Tu as le droit de ne pas aimer ce que tout le monde aime. Tes goûts sont une part de ta signature. »", "« Le monde ralentit un peu en août. Profite de ce ralentissement pour te retrouver. »", "« Les premières fois de l’été gardent un goût particulier. Elles te montrent que tu oses encore. »", "« Tu es une personne qui mérite qu’on l’attende, qu’on l’écoute et qu’on prenne soin d’elle. »", "« Les journées raccourcissent doucement. Chaque saison sait faire ses adieux sans drame. »", "« Tu as le droit d’être fière de toi, sans modestie, juste pour toi. Personne n’a besoin de le savoir. »", "« Tu peux garder de l’été ce qui t’a fait du bien et laisser le reste. »", "« Il y a de l’amour dans les petites routines. Prends soin des tiennes. »", "« La rentrée approche. Elle peut commencer par une phrase gentille que tu te dis à toi-même. »", "« Tu n’es pas obligée d’avoir un plan pour la suite. Tu peux juste avoir une envie. »", "« Le soir tombe plus tôt : c’est l’heure des confidences, avec la page ou avec quelqu’un que tu aimes. »", "« Un rire partagé cet été continue de résonner quelque part en toi. Laisse-le revenir. »", "« Ton corps a besoin d’eau, de sommeil et de douceur. Offre-lui les trois. »", "« Tu peux préparer la rentrée en douceur, un petit pas à la fois, sans tout organiser aujourd’hui. »", "« Ce que tu as aimé dans ces semaines peut t’accompagner quand le rythme reprendra. »", "« Tu n’as pas à tout reprendre d’un coup. Tu peux remettre ta vie en route doucement. »", "« Les fins d’été ont une lumière particulière. Regarde-la, elle ne dure pas. »", "« Une promesse douce faite à toi-même vaut mieux qu’une longue liste d’obligations. »", "« Août s’achève. Les valises se vident, et la page est prête pour la suite. »", "« Septembre ressemble à un cahier neuf. Tu peux y écrire ce que tu veux. »", "« La rentrée n’est pas une course. Tu peux y entrer à ton rythme, sans te comparer aux autres. »", "« Trois petits souhaits pour les mois qui viennent, c’est assez. Les grandes listes peuvent attendre. »", "« Tu as le droit d’être nostalgique de l’été et contente de la suite. »", "« Les routines reviennent. Choisis-en une qui prend soin de toi, rien qu’une, et tiens-y doucement. »", "« Il y a des choses qui te rassurent quand tout reprend. Garde-les tout près de toi cette semaine. »", "« Tu n’as pas à être parfaite dès le premier jour. Personne ne l’est, et ce n’est pas ce qu’on attend de toi. »", "« Il y a de la beauté dans le recommencement, même quand il fatigue. »", "« Tu as le droit de ne plus accepter ce qui te fait du mal. On peut le dire avec douceur et fermeté. »", "« Tu peux ajuster tes objectifs. Ils sont là pour t’aider, pas pour t’écraser. »", "« Les pommes mûrissent, les vignes aussi. Les saisons récompensent la patience. »", "« Tu as des talents que tu oublies souvent d’avoir. Ils sont pourtant là, fidèles et bien vivants. »", "« Tu as le droit de protéger ton énergie. Elle est précieuse, et tu n’en as qu’une réserve. »", "« Ce que tu commences maintenant n’a pas besoin d’être fini demain. »", "« Certaines personnes t’ont aidée sans même le savoir. Tu fais sûrement pareil pour d’autres. »", "« Il est permis d’avancer en doutant. Le doute et le courage marchent souvent côte à côte. »", "« Le ciel de septembre est souvent le plus clair. Lève les yeux aujourd’hui. »", "« Cet été t’a appris des choses sur toi, même si tu ne les as pas encore mises en mots. »", "« Tu peux dire « pas maintenant » sans dire « jamais ». Tes rythmes ont le droit d’être respectés. »", "« Ta valeur ne dépend pas de ta productivité. Tu vaux autant les jours où tu fais peu. »", "« Il y a encore tant de choses à découvrir cette année. Laisse ta curiosité choisir la première. »", "« Tu n’es pas seule à te sentir un peu dépassée à la rentrée. C’est un passage, et il se traverse. »", "« L’équinoxe revient : un jour et une nuit de même taille. Fais une place égale à l’effort et au repos. »", "« Chaque fois que tu es gentille avec toi, tu apprends un peu mieux à le faire. Continue. »", "« Tu peux être en transition. Tout le monde l’est un peu, tout le temps. »", "« Les premières feuilles qui tombent rappellent que lâcher prise peut être beau. »", "« Ce que tu ressens en ce moment a le droit d’être là, sans que tu cherches à le changer. »", "« Tu as le droit de prendre ton temps pour décider. Les bonnes décisions mûrissent comme les fruits. »", "« Un thé chaud revient sur la table. Les petits rituels font de grandes douceurs. »", "« Septembre se termine. Tu as repris ton souffle, ta place et ta route. »", "« Octobre se pare d’or et de rouille. Toi aussi, tu peux changer de couleur sans perdre ta beauté. »", "« Les feuilles tombent sans regret. Elles savent qu’elles nourriront le printemps. »", "« Il y a des choses que tu es prête à laisser partir. Les laisser s’envoler fait de la place pour respirer. »", "« Tu as le droit de te blottir. C’est la saison qui le demande, et ton cœur aussi peut-être. »", "« Une soupe, un plaid, un livre : ce soir peut être simple et doux. »", "« Un souvenir d’automne qui sent la cannelle ou les marrons peut réchauffer toute une journée grise. »", "« Tu n’as pas à briller tout le temps. La lune aussi a ses phases, et elle reste belle. »", "« Il y a du réconfort dans le bruit de la pluie contre la vitre. Laisse-la te bercer un moment. »", "« Se sentir chez soi est un sentiment précieux. Tu peux le cultiver, un petit coin après l’autre. »", "« Tu peux te reposer avant d’être à bout. Ton corps te remerciera de ne pas attendre la limite. »", "« Les arbres se dénudent pour mieux traverser l’hiver. Alléger, c’est aussi se protéger. »", "« Il y a des mots qu’on aime juste pour leur musique. Garde le tien en bouche aujourd’hui, comme un bonbon. »", "« Tu n’es pas en retard. Tu es en chemin, et chaque pas que tu fais t’appartient. »", "« Les soirées plus longues sont faites pour écrire. La page t’attend sans impatience. »", "« À côté de chaque peur, il y a une ressource que tu as déjà. Tu es mieux armée que tu ne le crois. »", "« Ta douceur n’est pas une faiblesse. C’est une façon courageuse d’habiter le monde. »", "« Il y a des jours couleur citrouille et des jours couleur brouillard. Tous ont leur place. »", "« Quand le ciel est bas, cherche ce qui t’apaise. Il y a toujours une petite lumière quelque part. »", "« Tu as le droit d’être fatiguée sans raison précise. La fatigue n’a pas besoin de justificatif. »", "« Le vent d’automne emporte les feuilles. Laisse-le emporter aussi une inquiétude. »", "« Une conversation qui fait du bien peut éclairer toute une semaine. Tu en as peut-être eu une récemment. »", "« Tu n’as pas besoin d’être d’accord avec tout le monde pour être en paix. »", "« Les champignons poussent dans l’ombre. Certaines belles choses aussi. »", "« Il reste encore de belles choses à vivre avant la fin de l’année. Elles t’attendent, sans se presser. »", "« Tu peux accueillir la mélancolie sans t’y perdre. Elle passe, comme un nuage d’automne. »", "« Écrire, c’est déposer un peu de toi quelque part où rien ne se perd. »", "« Avec l’heure d’hiver, on gagne une heure. Offre-la-toi, rien qu’à toi, sans la donner à personne. »", "« Ce qui te fait te sentir en sécurité mérite d’être protégé. Tu as le droit d’en prendre soin. »", "« Tu as traversé beaucoup de saisons. Celle-ci aussi, tu sauras la traverser. »", "« Les bougies reviennent sur les tables. Allume-en une pour toi, au propre ou au figuré. »", "« Octobre s’en va dans un froissement de feuilles. Garde-en une, celle que tu préfères. »", "« Novembre est un mois de silence. C’est un bon moment pour s’écouter, tout doucement. »", "« Pense à ceux que tu aimes et qui ne sont plus là. L’amour ne s’arrête pas avec eux. »", "« Certaines personnes nous marquent pour toujours. Leur souvenir est une lumière qu’on porte en soi. »", "« Tu as le droit d’avoir le cœur lourd sans avoir à l’expliquer. »", "« Le brouillard du matin finit toujours par se lever. Même les jours flous finissent par s’éclaircir. »", "« Les matins difficiles ont besoin d’un petit élan. Une musique, une tasse, une pensée douce peuvent suffire. »", "« Tu peux ralentir quand la lumière baisse. Ton corps suit les saisons. »", "« Il y a de la chaleur à partager un repas, même simple. Ce sont les visages qui font le festin. »", "« Il y a des choses que tu fais très bien et que personne ne remarque. Elles comptent quand même. »", "« Tu n’as pas besoin d’être joyeuse pour être reconnaissante. Les deux peuvent vivre séparément. »", "« Les arbres nus laissent voir le ciel. Parfois, perdre quelque chose fait de la place. »", "« Un petit plaisir qui ne coûte presque rien peut changer la couleur d’une journée entière. »", "« Tu peux t’autoriser à ne pas tout porter seule. Partager un poids, c’est déjà l’alléger. »", "« Il y a des jours où la meilleure chose à faire, c’est d’aller dormir tôt. »", "« Même une miette de bien-être cette semaine mérite d’être gardée. Les miettes finissent par faire un pain. »", "« Tu as le droit de changer de chemin en cours de route. Personne ne t’oblige à finir la mauvaise route. »", "« La pluie de novembre arrose les racines. Rien ne pousse sans saison humide. »", "« Console-toi comme tu consolerais quelqu’un que tu aimes : avec patience, et sans rien exiger. »", "« Tu n’es pas un fardeau. Tu es quelqu’un qu’on a de la chance de connaître. »", "« Les soirées sont longues : c’est le moment des confidences, et la page sait écouter sans interrompre. »", "« Les mots qu’on aimerait entendre d’une personne admirée, on peut parfois se les offrir à soi-même. »", "« Tu peux être fière d’avoir tenu, simplement. Tenir debout certains jours, c’est déjà un exploit. »", "« Le froid rend les mains plus tendres autour d’une tasse. Profite de ce petit réconfort. »", "« Même quand le reste est compliqué, il y a sûrement trois choses qui vont bien. Elles comptent aussi. »", "« Tu peux accueillir les fêtes qui approchent à ta manière, sans te forcer. »", "« Ta présence change quelque chose pour quelqu’un, même si tu ne le vois pas. »", "« Ce que tu aimerais offrir et ce que tu aimerais recevoir disent beaucoup de ton cœur généreux. »", "« Tu as le droit de te préserver du bruit du monde. Le calme est aussi une façon de prendre soin de toi. »", "« Les nuits plus longues sont faites pour rêver. Laisse tes rêves prendre de la place. »", "« Novembre s’achève. Tu as traversé le mois le plus gris avec ta lumière à toi. »", "« Décembre allume ses lumières une à une. Garde-en une pour toi chaque soir. »", "« Les fêtes ne sont pas toujours faciles. Tu as le droit de les vivre à ta façon. »", "« Tu as réussi des choses cette année que tu as peut-être oubliées. Elles sont pourtant bien à toi. »", "« Tu peux dire non à une invitation et oui à une soirée tranquille. Les deux peuvent être de vrais cadeaux. »", "« Le froid invite à se rapprocher. Pense à ceux qui te réchauffent. »", "« Le plus beau cadeau à te faire ne s’achète pas : un moment, un repos, une parole douce. »", "« Tu n’as pas à rendre l’année parfaite avant qu’elle se termine. »", "« Il y a de la magie dans les choses simples : une guirlande, une odeur de biscuits, un sourire. »", "« Cette année t’a appris quelque chose d’important, même si tu ne sais pas encore le nommer. »", "« Tu peux être reconnaissante et fatiguée en même temps. L’un n’empêche jamais l’autre. »", "« La nuit tombe tôt, mais chaque fenêtre éclairée raconte une histoire. La tienne aussi. »", "« Il y a quelqu’un que tu aimerais remercier cette année. Un mot suffit parfois à réchauffer un cœur. »", "« Tu as le droit de ralentir avant les fêtes, au lieu d’accélérer. La douceur n’attend pas janvier. »", "« Ce que tu as donné cette année a compté, même ce qu’on ne t’a pas rendu. »", "« Il y a eu cette année un moment où tu t’es sentie vraiment toi. Ce moment-là t’appartient pour toujours. »", "« Tu n’es pas obligée de faire le bilan. Tu peux juste remercier le chemin. »", "« Les sapins restent verts tout l’hiver. Une part de toi reste vivante même les jours froids. »", "« Tu peux laisser dans l’année qui s’en va ce qui t’a pesé. Tu n’as pas à tout emporter avec toi. »", "« Tu peux te sentir seule au milieu de la fête. Ici, tu as une place. »", "« Le solstice arrive : demain, la lumière recommencera à grandir. »", "« Un souhait pour toi, puis un pour le monde : les deux méritent d’être prononcés tout bas ce soir. »", "« Tu as le droit de pleurer à Noël et de rire le lendemain. Toutes tes émotions sont invitées à la fête. »", "« Une bougie dans la nuit suffit à changer toute la pièce. Ta douceur fait pareil. »", "« Se sentir aimée tient parfois à presque rien : un regard, un message, une main. Remarque-les aujourd’hui. »", "« Que cette journée te laisse au moins un instant de paix, rien qu’à toi. »", "« Tu as le droit de te reposer entre les fêtes. Le monde peut attendre un peu. »", "« Certains moments de cette année resteront pour toujours. Garde-les comme des petites étoiles. »", "« Tu n’es plus tout à fait la même qu’en janvier, et c’est une bonne nouvelle. »", "« La toi de l’an prochain sera contente de savoir que tu as pensé à elle avec tendresse. »", "« L’année tient presque toute entière dans ta main. Regarde-la avec tendresse. »", "« Dernier jour de l’année. Tu as fait de ton mieux, et ton mieux était précieux. Merci d’avoir écrit jusqu’ici. »"];
-const S={i:0,night:null,mot:MOTS[(()=>{const d=new Date(),C=[0,31,59,90,120,151,181,212,243,273,304,334];return C[d.getMonth()]+Math.min(d.getDate(),d.getMonth()===1?28:31)-1})()]};
-const night=()=>S.night!=null?S.night:!!(window.__W&&window.__W.night&&window.__W.night());
+const S={i:0,mot:MOTS[(()=>{const d=new Date(),C=[0,31,59,90,120,151,181,212,243,273,304,334];return C[d.getMonth()]+Math.min(d.getDate(),d.getMonth()===1?28:31)-1})()]};
+const night=()=>true;
 const written=()=>!!(window.__MJ&&window.__MJ.todayWritten);
 const name=()=>window.__P();
 const N=()=>night();
@@ -8545,7 +8501,7 @@ function drawM(){const f=FA[S.i],w=$('#we-m');w.innerHTML=`<div class="halo" sty
 <div style="position:absolute;left:44px;top:32px;width:370px"><p class="k">✦ MOT DU JOUR</p><p class="mot">${S.mot}</p></div>
 <div style="position:absolute;left:40px;bottom:28px;display:flex;align-items:flex-end;gap:16px"><button class="ar" data-go="1" aria-label="Écrire : ${f[1].toLowerCase()}"><img src="illus/ecrire-${f[0]}${N()?'-nuit':''}.webp" alt=""></button>
 <div style="padding-bottom:8px"><p class="q">Comment veux-tu écrire&nbsp;?</p><button data-go="1" style="margin:6px 0 0;display:flex;align-items:center;gap:10px"><span class="nm">${f[1]}</span><span class="sb">${f[2]}</span></button><div style="display:flex;align-items:center;gap:12px;margin-top:10px"><button class="arw" data-d="-1" aria-label="Façon précédente">‹</button><div class="dots">${FA.map((x,k)=>`<button class="${k===S.i?'on':''}" data-i="${k}" aria-label="${x[1].toLowerCase()}"></button>`).join('')}</div><button class="arw" data-d="1" aria-label="Façon suivante">›</button></div></div></div>`}
-function draw(){ph.classList.toggle('nt',N());drawS();drawM();const c=document.getElementById('wdgecap');if(c)c.querySelectorAll('[data-wn]').forEach(b=>b.classList.toggle('on',(b.dataset.wn==='1')===N()))}
+function draw(){ph.classList.add('nt');drawS();drawM()}
 /* ouverture : le widget grandit jusqu'à l'écran, Plume salue (le jour) ou se réveille et s'étire (la nuit), puis la page */
 function open(w,mode){if(ph.querySelector('.weo'))return;const pr=ph.getBoundingClientRect(),r=w.getBoundingClientRect(),k=pr.width/ph.offsetWidth||1;
  const o=document.createElement('div');o.className='weo'+(N()?' nt':'');const top=ph.scrollTop;
@@ -8568,9 +8524,9 @@ ph.addEventListener('click',e=>{const m=e.target.closest('#we-m'),s=e.target.clo
   if(d){S.i=(S.i+ +d.dataset.d+3)%3;drawM();return}if(dt){S.i=+dt.dataset.i;drawM();return}
   open(m,FA[S.i][0]);return}
  if(s){open(s,null)}});
-const cap=document.getElementById('wdgecap');if(cap)cap.addEventListener('click',e=>{const b=e.target.closest('[data-wn]');if(b){S.night=b.dataset.wn==='1';draw()}const w=e.target.closest('[data-ww]');if(w&&window.__MJ){window.__MJ.todayWritten=!window.__MJ.todayWritten;draw()}});
+const cap=document.getElementById('wdgecap');if(cap)cap.addEventListener('click',e=>{const w=e.target.closest('[data-ww]');if(w&&window.__MJ){window.__MJ.todayWritten=!window.__MJ.todayWritten;draw()}});
 document.addEventListener('click',e=>{if(e.target.closest('[data-mjtoday]'))setTimeout(draw,0)});
-const pw=document.getElementById('wdgp');if(pw)new MutationObserver(()=>{if(S.night==null)draw()}).observe(pw,{attributes:true,attributeFilter:['class']});
+const pw=document.getElementById('wdgp');if(pw)new MutationObserver(draw).observe(pw,{attributes:true,attributeFilter:['class']});
 window.__weDraw=draw;draw();
 })();
 </script>

@@ -1,5 +1,5 @@
 /* La palette vient du thème commun ; aucune heure ni couleur de fond imposée ici. */
-#en-app #mv{display:block!important;padding:0!important;overflow-y:auto;overflow-x:hidden;background:var(--sbg);color:var(--sink);color-scheme:light;
+#en-app #mv{display:block!important;padding:0!important;overflow-y:auto;overflow-x:hidden;background:var(--sbg);color:var(--sink);color-scheme:dark;
  --cf-ink:var(--sink);--cf-muted:var(--smuted);--cf-soft:var(--smuted);--cf-line:var(--sline);--cf-outline:var(--smuted);--cf-accent:var(--sacc);--cf-check:var(--smuted);--cf-selected:var(--sacc);--cf-placeholder:var(--smuted);--cf-fil:var(--sline);
  --cf-button:color-mix(in srgb,var(--sacc) 12%,var(--sbg));--cf-button-line:color-mix(in srgb,var(--sacc) 34%,var(--sbg));--cf-button-ink:var(--sink);--cf-button-hover:color-mix(in srgb,var(--sacc) 18%,var(--sbg));--cf-button-hover-line:var(--sacc);--cf-button-active:color-mix(in srgb,var(--sacc) 22%,var(--sbg))}
 #en-app #mv.nuit{color-scheme:dark;--cf-ink:#F1DDE0;--cf-muted:#C49DAB;--cf-soft:#D1ACB7;--cf-line:#795665;--cf-outline:#B68D9D;--cf-accent:#E0B4C2;--cf-check:#A67F90;--cf-selected:#D8B1C0;--cf-placeholder:#A98494;--cf-fil:#9B7588;--cf-button:#432F3C;--cf-button-line:#674657;--cf-button-ink:#E6C6D0;--cf-button-hover:#4B3544;--cf-button-hover-line:#8E6479;--cf-button-active:#392832}

@@ -37,7 +37,7 @@
    mood.style.setProperty('--av-mood-color',color(value));mood.style.setProperty('--av-position',value/100);writing.style.setProperty('--av-mood-color',color(value));range.value=String(value);range.setAttribute('aria-valuetext',word(value));
    mood.querySelector('output').textContent=word(value);mood.querySelector('.av-question').textContent=saved?'Ton humeur du moment':'Comment te sens-tu ?';
    mood.querySelector('.av-edit').hidden=saved;mood.querySelector('.av-saved').hidden=!saved;
-   mood.querySelector('.av-status span').textContent=word(value)+(night()?', ce soir.':', aujourd’hui.');
+   mood.querySelector('.av-status span').textContent=word(value)+(new Date().getHours()>=18?', ce soir.':', aujourd’hui.');
    labelCards();
   }
   let animationFrame=0;
