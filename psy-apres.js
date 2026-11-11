@@ -3,7 +3,7 @@
   'use strict';
   const templates = {
     home: `<section class="en-home en-home-page" data-view="home" aria-labelledby="psy-after-home-title">
-  <h3 class="en-home-heading" id="psy-after-home-title">Mes mots après la séance</h3>
+  <h3 class="en-home-heading" id="psy-after-home-title" tabindex="-1">Mes mots après la séance</h3>
   <p class="en-home-empty" data-empty>Aucune séance à noter</p>
   <ul class="en-session-list" data-session-list aria-label="Séances à noter"></ul>
   <button class="en-add-session cursor-interaction" type="button" data-add-session aria-expanded="false" aria-controls="psy-after-add-form">
@@ -96,7 +96,7 @@
       <section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
         <header class="en-recap-header">
           <p class="en-reading-date"><time data-reading-date></time></p>
-          <h3 class="en-heading" id="psy-after-recap-title">Récap de ma séance</h3>
+          <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
         </header>
         <div class="en-context en-recap-context" data-recap-context hidden>
           <section class="en-note-fold" data-recap-notes hidden>
@@ -433,10 +433,11 @@
 
     const sources = {
       notes: () => [{ title: 'Mes notes de séance', values: excerpts }],
-      prepared: () => [{ title: 'Mes sujets préparés', values: prepared }],
+      prepared: () => [{ title: 'Mes sujets préparés', values: prepared.map(topic => topic.text) }],
       remaining: () => {
         const discussed = new Set(entries.get('aborde').writing.values().map(textKey));
-        return [{ title: 'Mes sujets préparés', values: prepared.filter(topic => !discussed.has(textKey(topic))) }];
+        return [{ title: 'Mes sujets préparés', values: prepared
+          .filter(topic => !topic.checked && !discussed.has(textKey(topic.text))).map(topic => topic.text) }];
       },
       'follow-up': () => [fromRubric('flou'), fromRubric('de-cote')]
     };
@@ -452,11 +453,13 @@
       panels[activeIndex].writing.fit?.();
       if (!title.clientWidth) return;
       let size = 16;
+      title.classList.remove('en-wrap');
       title.style.fontSize = size + 'px';
-      while (title.scrollWidth > title.clientWidth + 1 && size > 12) {
+      while (title.scrollWidth > title.clientWidth + 1 && size > 10.5) {
         size -= .5;
         title.style.fontSize = size + 'px';
       }
+      title.classList.toggle('en-wrap', title.scrollWidth > title.clientWidth + 1);
     }
     function showRubric(index) {
       if (index < 0 || index >= panels.length) return;
@@ -751,7 +754,7 @@
     renderContext(editor, session);
 
     const guided = mountGuided(get('[data-pane="guided"]'), prefix,
-      session.notes.map(note => note.text), session.topics.map(topic => topic.text),
+      session.notes.map(note => note.text), session.topics,
       { ...session.rubrics, index: session.index }, update);
 
     function dateDisplay() {
@@ -835,6 +838,7 @@
         content.append(section);
       }
       show('review');
+      get('.en-recap-header .en-heading').focus({ preventScroll: true });
     }
     function changeDate() {
       if (!dateInput.validity.valid || !validDay(dateInput.value) || dateInput.value === session.date) return;
