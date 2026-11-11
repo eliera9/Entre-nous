@@ -61,7 +61,10 @@ test('le retour d’une ancienne séance conserve notes, sujets cochés, texte e
 test('les ressources d’Après se chargent au démarrage, à la publication et hors ligne', () => {
   for (const file of ['index.html', 'scripts/build.mjs', 'sw.js']) {
     const content = readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+    assert.match(content, /psy-apres-ecriture\.js/);
     assert.match(content, /psy-apres\.js/);
     assert.match(content, /psy-apres\.css/);
   }
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(html.indexOf('src="psy-apres-ecriture.js"') < html.indexOf('src="psy-apres.js"'));
 });

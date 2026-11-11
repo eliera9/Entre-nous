@@ -1,6 +1,7 @@
 /* Espace Psy · retours de séance, dans le coffre existant. */
 (() => {
   'use strict';
+  const richWriting = globalThis.__enPsyWriting;
   const templates = {
     home: `<section class="en-home en-home-page" data-view="home" aria-labelledby="psy-after-home-title">
   <h3 class="en-home-heading" id="psy-after-home-title" tabindex="-1">Mes mots après la séance</h3>
@@ -80,14 +81,22 @@
       </section>
       <div class="en-writing" data-writing hidden>
         <div class="en-personal-meta">
-          <div class="en-title-centered">
-            <label class="en-sr" for="psy-after-personal-title">Un titre pour ma séance</label>
-            <input class="en-personal-title" id="psy-after-personal-title" data-personal-title placeholder="Un titre pour ma séance" maxlength="160">
-            <span class="en-empty-title" aria-hidden="true"><i data-lucide="pen-line"></i><span>Un titre pour ma séance</span></span>
+          <div class="en-personal-row">
+            <div class="en-title-centered">
+              <label class="en-sr" for="psy-after-personal-title">Un titre pour ma séance</label>
+              <input class="en-personal-title" id="psy-after-personal-title" data-personal-title placeholder="Un titre pour ma séance" maxlength="160">
+              <span class="en-empty-title" aria-hidden="true"><i data-lucide="pen-line"></i><span>Un titre pour ma séance</span></span>
+            </div>
+            <button type="button" class="en-format-toggle cursor-interaction" data-format-toggle aria-label="Outils d’écriture" aria-expanded="false" aria-controls="psy-after-format-tools-panel" data-tooltip="Outils d’écriture">
+              <span class="en-format-aa" aria-hidden="true">Aa</span>
+              <i data-lucide="x" aria-hidden="true"></i>
+            </button>
           </div>
+          <div data-format-tools></div>
+          <p class="en-format-feedback" data-format-feedback role="status"></p>
         </div>
         <div id="psy-after-free" data-pane="free" hidden>
-          <textarea class="en-text" id="psy-after-free-text" aria-label="Mon retour sur la séance" rows="4" placeholder="Ce que j’ai envie de garder de cette séance…"></textarea>
+          <div class="en-text" id="psy-after-free-text"></div>
         </div>
         <div id="psy-after-guided" data-pane="guided" hidden>
           <nav class="en-rubric-nav" aria-label="Parcourir les rubriques">
@@ -126,6 +135,126 @@
         </div>
       </section>
 </div>`,
+    format: `<section class="en-format-panel" data-format-panel id="psy-after-format-tools-panel" aria-label="Outils d’écriture" hidden>
+      <div class="en-format-categories" role="group" aria-label="Catégories d’outils">
+        <button type="button" class="cursor-interaction" data-category="text" aria-pressed="true">Texte</button>
+        <button type="button" class="cursor-interaction" data-category="color" aria-pressed="false">Couleurs</button>
+        <button type="button" class="cursor-interaction" data-category="paragraph" aria-pressed="false">Paragraphes</button>
+        <button type="button" class="cursor-interaction" data-category="insert" aria-pressed="false">Insérer</button>
+      </div>
+
+      <div class="en-format-content" data-tools="text">
+        <div class="en-format-marks" role="group" aria-label="Styles de texte">
+          <button type="button" class="cursor-interaction" data-cmd="bold" aria-pressed="false" aria-label="Gras" data-tooltip="Gras"><strong>G</strong></button>
+          <button type="button" class="cursor-interaction" data-cmd="italic" aria-pressed="false" aria-label="Italique" data-tooltip="Italique"><em>I</em></button>
+          <button type="button" class="cursor-interaction" data-cmd="underline" aria-pressed="false" aria-label="Souligner" data-tooltip="Souligner"><u>S</u></button>
+          <button type="button" class="cursor-interaction" data-cmd="strikeThrough" aria-pressed="false" aria-label="Barrer" data-tooltip="Barrer"><s>B</s></button>
+          <button type="button" class="cursor-interaction" data-special="smallcaps" aria-label="Petites capitales" data-tooltip="Petites capitales"><span class="en-format-smallcaps">Aa</span></button>
+        </div>
+        <div class="en-format-settings">
+          <label>Police
+            <select aria-label="Police" data-change="fontName">
+              <option value="" selected disabled>Choisir</option>
+              <option value="EN Cormorant Garamond">Cormorant Garamond</option>
+              <option value="Entre nous Newsreader">Newsreader</option>
+              <option value="Caveat">Caveat</option>
+            </select>
+          </label>
+          <label>Taille
+            <select aria-label="Taille" data-change="fontSize">
+              <option value="" selected disabled>Choisir</option>
+              <option value="2">Petite</option>
+              <option value="3">Normale</option>
+              <option value="4">Grande</option>
+              <option value="5">Très grande</option>
+            </select>
+          </label>
+        </div>
+        <button type="button" class="en-format-quiet cursor-interaction" data-cmd="removeFormat"><i data-lucide="eraser" aria-hidden="true"></i> Effacer la mise en forme</button>
+      </div>
+
+      <div class="en-format-content" data-tools="color" hidden>
+        <div class="en-format-color-group">
+          <p>Couleur du texte</p>
+          <div class="en-format-swatches" role="group" aria-label="Couleur du texte">
+            <button type="button" class="cursor-interaction" data-special="default-ink" data-value="default" style="--tone:#f2dfe5" aria-label="Couleur d’origine" data-tooltip="Couleur d’origine"></button>
+            <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#ddb2ba" style="--tone:#ddb2ba" aria-label="Rose boisé" data-tooltip="Rose boisé"></button>
+            <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#c9b9e2" style="--tone:#c9b9e2" aria-label="Lilas" data-tooltip="Lilas"></button>
+            <button type="button" class="cursor-interaction" data-cmd="foreColor" data-value="#e4c797" style="--tone:#e4c797" aria-label="Sable doré" data-tooltip="Sable doré"></button>
+            <label class="en-format-custom" data-tooltip="Couleur personnalisée">
+              <i data-lucide="pipette" aria-hidden="true"></i>
+              <input type="color" value="#ddb2ba" aria-label="Couleur personnalisée" data-change="foreColor">
+            </label>
+          </div>
+        </div>
+        <div class="en-format-color-group">
+          <p>Surligneur</p>
+          <div class="en-format-swatches" role="group" aria-label="Surligneur">
+            <button type="button" class="cursor-interaction" data-cmd="hiliteColor" data-value="#724657" style="--tone:#a2657d" aria-label="Rose poudré" data-tooltip="Rose poudré"></button>
+            <button type="button" class="cursor-interaction" data-cmd="hiliteColor" data-value="#514262" style="--tone:#8c75a9" aria-label="Mauve" data-tooltip="Mauve"></button>
+            <button type="button" class="cursor-interaction" data-cmd="hiliteColor" data-value="#5e4b32" style="--tone:#ab8756" aria-label="Miel" data-tooltip="Miel"></button>
+            <button type="button" class="cursor-interaction" data-cmd="hiliteColor" data-value="#38534e" style="--tone:#65998e" aria-label="Sauge" data-tooltip="Sauge"></button>
+            <button type="button" class="en-format-clear cursor-interaction" data-cmd="hiliteColor" data-value="transparent" aria-label="Retirer le surlignage" data-tooltip="Retirer le surlignage"><i data-lucide="eraser" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="en-format-content" data-tools="paragraph" hidden>
+        <div class="en-format-settings">
+          <label>Style du paragraphe
+            <select aria-label="Style du paragraphe" data-change="formatBlock">
+              <option value="" selected disabled>Choisir</option>
+              <option value="p">Paragraphe</option>
+              <option value="h4">Titre</option>
+              <option value="h5">Sous-titre</option>
+              <option value="blockquote">Citation</option>
+            </select>
+          </label>
+        </div>
+        <div class="en-format-marks" role="group" aria-label="Alignement et retrait">
+          <button type="button" class="cursor-interaction" data-cmd="justifyLeft" aria-label="Aligner à gauche" data-tooltip="Aligner à gauche"><i data-lucide="align-left" aria-hidden="true"></i></button>
+          <button type="button" class="cursor-interaction" data-cmd="justifyCenter" aria-label="Centrer" data-tooltip="Centrer"><i data-lucide="align-center" aria-hidden="true"></i></button>
+          <button type="button" class="cursor-interaction" data-cmd="justifyRight" aria-label="Aligner à droite" data-tooltip="Aligner à droite"><i data-lucide="align-right" aria-hidden="true"></i></button>
+          <button type="button" class="cursor-interaction" data-cmd="outdent" aria-label="Réduire le retrait" data-tooltip="Réduire le retrait"><i data-lucide="indent-decrease" aria-hidden="true"></i></button>
+          <button type="button" class="cursor-interaction" data-cmd="indent" aria-label="Augmenter le retrait" data-tooltip="Augmenter le retrait"><i data-lucide="indent-increase" aria-hidden="true"></i></button>
+        </div>
+        <div class="en-format-list-tools" role="group" aria-label="Listes">
+          <button type="button" class="cursor-interaction" data-cmd="insertUnorderedList"><i data-lucide="list" aria-hidden="true"></i> Puces</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertOrderedList"><i data-lucide="list-ordered" aria-hidden="true"></i> Numéros</button>
+          <button type="button" class="cursor-interaction" data-special="checklist"><i data-lucide="list-checks" aria-hidden="true"></i> À cocher</button>
+        </div>
+      </div>
+
+      <div class="en-format-content" data-tools="insert" hidden>
+        <div class="en-format-insert">
+          <button type="button" class="cursor-interaction" data-reveal="link" aria-expanded="false" aria-controls="psy-after-format-link-form"><i data-lucide="link" aria-hidden="true"></i> Lien</button>
+          <button type="button" class="cursor-interaction" data-special="date"><i data-lucide="calendar-days" aria-hidden="true"></i> Date</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertHorizontalRule"><i data-lucide="minus" aria-hidden="true"></i> Séparateur</button>
+          <button type="button" class="cursor-interaction" data-reveal="emoji" aria-expanded="false" aria-controls="psy-after-format-symbols"><i data-lucide="smile" aria-hidden="true"></i> Symboles</button>
+        </div>
+        <form class="en-format-link" data-format-link id="psy-after-format-link-form" data-extra="link" hidden>
+          <label>Adresse du lien<input name="address" type="url" inputmode="url" required placeholder="https://…"></label>
+          <div>
+            <button type="submit" class="en-format-quiet cursor-interaction">Insérer le lien</button>
+            <button type="button" class="en-format-quiet cursor-interaction" data-cmd="unlink">Retirer le lien</button>
+          </div>
+          <p data-link-error role="alert" hidden>Utilise une adresse qui commence par https:// ou http://.</p>
+        </form>
+        <div class="en-format-marks" id="psy-after-format-symbols" data-extra="emoji" role="group" aria-label="Symboles à insérer" hidden>
+          <button type="button" class="cursor-interaction" data-cmd="insertText" data-value="♡" aria-label="Cœur">♡</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertText" data-value="✦" aria-label="Étoile">✦</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertText" data-value="☾" aria-label="Lune">☾</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertText" data-value="🌿" aria-label="Branche">🌿</button>
+          <button type="button" class="cursor-interaction" data-cmd="insertText" data-value="✨" aria-label="Étincelles">✨</button>
+        </div>
+      </div>
+
+      <footer class="en-format-history">
+        <output aria-label="Nombre de mots" data-word-count></output>
+        <button type="button" class="cursor-interaction" data-cmd="undo" aria-label="Annuler la dernière modification" data-tooltip="Annuler"><i data-lucide="undo-2" aria-hidden="true"></i></button>
+        <button type="button" class="cursor-interaction" data-cmd="redo" aria-label="Rétablir la modification" data-tooltip="Rétablir"><i data-lucide="redo-2" aria-hidden="true"></i></button>
+      </footer>
+    </section>`,
     reperes: `<fieldset class="en-reperes">
     <legend data-prompt></legend>
     <div class="en-choices" data-choices></div>
@@ -142,7 +271,7 @@
     </button>
   </div>`,
     prose: `<div class="en-writing en-reflection">
-    <textarea class="en-prose" data-response rows="4"></textarea>
+    <div class="en-prose" data-response></div>
   </div>`,
     source: `<div class="en-note-tools" data-note-tools>
     <button type="button" class="en-quiet en-sheet-toggle cursor-interaction" data-notes-toggle aria-expanded="false">
@@ -231,7 +360,6 @@
     const count = get('[data-rubric-count]');
     const previous = get('[data-rubric-prev]');
     const next = get('[data-rubric-next]');
-    const needsResize = !CSS.supports('field-sizing', 'content');
     function clone(name) {
       return template(name);
     }
@@ -259,10 +387,12 @@
 
     function wireReflection(panel, rubric) {
       panel.append(clone('prose'));
-      const text = panel.querySelector('[data-response]');
-      text.placeholder = rubric.placeholder;
-      text.setAttribute('aria-label', rubric.title);
-      return { values: () => [text.value].filter(value => value.trim()), restore: values => { text.value = values[0] || ''; } };
+      const field = panel.querySelector('[data-response]');
+      richWriting.prepareField(field, rubric.placeholder, rubric.title);
+      return {
+        entries: () => [richWriting.read(field)].filter(entry => entry.text.trim()),
+        restore: (paragraphs, rich) => richWriting.write(field, paragraphs[0], rich?.[0]),
+      };
     }
 
     function wireBullets(panel, rubric) {
@@ -273,43 +403,32 @@
       list.setAttribute('aria-label', rubric.list.label ?? rubric.title);
       const fields = [];
 
-      function fitBullet(text) {
-        if (!needsResize || !text.clientWidth) return;
-        text.style.height = '0px';
-        text.style.height = text.scrollHeight + 'px';
-      }
-
-      function appendBullet(value = '') {
+      function appendBullet(value = '', html = '') {
         const index = fields.length;
-        const item = document.createElement('li');
-        const text = document.createElement('textarea');
-        item.className = 'en-bullet';
-        text.rows = 2;
-        text.placeholder = index === 0 ? rubric.placeholder : rubric.list.next;
-        text.value = value;
-        text.setAttribute('aria-label', rubric.list.item + ' ' + (index + 1));
-        text.setAttribute('enterkeyhint', 'enter');
-        if (needsResize) text.addEventListener('input', () => fitBullet(text));
-        item.append(text);
+        const item = element('li', 'en-bullet');
+        const field = element('div');
+        richWriting.prepareField(field, index === 0 ? rubric.placeholder : rubric.list.next,
+          rubric.list.item + ' ' + (index + 1));
+        richWriting.write(field, value, html);
+        item.append(field);
         list.append(item);
-        fields.push(text);
-        fitBullet(text);
-        return text;
+        fields.push(field);
+        return field;
       }
 
       appendBullet();
       add.addEventListener('click', () => {
         const last = fields.at(-1);
-        const field = last.value.trim() ? appendBullet() : last;
+        const field = richWriting.read(last).text.trim() ? appendBullet() : last;
         field.focus();
       });
 
-      function values() {
-        return fields.map(field => field.value).filter(value => value.trim());
+      function entries() {
+        return fields.map(richWriting.read).filter(entry => entry.text.trim());
       }
 
       function appendTexts(texts) {
-        const existing = new Set(values().map(textKey));
+        const existing = new Set(entries().map(entry => textKey(entry.text)));
         const additions = [];
         for (const text of texts) {
           const key = textKey(text);
@@ -319,19 +438,16 @@
         }
         const addedCount = additions.length;
         const last = fields.at(-1);
-        if (addedCount && !last.value.trim()) {
-          last.value = additions.shift();
-          fitBullet(last);
-        }
+        if (addedCount && !richWriting.read(last).text.trim()) richWriting.write(last, additions.shift());
         for (const text of additions) appendBullet(text);
         return addedCount;
       }
-      function restore(values) {
-        if (!values.length) return;
-        fields[0].value = values[0];
-        values.slice(1).forEach(appendBullet);
+      function restore(paragraphs, rich) {
+        if (!paragraphs.length) return;
+        richWriting.write(fields[0], paragraphs[0], rich?.[0]);
+        for (let i = 1; i < paragraphs.length; i++) appendBullet(paragraphs[i], rich?.[i]);
       }
-      return { values, appendTexts, restore, fit: () => fields.forEach(fitBullet) };
+      return { entries, appendTexts, restore };
     }
 
     function wireSource(panel, rubric, writing, getGroups) {
@@ -438,14 +554,14 @@
     const entries = new Map(panels.map(entry => [entry.rubric.id, entry]));
     function fromRubric(id) {
       const entry = entries.get(id);
-      return { title: entry.rubric.title, values: entry.writing.values() };
+      return { title: entry.rubric.title, values: entry.writing.entries().map(item => item.text) };
     }
 
     const sources = {
       notes: () => [{ title: 'Mes notes de séance', values: excerpts }],
       prepared: () => [{ title: 'Mes sujets préparés', values: prepared.map(topic => topic.text) }],
       remaining: () => {
-        const discussed = new Set(entries.get('aborde').writing.values().map(textKey));
+        const discussed = new Set(entries.get('aborde').writing.entries().map(item => textKey(item.text)));
         return [{ title: 'Mes sujets préparés', values: prepared
           .filter(topic => !topic.checked && !discussed.has(textKey(topic.text))).map(topic => topic.text) }];
       },
@@ -454,13 +570,12 @@
     for (const entry of panels) {
       const { panel, rubric, writing } = entry;
       const record = saved[rubric.id];
-      if (record) writing.restore(record.paragraphs || []);
+      if (record) writing.restore(record.paragraphs || [], record.rich);
       if (rubric.source) entry.refresh = wireSource(panel, rubric, writing, sources[rubric.source.kind]);
     }
 
     let activeIndex = 0;
     function fitTitle() {
-      panels[activeIndex].writing.fit?.();
       if (!title.clientWidth) return;
       let size = 16;
       title.classList.remove('en-wrap');
@@ -490,13 +605,18 @@
     showRubric(Number.isInteger(saved.index) ? Math.min(panels.length - 1, Math.max(0, saved.index)) : 0);
 
     function sections() {
-      return panels.map(({ panel, rubric, writing }) => ({
-        id: rubric.id,
-        title: rubric.title,
-        bullets: Boolean(rubric.list),
-        paragraphs: writing.values(),
-        choices: [...panel.querySelectorAll('input[type="checkbox"]:checked')].map(input => input.value)
-      })).filter(entry => entry.paragraphs.length || entry.choices.length);
+      return panels.map(({ panel, rubric, writing }) => {
+        const contents = writing.entries();
+        const html = contents.map(entry => entry.html);
+        return {
+          id: rubric.id,
+          title: rubric.title,
+          bullets: Boolean(rubric.list),
+          paragraphs: contents.map(entry => entry.text),
+          choices: [...panel.querySelectorAll('[data-choices] input:checked')].map(input => input.value),
+          rich: html.some(Boolean) ? html : undefined,
+        };
+      }).filter(entry => entry.paragraphs.length || entry.choices.length);
     }
     return { sections, fitTitle, index: () => activeIndex };
   }
@@ -767,7 +887,7 @@
     const dateToggle = get('[data-date-toggle]');
     const dateEditor = get('[data-date-editor]');
     const personalTitle = get('[data-personal-title]');
-    const free = get('[data-pane="free"] textarea');
+    const free = get('[data-pane="free"] .en-text');
     const edit = get('[data-edit]');
     const finish = get('[data-finish]');
     const later = get('[data-later]');
@@ -777,12 +897,15 @@
     dateInput.max = dayKey(new Date());
     dateInput.value = session.date;
     personalTitle.value = session.title;
-    free.value = session.free;
+    richWriting.prepareField(free, 'Ce que j’ai envie de garder de cette séance…', 'Mon retour sur la séance');
+    richWriting.write(free, session.free, session.freeHtml);
+    get('[data-format-tools]').append(template('format', prefix));
     renderContext(editor, session);
 
     const guided = mountGuided(get('[data-pane="guided"]'), prefix,
       session.notes.map(note => note.text), session.topics,
       { ...session.rubrics, index: session.index }, update);
+    const formatting = richWriting.mount(editor, update);
 
     function dateDisplay() {
       const display = dayValue(session.date);
@@ -801,28 +924,30 @@
     }
     function update() {
       const sections = guided.sections();
-      const next = Object.fromEntries(sections.map(({ id, paragraphs, choices }) => [id, { paragraphs, choices }]));
-      const current = JSON.stringify([session.title, session.free, session.rubrics]);
+      const next = Object.fromEntries(sections.map(({ id, paragraphs, choices, rich }) => [id, { paragraphs, choices, rich }]));
+      const current = JSON.stringify([session.title, session.free, session.freeHtml || '', session.rubrics]);
+      const freeContent = richWriting.read(free);
       session.title = personalTitle.value;
-      session.free = free.value;
+      session.free = freeContent.text;
+      if (freeContent.html) session.freeHtml = freeContent.html;
+      else delete session.freeHtml;
       session.rubrics = next;
       session.index = guided.index();
-      if (current !== JSON.stringify([session.title, session.free, next])) session.completed = false;
+      if (current !== JSON.stringify([session.title, session.free, freeContent.html, next])) session.completed = false;
+      formatting.refresh();
       controls();
       saveSoon();
     }
     function fitWriting() {
       guided.fitTitle();
-      if (free.offsetWidth) {
-        free.style.height = 'auto';
-        free.style.height = Math.max(140, free.scrollHeight + 2) + 'px';
-      }
+      formatting.refresh();
     }
     function selectMode(mode) {
       session.mode = mode;
       get('[data-writing]').hidden = false;
       for (const button of modeButtons) button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
       for (const pane of editor.querySelectorAll('[data-pane]')) pane.hidden = pane.dataset.pane !== mode;
+      formatting.close();
       fitWriting();
     }
     function setHelp(open) {
@@ -840,12 +965,13 @@
       for (const panel of editor.querySelectorAll('[data-view]')) panel.hidden = panel.dataset.view !== next;
       setHelp(false);
       setDate(false);
+      formatting.close();
       if (next === 'write') fitWriting();
       host.closest('.phone')?.scrollTo({ top: 0 });
     }
     function showRecap() {
       const sections = guided.sections();
-      if (session.free.trim()) sections.unshift({ title: 'Écriture libre', paragraphs: [session.free], choices: [] });
+      if (session.free.trim()) sections.unshift({ title: 'Écriture libre', paragraphs: [session.free], choices: [], rich: [session.freeHtml] });
       if (session.extras.length) sections.push({ title: 'Mes petits pas', paragraphs: session.extras, choices: [], bullets: true });
       const content = get('[data-reading-content]');
       content.replaceChildren();
@@ -855,13 +981,14 @@
         const section = element('section', 'en-reading-section');
         section.append(element('h5', '', entry.title));
         if (entry.choices.length) section.append(element('p', '', entry.choices.join(' · ')));
-        if (entry.bullets && entry.paragraphs.length) {
-          const list = element('ul', 'en-reading-bullets');
-          for (const paragraph of entry.paragraphs) list.append(element('li', '', paragraph));
-          section.append(list);
-        } else {
-          for (const paragraph of entry.paragraphs) section.append(element('p', '', paragraph));
-        }
+        const body = entry.bullets ? element('ul', 'en-reading-bullets') : section;
+        entry.paragraphs.forEach((paragraph, index) => {
+          const html = entry.rich?.[index];
+          const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', html ? 'en-formatted' : '');
+          richWriting.write(node, paragraph, html, true);
+          body.append(node);
+        });
+        if (entry.bullets && entry.paragraphs.length) section.append(body);
         content.append(section);
       }
       show('review');
@@ -875,12 +1002,9 @@
       controls();
       saveSoon();
     }
-    editor.addEventListener('input', event => {
-      if (event.target === free) fitWriting();
-      if (event.target.matches('textarea,[data-personal-title],input[type="checkbox"]')) update();
-    });
+    personalTitle.addEventListener('input', update);
     editor.addEventListener('change', event => {
-      if (event.target.matches('input[type="checkbox"]')) update();
+      if (event.target.matches('[data-choices] input')) update();
     });
     editor.addEventListener('keydown', event => {
       if (event.key !== 'Escape') return;
