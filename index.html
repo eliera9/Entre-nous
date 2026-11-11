@@ -718,11 +718,13 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <link rel="stylesheet" href="accueil-valide.css">
 <script src="accueil-valide.js" defer></script>
 <link rel="stylesheet" href="psy-approved.css">
+<link rel="stylesheet" href="psy-apres.css">
 <script src="vendor/lucide.min.js" defer></script>
 <script src="psy-premiere-validee.js" defer></script>
 <script src="psy-suivi-recap.js" defer></script>
 <script src="psy-suivi-valide.js" defer></script>
 <script src="psy-approved.js" defer></script>
+<script src="psy-apres.js" defer></script>
 </head>
 <body>
 <script type="text/x-en">document.documentElement.lang='fr'/* A-15 (03.11.2026) : la page est en français */</script>
@@ -6993,7 +6995,7 @@ function msRender(){const o=ph.querySelector('.ms');if(o){o.innerHTML=msHTML();o
 
 /* ---------- APRÈS ---------- */
 const pasD=()=>S.mode==='soir'||S.msDone;
-function tApres(){if(!S.msDone&&!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i></div><p class="ps-s">Après ta séance, tu pourras poser ici ce qui s'est dit.</p></div>`;
+function tApres(){if(globalThis.__enPsyAfter)return '<div data-psy-after></div>';if(!S.msDone&&!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i></div><p class="ps-s">Après ta séance, tu pourras poser ici ce qui s'est dit.</p></div>`;
  if(!pasD()){const s=SEANCES[0];return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${__DF('2026-10-15','{d} {mo}','u','2026-10-28')}</div><p class="ps-t">${esc(s.q)}</p>`+partsRows(true,s)+`<p class="ps-s" style="margin-top:14px">Demain soir, ta séance du ${sessionLabel()} t'attendra ici.</p>`}
  const n=allNotes();
  return`<div class="ps-k" style="margin-top:18px">SÉANCE DU ${sessionLabel(true)}</div><p class="ps-t">Comment c'était ?</p>
@@ -7147,6 +7149,8 @@ function render(top){const c=cur();if(window.__enApprovedPsy&&window.__enApprove
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
  TT.textContent=TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
+ const after=B.querySelector('[data-psy-after]');
+ if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:window.__calE||[]});
  if(top)ph.scrollTop=0;
  const tb=$('pstabs');if(tb){const o=tb.querySelector('.on');if(o)tb.scrollLeft=o.offsetLeft-60}
  B.querySelectorAll('[data-col]').forEach(c=>c.scrollLeft=c.scrollWidth);
@@ -7172,7 +7176,7 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t)});
 ph.addEventListener('keydown',e=>{if(e.target.id==='msin'&&e.key==='Enter')act('msadd')});
-BK.addEventListener('click',e=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
+BK.addEventListener('click',e=>{if(cur().v==='tabs'&&S.tab==='apres'&&window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
 
 /* ---------- actions ---------- */
 function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
@@ -7191,7 +7195,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'keep':S.stack=[];render(1);toast('✦ Ta préparation est gardée pour demain');break;
  case'ms':openMS();break;
  case'msx':S.ms.bye=1;msRender();break;
- case'msclose':{const o=ph.querySelector('.ms');o&&o.remove();unlock();S.msNotes=S.ms.notes;S.msCk=S.ms.ck;S.msSubjects=S.notes.map(n=>({...n}));S.msDone=1;const today=new Date();S.sessionDate=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');if(S.mode==='first')S.mode='vide';S.stack=[];S.tab='apres';render(1);break}
+ case'msclose':{const previous=psySnapshot();const o=ph.querySelector('.ms');o&&o.remove();unlock();S.msNotes=S.ms.notes;S.msCk=S.ms.ck;S.msSubjects=S.notes.map(n=>({...n}));S.msDone=1;const today=new Date();S.sessionDate=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');if(S.mode==='first')S.mode='vide';S.stack=[];S.tab='apres';window.__enPsyAfter?.recordMode(previous,psySnapshot(),SEANCES,window.__calE||[]);render(1);break}
  case'msdim':S.ms.dim=!S.ms.dim;msRender();break;
  case'msck':S.ms.ck[d.k]=!S.ms.ck[d.k];msRender();break;
  case'msq':S.ms.qck[d.k]=!S.ms.qck[d.k];msRender();break;
@@ -7251,7 +7255,9 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'veille':S.veille[d.i]=d.k;render();break;
  /* séances */
  case'filt':S.filt=d.k;render();break;
- case'seopen':S.seTab='apres';go('seance',{i:d.i});break;
+ case'seopen':{const saved=SEANCES.find(session=>session.id===d.i);
+  if(saved?.afterId&&window.__enPsyAfter){S.tab='apres';render(1);if(window.__enPsyAfter.open(saved.afterId,true))break;S.tab='seances';}
+  S.seTab='apres';go('seance',{i:d.i});break}
  case'setab':S.seTab=d.k;render();break;
  case'evsel':S.evSel=d.i;{const sc=[...B.querySelectorAll('[data-col]')].map(c=>c.scrollLeft);render();B.querySelectorAll('[data-col]').forEach((c,i)=>c.scrollLeft=sc[i])}break;
  case'phi':S.phI=+d.i;render();break;
@@ -8202,7 +8208,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 const __ce=el=>!!el&&(el.isContentEditable||(el.getAttribute&&el.getAttribute('contenteditable')==='true'));
 const SKIP_TYPES=/^(range|file|password|checkbox|radio|hidden|button|submit|color)$/i;
 function eligible(el){if(!el||!el.closest)return false;const ph=el.closest('.phone');if(!ph)return false;
- if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide,#en-mail-overlay,[data-en-identity]'))return false;
+ if(el.closest('.ias-sheet,.pfcode,.o3,.pad,.wdgph,.ad-sh,#aide,#en-mail-overlay,[data-en-identity],[data-psy-after]'))return false;
  if(el.tagName==='INPUT'){if(SKIP_TYPES.test(el.type))return false;const p=(el.placeholder||'')+' '+(el.id||'');if(/chercher|un mot, une personne|un lieu, une personne|\bq\b|mjq|svq|psq|opw/i.test(p))return false}
  else if(el.tagName!=='TEXTAREA'&&!__ce(el))return false;
  if(__ce(el)&&el.closest('[contenteditable="true"]')!==el)return false;
