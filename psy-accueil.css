@@ -9,6 +9,10 @@
   --home-note: color-mix(in srgb, var(--sacc) 15%, var(--sbg));
   --home-capsule: color-mix(in srgb, var(--sacc) 24%, var(--sbg));
   --home-outline: color-mix(in srgb, var(--sacc) 49%, var(--sbg));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 18px;
+  padding-block-start: 19px;
   color: var(--home-ink);
 }
 #psy.nuit .psy-home {
@@ -22,7 +26,6 @@
 }
 #psy .psy-home .title-card {
   display: block;
-  margin-top: 19px;
   border: 1px solid color-mix(in srgb, var(--home-rose) 27%, var(--sbg));
   border-radius: 19px;
   background: linear-gradient(125deg, var(--home-note), var(--home-panel));
@@ -114,7 +117,7 @@
 #psy .psy-home .pager-marker[aria-current="true"] { color: var(--home-rose); }
 #psy .psy-home .pager-marker[aria-current="true"] span { width: 17px; }
 
-#psy .psy-home .history-block { display: block; margin-top: 14px; }
+#psy .psy-home .history-block { display: block; }
 #psy .psy-home :is(.history-header, .steps-header) { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 #psy .psy-home :is(.history-heading, .steps-heading) {
   display: flex;
@@ -160,7 +163,7 @@
 }
 #psy .psy-home .history-preview + .history-preview { border-top: 1px solid var(--sline); }
 #psy .psy-home .history-preview time { color: var(--home-rose); font: 500 13px/1.15 var(--home-garamond); }
-#psy .psy-home .steps-overview { display: block; margin-top: 16px; padding: 0 9px 6px; border-left: 1px solid var(--home-outline); background: var(--home-panel); }
+#psy .psy-home .steps-overview { display: block; padding: 0 9px 6px; border-left: 1px solid var(--home-outline); background: var(--home-panel); }
 #psy .psy-home .steps-view-core { border: 1px solid var(--home-outline); border-radius: 8px; letter-spacing: .03em; }
 #psy .psy-home .steps-overview-count {
   display: flex;
@@ -193,7 +196,6 @@
   gap: 8px;
   width: 100%;
   min-height: 44px;
-  margin-top: 14px;
   padding: 6px 8px;
   background: var(--sbg);
   border: 1px solid var(--home-outline);
