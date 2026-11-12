@@ -21,6 +21,7 @@
   --home-outline: #805e70;
 }
 #psy .psy-home .title-card {
+  display: block;
   margin-top: 19px;
   border: 1px solid color-mix(in srgb, var(--home-rose) 27%, var(--sbg));
   border-radius: 19px;
@@ -38,6 +39,7 @@
 #psy .psy-home .psy-card-hit { position: absolute; inset: 0; z-index: 1; border-radius: 18px; }
 #psy .psy-home .psy-card-panel:last-child .title-card-body { padding-bottom: 12px; }
 #psy .psy-home .title-date { min-width: 0; padding-right: 9px; text-align: center; }
+#psy .psy-home .psy-home-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #psy .psy-home .title-date strong {
   display: block;
   margin: 1px 0 3px;
@@ -66,7 +68,7 @@
   content: '';
   display: block;
   width: 35px;
-  margin: 7px auto 0;
+  margin: 0 auto;
   border-bottom: 1px solid var(--home-outline);
 }
 #psy .psy-home .action-row { display: flex; justify-content: center; margin-top: 12px; }
@@ -89,7 +91,12 @@
   background: var(--home-capsule);
 }
 #psy .psy-home .action-core svg { width: 14px; height: 14px; stroke-width: 1.5; }
-#psy .psy-home .psy-card-empty { padding: 14px; text-align: center; }
+#psy .psy-home .psy-card-status {
+  margin: 0;
+  color: var(--home-ink);
+  text-align: center;
+  font: italic 500 14px/1.18 var(--home-garamond);
+}
 #psy .psy-home .card-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; margin: 6px 5px 0; }
 #psy .psy-home :is(.pager-arrow, .pager-marker) {
   display: grid;
@@ -101,13 +108,13 @@
 }
 #psy .psy-home .pager-arrow { color: var(--home-rose); }
 #psy .psy-home .pager-arrow svg { width: 22px; height: 22px; stroke-width: 1.45; }
-#psy .psy-home .pager-markers { display: flex; justify-content: safe center; overflow-x: auto; scrollbar-width: none; }
+#psy .psy-home .pager-markers { display: flex; gap: 0; justify-content: safe center; overflow-x: auto; scrollbar-width: none; }
 #psy .psy-home .pager-marker { flex: 0 0 25px; }
 #psy .psy-home .pager-marker span { width: 5px; height: 5px; border-radius: 8px; background: currentColor; }
 #psy .psy-home .pager-marker[aria-current="true"] { color: var(--home-rose); }
 #psy .psy-home .pager-marker[aria-current="true"] span { width: 17px; }
 
-#psy .psy-home .history-block { margin-top: 14px; }
+#psy .psy-home .history-block { display: block; margin-top: 14px; }
 #psy .psy-home :is(.history-header, .steps-header) { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 #psy .psy-home :is(.history-heading, .steps-heading) {
   display: flex;
@@ -120,6 +127,8 @@
 #psy .psy-home svg { flex: none; width: 16px; height: 16px; color: var(--home-rose); stroke-width: 1.45; }
 #psy .psy-home :is(.history-heading, .steps-heading) svg { width: 14px; height: 14px; }
 #psy .psy-home :is(.history-all, .steps-view) { display: flex; align-items: center; min-height: 44px; font: italic 500 14px/1.18 var(--home-garamond); }
+#psy .psy-home .history-all { position: relative; flex: none; min-height: 28px; }
+#psy .psy-home .history-all::before { content: ''; position: absolute; inset: -8px -2px; }
 #psy .psy-home :is(.history-all-core, .steps-view-core) { display: flex; align-items: center; gap: 4px; padding: 5px 8px; }
 #psy .psy-home .history-all-core { border-radius: 999px; background: var(--home-capsule); }
 #psy .psy-home .history-all-core svg { width: 12px; height: 12px; }
@@ -127,11 +136,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 2px 0 1px;
+  margin: 0 0 1px;
   color: var(--home-rose);
   font: 500 14px/1.1 var(--home-sc);
 }
 #psy .psy-home .history-month h4::after { content: ''; flex: 1; height: 1px; background: var(--sline); }
+#psy .psy-home .history-month + .history-month { margin-top: 6px; }
 #psy .psy-home .history-preview {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content 16px;
@@ -146,7 +156,7 @@
 }
 #psy .psy-home .history-preview + .history-preview { border-top: 1px solid var(--sline); }
 #psy .psy-home .history-preview time { color: var(--home-rose); font: 500 13px/1.15 var(--home-garamond); }
-#psy .psy-home .steps-overview { margin-top: 16px; padding: 0 9px 6px; border-left: 1px solid var(--home-outline); background: var(--home-panel); }
+#psy .psy-home .steps-overview { display: block; margin-top: 16px; padding: 0 9px 6px; border-left: 1px solid var(--home-outline); background: var(--home-panel); }
 #psy .psy-home .steps-view-core { border: 1px solid var(--home-outline); border-radius: 8px; letter-spacing: .03em; }
 #psy .psy-home .steps-overview-count {
   display: flex;

@@ -30,6 +30,26 @@ test('l’Éphéméride montre le prochain rendez-vous et les séances à poursu
   ]);
 });
 
+test('l’absence de séance à poursuivre est visible avec et sans prochain rendez-vous', () => {
+  const { home } = app();
+  const carousel = { addEventListener() {} };
+  const root = { querySelector: () => carousel };
+  home.mount(root, [], {});
+  assert.match(carousel.innerHTML, /Aujourd’hui/);
+  assert.match(carousel.innerHTML, /Aucune séance à poursuivre/);
+  assert.match(carousel.innerHTML, /data-a="enaddpsy"/);
+
+  const upcoming = { id: 'next', kind: 'upcoming', date: '2026-11-19', calendarTime: '10:00' };
+  home.mount(root, [upcoming], {});
+  assert.match(carousel.innerHTML, /Prochain rendez-vous/);
+  assert.match(carousel.innerHTML, /10 h 00/);
+  assert.match(carousel.innerHTML, /Aucune séance à poursuivre/);
+  assert.match(carousel.innerHTML, /data-k="prep"/);
+
+  home.mount(root, [upcoming, { id: 'draft', kind: 'current', date: '2026-11-11' }], {});
+  assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre/);
+});
+
 test('un rendez-vous déplacé conserve sa fiche et sa préparation', () => {
   const { returns } = app();
   const event = { id: 1, t: 'psy', y: 2099, m: 10, d: 19, h: 10, mi: 0 };
