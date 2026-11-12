@@ -50,6 +50,19 @@ test('l’absence de séance à poursuivre est visible avec et sans prochain ren
   assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre/);
 });
 
+test('l’historique regroupe les séances sous le mois abrégé et conserve leurs accès', () => {
+  const { home } = app();
+  const records = [
+    { id: 'archive-15', date: '2026-10-15', title: 'Deuxième ligne' },
+    { id: 'archive-29', date: '2026-10-29', title: 'Première ligne' },
+  ];
+  const html = home.render({ records, items: [] });
+  assert.equal((html.match(/<h4>Oct\. 2026<\/h4>/g) || []).length, 1);
+  assert.match(html, /<h4>Oct\. 2026<\/h4>\s*<div class="history-month-rows">/);
+  assert.match(html, /data-a="session-archive" data-i="archive-29"[\s\S]*data-a="session-archive" data-i="archive-15"/);
+  assert.match(html, /data-a="psy-page" data-k="seances"/);
+});
+
 test('un rendez-vous déplacé conserve sa fiche et sa préparation', () => {
   const { returns } = app();
   const event = { id: 1, t: 'psy', y: 2099, m: 10, d: 19, h: 10, mi: 0 };

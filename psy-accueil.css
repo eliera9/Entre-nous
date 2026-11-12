@@ -132,16 +132,20 @@
 #psy .psy-home :is(.history-all-core, .steps-view-core) { display: flex; align-items: center; gap: 4px; padding: 5px 8px; }
 #psy .psy-home .history-all-core { border-radius: 999px; background: var(--home-capsule); }
 #psy .psy-home .history-all-core svg { width: 12px; height: 12px; }
+#psy .psy-home .history-month {
+  display: grid;
+  grid-template-columns: minmax(64px, max-content) minmax(0, 1fr);
+  margin-top: 3px;
+}
 #psy .psy-home .history-month h4 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 1px;
+  margin: 0;
+  padding: 12px 4px 0 0;
   color: var(--home-rose);
   font: 500 14px/1.1 var(--home-sc);
+  white-space: nowrap;
 }
-#psy .psy-home .history-month h4::after { content: ''; flex: 1; height: 1px; background: var(--sline); }
-#psy .psy-home .history-month + .history-month { margin-top: 6px; }
+#psy .psy-home .history-month-rows { min-width: 0; padding-inline-start: 7px; border-inline-start: 1px solid var(--sline); }
+#psy .psy-home .history-month + .history-month { margin-top: 8px; }
 #psy .psy-home .history-preview {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content 16px;

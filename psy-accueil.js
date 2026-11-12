@@ -13,7 +13,7 @@
   const shortDate = format({ day: 'numeric', month: 'short' });
   const weekday = format({ weekday: 'short' });
   const month = format({ month: 'short' });
-  const monthYear = format({ month: 'long', year: 'numeric' });
+  const monthYear = format({ month: 'short', year: 'numeric' });
   const capitalize = text => text[0].toLocaleUpperCase('fr-FR') + text.slice(1);
   const newest = (a, b) => b.date.localeCompare(a.date) || (b.calendarTime || '').localeCompare(a.calendarTime || '');
 
@@ -36,10 +36,12 @@
     }
     return [...groups.values()].map(group => `<div class="history-month">
       <h4>${capitalize(monthYear.format(dateOf(group[0].date)))}</h4>
-      ${group.map(record => `<button type="button" class="history-preview" data-a="session-archive" data-i="${escape(record.id)}">
-        <span>${escape(record.title || record.q || 'Séance du ' + shortDate.format(dateOf(record.date)))}</span>
-        <time datetime="${record.date}" aria-label="${longDate.format(dateOf(record.date))}">${shortDate.format(dateOf(record.date))}</time>
-        ${icon('chevron-right')}</button>`).join('')}
+      <div class="history-month-rows">
+        ${group.map(record => `<button type="button" class="history-preview" data-a="session-archive" data-i="${escape(record.id)}">
+          <span>${escape(record.title || record.q || 'Séance du ' + shortDate.format(dateOf(record.date)))}</span>
+          <time datetime="${record.date}" aria-label="${longDate.format(dateOf(record.date))}">${shortDate.format(dateOf(record.date))}</time>
+          ${icon('chevron-right')}</button>`).join('')}
+      </div>
       </div>`).join('');
   }
 
