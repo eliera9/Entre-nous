@@ -268,7 +268,8 @@ window.__enReel=()=>{if(!REEL()){M.ls['en-reel']='1';touch()}if(!M.ls['en-depuis
 window.__enDepuis=()=>{const t=+M.ls['en-depuis']||Date.now();const d=new Date(t);return ['JANVIER','FÉVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOÛT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DÉCEMBRE'][d.getMonth()]+' '+d.getFullYear()};
 window.__enPersist=(k,o,fields)=>{LIVE[k]={o,fields};const sv=M.st[k];if(sv&&o)fields.forEach(f=>{if(sv[f]!==undefined)o[f]=sv[f]});return o};
 function enrollmentMeta(){const {restoring,suspended,...data}=ENROLL;return JSON.parse(JSON.stringify(data));}
-function snapshot(){const st={};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});if(ENROLL.startedAt)st['inscription-progress-v1']=enrollmentMeta();return st}
+// Les écrans ouverts à la demande se réinscrivent dans LIVE quand on y revient.
+function snapshot(){const st={...M.st};Object.entries(LIVE).forEach(([k,{o,fields}])=>{if(fields==='*'){st[k]=JSON.parse(JSON.stringify(o));return}const x={};fields.forEach(f=>x[f]=o[f]);st[k]=x});if(ENROLL.startedAt)st['inscription-progress-v1']=enrollmentMeta();return st}
 let last='';
 function touch(){dirty=true;clearTimeout(touch.t);touch.t=setTimeout(save,1200)}
 function save(force){
@@ -385,6 +386,18 @@ window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.
 /* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
 window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;ENROLL.suspended=true;await dbWriteEntries([[KEY,rec]],true);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
+let autosavePending=null,autosaveRequested=false;
+window.__vaultAutosave=()=>{
+ autosaveRequested=true;
+ if(!autosavePending){
+  autosavePending=(async()=>{
+   try{while(autosaveRequested){autosaveRequested=false;await save();}}
+   finally{autosavePending=null;}
+  })();
+  autosavePending.catch(()=>{});
+ }
+ return autosavePending;
+};
 window.__enEnrollmentState=()=>ENROLL;
 window.__enEnrollmentReady=()=>{ENROLL.restoring=false;if(ENROLL.active){window.__enCaptureEnrollment?.();touch();}};
 window.__enEnrollmentUpdate=patch=>{if(!ENROLL.active||ENROLL.restoring)return;Object.assign(ENROLL,patch);touch();};
@@ -6895,6 +6908,7 @@ function openMS(){
  app.appendChild(overlay);
  const close=()=>{overlay.remove();app.classList.remove('en-mode-open');ph.inert=!ph.classList.contains('en-on')};
  session.mount(overlay,S.msDraft,{
+  onChange:window.__vaultAutosave,
   pause(){close();returnFocus?.focus({preventScroll:true});window.__vaultPushNow?.()?.catch(()=>{})},
   finish(){const draft=S.msDraft;if(!draft)return;
    const previous=psySnapshot();

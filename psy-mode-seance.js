@@ -55,7 +55,7 @@
     return { subjects, checked: [], note: '', notesOpen: false };
   }
 
-  function mount(host, draft, { pause, finish }) {
+  function mount(host, draft, { pause, finish, onChange }) {
     const doc = host.ownerDocument;
     host.setAttribute('role', 'dialog');
     host.setAttribute('aria-modal', 'true');
@@ -73,6 +73,7 @@
       input.addEventListener('change', () => {
         draft.checked = draft.checked.filter(id => id !== subject.id);
         if (input.checked) draft.checked.push(subject.id);
+        onChange?.();
       });
       topics.append(row);
     }
@@ -84,7 +85,10 @@
     note.value = draft.note;
     details.open = draft.notesOpen;
     details.addEventListener('toggle', () => { draft.notesOpen = details.open; });
-    note.addEventListener('input', () => { draft.note = note.value; });
+    note.addEventListener('input', () => {
+      draft.note = note.value;
+      onChange?.();
+    });
 
     const close = host.querySelector('[data-close]');
     close.addEventListener('click', pause);

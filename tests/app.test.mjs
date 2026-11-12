@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, access } from 'node:fs/promises';
 import { Script, runInNewContext } from 'node:vm';
 import { webcrypto } from 'node:crypto';
+import { setImmediate } from 'node:timers/promises';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 
@@ -71,6 +72,66 @@ test('les sauvegardes concurrentes se rangent dans l’ordre et reprennent aprè
   failNext = true; await assert.rejects(() => save(true));
   current = 'récupéré'; await save(true);
   assert.equal(writes.at(-1), 'récupéré');
+});
+
+test('une sauvegarde au démarrage conserve les retours avant l’ouverture d’Après', async () => {
+  const savedAfter = {
+    sessions: [{ id: 'seance-test', free: 'Retour fictif', freeHtml: '<b>Retour fictif</b>' }],
+    deletedCalendarKeys: ['cal:7'],
+  };
+  const register = html.match(/window\.__enKeep=\(k,o\)=>\{[^\n]+\};/)[0];
+  const snapshotCode = html.slice(html.indexOf('function snapshot(){'), html.indexOf('setInterval(()=>{if(DEK)save()}'));
+  let onDisk;
+  const app = runInNewContext(`
+    const M={ls:{},st:{'psy-after-v1':savedAfter}},LIVE={},ENROLL={active:false},W={code:{}},DEK={},META={};
+    let dirty=false,saving=null;
+    const REEL=()=>true;
+    const window={};
+    ${register}
+    ${snapshotCode}
+    window.__enKeep('rg', { prenom: 'Test' });
+    ({save, keep: window.__enKeep})
+  `, {
+    savedAfter,
+    seal: async (_, data) => JSON.stringify(data),
+    dbPut: async (_, record) => { onDisk = JSON.parse(record.box); },
+    KEY: 'v1', CLOUD: { push() {} },
+  });
+  await app.save();
+  assert.deepEqual(onDisk.st['psy-after-v1'], savedAfter);
+  const after = app.keep('psy-after-v1', { sessions: [] });
+  assert.equal(after.sessions[0].free, 'Retour fictif');
+  after.sessions[0].free = 'Retour complété';
+  await app.save();
+  assert.equal(onDisk.st['psy-after-v1'].sessions[0].free, 'Retour complété');
+});
+
+test('la sauvegarde automatique démarre à la saisie et attend les changements en cours', async () => {
+  const code = html.slice(html.indexOf('let autosavePending='), html.indexOf('window.__enEnrollmentState='));
+  const writes = [];
+  const releases = [];
+  let value = 'Une ligne';
+  const autosave = runInNewContext(`const window={};${code};window.__vaultAutosave`, {
+    save() {
+      writes.push(value);
+      return new Promise((resolve, reject) => releases.push({ resolve, reject }));
+    },
+  });
+  const first = autosave();
+  assert.deepEqual(writes, ['Une ligne']);
+  value = 'Deux lignes';
+  assert.equal(autosave(), first);
+  value = 'Dernière ligne';
+  assert.equal(autosave(), first);
+  releases[0].resolve();
+  await setImmediate();
+  assert.deepEqual(writes, ['Une ligne', 'Dernière ligne']);
+  releases[1].reject(new Error('Disque indisponible'));
+  await assert.rejects(first, /Disque indisponible/);
+  const retry = autosave();
+  releases[2].resolve();
+  await retry;
+  assert.deepEqual(writes, ['Une ligne', 'Dernière ligne', 'Dernière ligne']);
 });
 
 test('le cache hors ligne ne supprime pas les caches des autres applications', async () => {

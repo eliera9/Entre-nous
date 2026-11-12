@@ -25,7 +25,7 @@ test('les anciens carnets gardent leur petit nom et un surnom vide reprend le pr
 test('la sauvegarde du carnet conserve les deux noms, le choix et les informations existantes',()=>{
  const profile={prenom:'Camille',petit:'Cami',appellation:1,naiss:[4,2,45],psy:'oui'};
  const start=html.indexOf('function snapshot(){'),end=html.indexOf("let last='';",start);
- const snapshot=runInNewContext(html.slice(start,end)+';snapshot',{ENROLL:{active:false},LIVE:{rg:{o:profile,fields:'*'}}});
+ const snapshot=runInNewContext(html.slice(start,end)+';snapshot',{M:{st:{}},ENROLL:{active:false},LIVE:{rg:{o:profile,fields:'*'}}});
  const restored=JSON.parse(JSON.stringify(snapshot())).rg;
  assert.deepEqual(restored,profile);assert.equal(display(restored),'Cami');
  restored.appellation=0;assert.equal(display(restored),'Camille');

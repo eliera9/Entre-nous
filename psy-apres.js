@@ -721,13 +721,14 @@
     for (const old of history) {
       const date = legacyDate(old);
       if (!date) continue;
-      const checked = new Set(old.suj || []);
+      const checked = new Set(old.afterId ? [] : old.suj || []);
       const session = newSession(date, {
+        ...(old.afterId ? { id: old.afterId, title: old.q === 'Mon retour sur la séance' ? '' : old.q || '' } : {}),
         historyId: old.id, completed: true,
         topics: [...new Set([...(old.prev || []), ...checked])].map(text => ({ text, checked: checked.has(text) })),
         notes: (old.notes || []).map(([label, time, text]) => ({ label, time, text })),
         rubrics: {
-          aborde: { paragraphs: strings([old.apres?.parler]), choices: [] },
+          aborde: { paragraphs: strings(old.afterId && old.suj?.length ? old.suj : [old.apres?.parler]), choices: [] },
           compris: { paragraphs: strings([old.apres?.retiens]), choices: [] },
           apres: { paragraphs: strings([old.apres?.ressens]), choices: [] },
         },
@@ -785,21 +786,14 @@
   }
 
   let state;
-  let saveTimer;
   let controller;
   function save() {
-    clearTimeout(saveTimer);
-    saveTimer = undefined;
-    globalThis.__vaultPushNow?.()?.catch(() => {});
-  }
-  function saveSoon() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(save, 500);
+    return globalThis.__vaultAutosave?.() ?? globalThis.__vaultPushNow?.();
   }
   function prepare(legacy, history, calendar) {
     state ||= globalThis.__enKeep('psy-after-v1', { version: 1, sessions: [], migrated: false });
     const changed = migrate(state, history, legacy);
-    if (syncCalendar(state, calendar, new Date()) || changed) saveSoon();
+    if (syncCalendar(state, calendar, new Date()) || changed) save();
   }
 
   function recordMode(previous, current, history, calendar) {
@@ -939,7 +933,7 @@
       if (current !== JSON.stringify([session.title, session.free, freeContent.html, next])) session.completed = false;
       formatting.refresh();
       controls();
-      saveSoon();
+      save();
     }
     function fitWriting() {
       guided.fitTitle();
@@ -1032,7 +1026,7 @@
       session.completed = false;
       dateDisplay();
       controls();
-      saveSoon();
+      save();
     }
     personalTitle.addEventListener('input', update);
     editor.addEventListener('change', event => {
@@ -1047,7 +1041,7 @@
     dateInput.addEventListener('input', changeDate);
     dateToggle.addEventListener('click', () => setDate(dateEditor.hidden));
     help.addEventListener('click', () => setHelp(helpPanel.hidden));
-    for (const button of modeButtons) button.addEventListener('click', () => { selectMode(button.dataset.mode); saveSoon(); });
+    for (const button of modeButtons) button.addEventListener('click', () => { selectMode(button.dataset.mode); save(); });
     get('[data-review]').addEventListener('click', showRecap);
     edit.addEventListener('click', () => { show('write'); modeButtons.find(button => button.dataset.mode === session.mode)?.focus(); });
     finish.addEventListener('click', () => {
@@ -1150,7 +1144,19 @@
     function open(id, recap = false) {
       const session = state.sessions.find(item => item.id === id);
       if (!session || !host.isConnected) return false;
-      const exit = () => { save(); home(id); };
+      let leaving = false;
+      async function exit() {
+        if (leaving) return;
+        leaving = true;
+        try {
+          await save();
+          if (active?.session === session && host.isConnected) home(id);
+        } catch {
+          // Le coffre signale l’échec. Le retour reste ouvert pour réessayer.
+        } finally {
+          leaving = false;
+        }
+      }
       active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item)) };
       if (recap) active.editor.showRecap();
       else host.closest('.phone')?.scrollTo({ top: 0 });

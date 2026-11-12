@@ -68,3 +68,20 @@ test('les ressources d’Après se chargent au démarrage, à la publication et 
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.ok(html.indexOf('src="psy-apres-ecriture.js"') < html.indexOf('src="psy-apres.js"'));
 });
+
+test('un retour validé peut retrouver les éléments conservés dans l’historique', () => {
+  const { migrate } = model();
+  const state = { sessions: [] };
+  const history = [{
+    id: 'apres-seance-test', afterId: 'seance-test', date: '2026-11-11', q: 'Mon titre',
+    prev: ['Sujet préparé'], suj: ['Premier sujet', 'Autre sujet'],
+    apres: { parler: 'Premier sujet\nAutre sujet' },
+  }];
+  assert.equal(migrate(state, history, {}), true);
+  const [session] = state.sessions;
+  assert.equal(session.id, 'seance-test');
+  assert.equal(session.title, 'Mon titre');
+  assert.equal(session.completed, true);
+  assert.deepEqual(plain(session.topics), [{ text: 'Sujet préparé', checked: false }]);
+  assert.deepEqual(plain(session.rubrics.aborde.paragraphs), ['Premier sujet', 'Autre sujet']);
+});
