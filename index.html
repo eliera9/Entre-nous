@@ -626,10 +626,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 (()=>{/* 6 · Psy : la prochaine séance vient du calendrier */
 const J=['DIM.','LUN.','MAR.','MER.','JEU.','VEN.','SAM.'],MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'],MOL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-function nextPsy(){const E=window.__calE||[];const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
- for(let i=0;i<120;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);for(const e of E){if(e.t!=='psy')continue;const s=new Date(e.y,e.m,e.d);let on=false;
+function nextPsy(exclude=()=>false){const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const E=(window.__calE||[]).filter(e=>e.t==='psy').sort((a,b)=>(a.h||0)*60+(a.mi||0)-(b.h||0)*60-(b.mi||0));
+ const horizon=Math.max(120,...E.map(e=>Math.round((new Date(e.y,e.m,e.d)-t0)/864e5)+36).filter(Number.isFinite));
+ for(let i=0;i<horizon;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);for(const e of E){const s=new Date(e.y,e.m,e.d);let on=false;
   if(e.rep){if(dt>=s){const k=Math.round((dt-s)/864e5);on=e.rep===1?k%7===0:e.rep===2?k%14===0:e.rep===3?dt.getDate()===e.d:false}}else on=+s===+dt;
-  if(on){const at=new Date(dt);at.setHours(e.h||0,e.mi||0);if(at<now&&i===0)continue;return {e,dt,i}}}}return null}
+  if(on){const at=new Date(dt);at.setHours(e.h||0,e.mi||0);const next={e,dt,i};if(at<now&&i===0||exclude(next))continue;return next}}}return null}
 const hh=e=>(e.h??0)+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
 window.__enPsyEph=()=>{const n=nextPsy();
  if(!n)return `<div class="ps-eph"><div class="d"><b>✦</b><small>À VENIR</small></div><div class="m"><p>Pas encore de séance prévue</p><span>ajoute-la à ton calendrier</span></div><button class="ps-btn2" data-a="enaddpsy">AJOUTER</button></div>`;
@@ -735,6 +737,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="accueil-valide.js" defer></script>
 <link rel="stylesheet" href="psy-approved.css">
 <link rel="stylesheet" href="psy-apres.css">
+<link rel="stylesheet" href="psy-accueil.css">
 <link rel="stylesheet" href="psy-mode-seance.css">
 <script src="vendor/lucide.min.js" defer></script>
 <script src="psy-premiere-validee.js" defer></script>
@@ -743,6 +746,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="psy-approved.js" defer></script>
 <script src="psy-apres-ecriture.js" defer></script>
 <script src="psy-apres.js" defer></script>
+<script src="psy-accueil.js" defer></script>
 <script src="psy-mode-seance.js" defer></script>
 </head>
 <body>
@@ -6527,7 +6531,7 @@ const src=$('open');if(src)new MutationObserver(()=>W.paintAll()).observe(src,{a
 })();</script>
 
 <script type="text/x-en">(()=>{const ICO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14M5 12h10M5 16h14"/></svg>';
-const PAGES=[['home','Accueil','accueil',[]],['mj','Journal','journal',[['@write','Écrire ma page']]],['mvfiche','Mon espace','@photo',[['souv','Mes souvenirs'],['calp','Mon calendrier'],['@sec','Mon carnet secret']]],['psy','Psy','psy',[['mpp','Mes petits pas']]]];
+const PAGES=[['home','Accueil','accueil',[]],['mj','Journal','journal',[['@write','Écrire ma page']]],['mvfiche','Mon espace','@photo',[['souv','Mes souvenirs'],['calp','Mon calendrier'],['@sec','Mon carnet secret']]],['psy','Psy','psy',[['@psy-avant','Avant'],['@psy-apres','Après'],['mpp','Mes petits pas']]]];
 const GRP=a=>a==='home'?'home':/^(mj|pdj)$/.test(a)?'mj':/^(psy|mpp)$/.test(a)?'psy':/^(mvfiche|souv|calp|mvdit|mv|mv2|mv3|mvai|mvret|mvintro)$/.test(a)?'mvfiche':'';
 const mi=k=>'<img data-mi="'+k+'" alt="">';
 const GEAR='<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>';
@@ -6549,6 +6553,7 @@ function build(ph){if(ph.querySelector('.sbdr'))return;const act=ph.id;
   if(b.classList.contains('sbg')&&+b.dataset.subs){const gp=b.parentNode;if(!gp.classList.contains('open')){r.querySelectorAll('.sbgrp.open').forEach(x=>x.classList.remove('open'));gp.classList.add('open');return}}
   if(b.dataset.go==='@write'){close();setTimeout(()=>window.__mjWrite&&window.__mjWrite(),300);return}
   if(b.dataset.go==='@sec'){close();setTimeout(()=>{goTo('mvfiche');const t=document.querySelector('#mvfiche .pftr button[data-t="sec"]');t&&t.click()},300);return}
+  if(b.dataset.go?.startsWith('@psy-')){close();setTimeout(()=>{window.__enShow('psy');setTimeout(()=>window.__enPsyBridge?.openPage(b.dataset.go.slice(5)),0)},300);return}
   const g=b.dataset.go;if(g==='reglages'){close();setTimeout(()=>goTo('rg'),300);return}if(!g){toast('Cette page arrive bientôt');return}close();setTimeout(()=>goTo(g),300)});
  ph.__sb=()=>{r.removeAttribute('inert');const nt=/2A1E26/i.test(getComputedStyle(ph).getPropertyValue('--sbg'));r.querySelector('.sbn').textContent=window.__P();r.querySelectorAll('img[data-mi]').forEach(i=>i.src='illus/menu/'+i.dataset.mi+(nt?'-nuit':'')+'.webp');const st=ph.scrollTop,h=ph.clientHeight;[d,r].forEach(x=>{x.style.top=st+'px';x.style.height=h+'px'});ph.style.overflowY='hidden';d.hidden=false;requestAnimationFrame(()=>{d.classList.add('on');r.classList.add('on')})}}
 const BR=()=>{const e=document.createElement('span');e.className='sbbrand';e.innerHTML='<i>✦</i>ENTRE NOUS<i>✦</i>';return e};
@@ -6785,16 +6790,15 @@ const SEANCES=[];window.__enKeepArr?.('psyse',SEANCES);
 
 let S;
 function reset(mode){S={mode,stack:[],tab:'avant',notes:[],addNote:0,
- prep:{step:1,ni:0,stars:new Set(),tab:'gen',start:'',gen:'',by:{},ia:'claude',quest:[],feel:{}},
+ prep:newPrep(),
  msDraft:null,msNotes:null,msCk:{},pas:[],pasYay:null,veille:{},
  ap:{parts:{},vrac:'',from:{},saved:0,ressens:{sel:new Set(),star:null,mots:''},retiens:{a:'',b:'',c:'',k:0,keep:1},parler:{ck:{},txt:{},plus:'',extra:[]},paspro:[],pasAdded:[],vracOpen:0},
  sv:{tab:'suivi',mo:'',an:'',ry:'',why:'',dj:'',dm:'',ab:'',abPills:null,sv:'',out:'',aid:[],aidNew:null,sus:'',susL:null,ia:{},hint:{}},
  first:{p:{},done:{}},seSel:null,seTab:'apres',evSel:null,ph:{},filt:'toutes',q:'',iaPick:'claude'};enBridge(S);
- if(mode==='first')S.stack=[{v:'intro'}];
-
 }
-function psySnapshot(){return {notes:S.notes,pas:S.pas,mode:S.mode,first:S.first,sv:S.sv,tab:S.tab,
- prep:{...S.prep,stars:[...S.prep.stars]},ap:{...S.ap,ressens:{...S.ap.ressens,sel:[...S.ap.ressens.sel]}},msDraft:S.msDraft,msNotes:S.msNotes,msCk:S.msCk,msDone:S.msDone,sessionDate:S.sessionDate,msSubjects:S.msSubjects}}
+function psySnapshot(){return {notes:inbox.notes,pas:S.pas,mode:S.mode,first:S.first,sv:S.sv,tab:S.tab,
+ prep:{...inbox.prep,stars:[...inbox.prep.stars]},ap:{...S.ap,ressens:{...S.ap.ressens,sel:[...S.ap.ressens.sel]}},msDraft:S.msDraft,msNotes:S.msNotes,msCk:S.msCk,msDone:S.msDone,sessionDate:S.sessionDate,msSubjects:S.msSubjects}}
+const newPrep=()=>({step:1,ni:0,stars:new Set(),tab:'gen',start:'',gen:'',by:{},ia:'claude',quest:[],feel:{}});
 reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);if(saved){
  reset(saved.mode==='first'?'first':'vide');S.notes=saved.notes||[];S.pas=saved.pas||[];
  if(saved.first)S.first=saved.first;if(saved.sv)Object.assign(S.sv,saved.sv);if(saved.tab)S.tab=saved.tab;
@@ -6802,6 +6806,59 @@ reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);
  if(saved.ap)S.ap={...S.ap,...saved.ap,ressens:{...S.ap.ressens,...saved.ap.ressens,sel:new Set(saved.ap.ressens?.sel||[])}};
  S.msDraft=saved.msDraft||null;S.msNotes=saved.msNotes||null;S.msCk=saved.msCk||{};S.msDone=!!saved.msDone;S.sessionDate=saved.sessionDate;S.msSubjects=saved.msSubjects||[];
 }}
+const inbox={notes:S.notes,prep:S.prep};
+const calendar=()=>window.__calE||[];
+const afterModule=()=>window.__enPsyAfter;
+const sessionRoute=()=>S.stack.findLast(route=>route.v==='session');
+const activeSession=()=>afterModule()?.find(sessionRoute()?.id);
+const cardPosition={};
+function sessionPreparation(){
+ const session=activeSession();if(!session)return inbox;
+ if(!session.preparation){
+  const includeInbox=sessionRoute().includeInbox;
+  const prep=includeInbox?JSON.parse(JSON.stringify({...inbox.prep,stars:[...inbox.prep.stars]})):newPrep();
+  const notes=includeInbox?JSON.parse(JSON.stringify(inbox.notes)):[];
+  session.preparation={notes,prep};
+ }
+ const stars=session.preparation.prep.stars;
+ if(!(stars instanceof Set))session.preparation.prep.stars=new Set(stars||[]);
+ if(!session.preparation.prep.stars.toJSON)Object.defineProperty(session.preparation.prep.stars,'toJSON',{value(){return [...this]}});
+ return session.preparation;
+}
+for(const key of ['notes','prep'])Object.defineProperty(S,key,{enumerable:true,get:()=>sessionPreparation()[key],set:value=>{sessionPreparation()[key]=value}});
+function psySessions(){
+ const after=afterModule();if(!after)return [];
+ const sessions=after.prepare(psySnapshot(),SEANCES,calendar());
+ if(S.msDraft){after.migrateModeDraft(S.msDraft);S.msDraft=null;window.__vaultAutosave?.()}
+ return sessions;
+}
+function upcomingPsy(){const after=afterModule();return window.__enNextPsy?.(next=>{
+ const session=after.appointment(next);return after.isDeleted(next)||session?.completed||session?.modeDraft||session?.fromMode;
+})}
+function openSession(id,shortcut){
+ psySessions();
+ const next=upcomingPsy();
+ const item=id==='next'?afterModule().appointment(next,true):afterModule().find(id);
+ if(!item)return;
+ if(item.completed){go('archive',{id:item.id});return}
+ const includeInbox=Boolean(next&&afterModule().appointment(next)?.id===item.id);
+ const tab=shortcut==='apres'||!shortcut&&!item.modeDraft&&!includeInbox?'apres':'avant';
+ S.stack.push({v:'session',id:item.id,tab,includeInbox});
+ if(shortcut==='prep')go('prep0');
+ else {render(1);if(shortcut==='mode')openMS()}
+}
+function openPsyPage(page){
+ if(!PSY_PAGES[page]||cur().v==='section'&&cur().page===page)return;
+ if(ph.classList.contains('psy-approved-active')){window.__enApprovedPsy.save().then(()=>{S.stack=[];go('section',{page})}).catch(()=>{});return}
+ go('section',{page});
+}
+function openArchive(id){
+ psySessions();
+ const saved=SEANCES.find(record=>record.id===id);
+ const session=afterModule()?.restoreArchive(saved);
+ if(session)go('archive',{id:session.id});
+ else if(saved){S.seTab='apres';go('seance',{i:id})}
+}
 /* une seule liste de petits pas : ceux de la psy sont ceux de « Mes petits pas », famille PSY */
 const PSYP=x=>x&&(x.f==='psy'||x.fam==='psy');
 function enBridge(S){let tmp=Array.isArray(S.pas)?S.pas:[];delete S.pas;
@@ -6809,7 +6866,7 @@ function enBridge(S){let tmp=Array.isArray(S.pas)?S.pas:[];delete S.pas;
  Object.defineProperty(S,'pas',{configurable:true,enumerable:true,get(){const P=pp();return P?P.items.filter(PSYP):tmp},set(a){a=a||[];const P=pp();if(!P){tmp=a;return}a.forEach(x=>{x.f='psy';x.fam='psy'});const rest=P.items.filter(x=>!PSYP(x));P.items.splice(0,P.items.length,...rest,...a);P.emit&&P.emit()}})}
 function enPushPas(o){o.f='psy';o.fam='psy';const P=window.__PP;if(P){P.items.unshift(o);P.emit&&P.emit()}else S.pas=[o,...S.pas]}
 function sessionLabel(upper){const d=S.sessionDate?new Date(S.sessionDate+'T12:00:00'):new Date();const t=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});return upper?t.toUpperCase():t}
-const cur=()=>S.stack[S.stack.length-1]||{v:'tabs'};
+const cur=()=>S.stack[S.stack.length-1]||{v:'psyhome'};
 const go=(v,o)=>{S.stack.push(Object.assign({v},o||{}));render(1)};
 const back=()=>{if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro'))S.stack.pop();render(1)};
 
@@ -6822,9 +6879,10 @@ const idea=k=>`<button class="ps-idea" data-a="hint" data-k="${k}">· une idée 
 const fold=(k,lab,n,body)=>`<button class="ps-fold" data-a="fold" data-k="${k}"><span>${lab}</span><span>${n} ${S.ph&&S.ph[k]?'⌃':'⌄'}</span></button>${S.ph&&S.ph[k]?body:''}`;
 
 /* ---------- AVANT ---------- */
-function tAvant(){
+function tAvant(scoped=false){
  const empty=S.notes.length?'':`<div class="ps-empty"><p class="ps-s">Rien à aborder pour l'instant.<br>Tes notes s'ajouteront ici au fil des jours.</p></div>`;
- return window.__enPsyEph()+empty+aborder();
+ const entry=scoped?'<button type="button" class="ps-btn" data-a="prepgo">Préparer ma séance</button>':window.__enPsyEph();
+ return entry+empty+aborder();
 }
 function aborder(){
  const n=S.notes;let h=H('À ABORDER');
@@ -6833,7 +6891,9 @@ function aborder(){
  return h+`<button class="ps-add" data-a="addnote">+ ajouter une note</button>`;}
 
 /* ---------- préparation ---------- */
-function prepDate(){const next=window.__enNextPsy?.();if(!next)return '';
+function prepDate(){const selected=activeSession();if(selected){const label=new Date(selected.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+ return `<div class="ps-k" style="margin-top:16px">${label.toUpperCase()}${selected.calendarTime?' · '+selected.calendarTime.replace(':',' H '):''}</div>`}
+ const next=window.__enNextPsy?.();if(!next)return '';
  const label=next.dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
  return `<div class="ps-k" style="margin-top:16px">TA SÉANCE · ${label.toUpperCase()} · ${window.__enHH(next.e).toUpperCase()}</div>`;
 }
@@ -6895,11 +6955,26 @@ const localSessionDate=(date=new Date())=>date.getFullYear()+'-'+String(date.get
 function openMS(){
  const session=window.__enPsyModeSession;
  const app=ph.closest('#en-app');
- if(!session||!app||app.classList.contains('en-mode-open'))return;
- const returnFocus=ph.querySelector('.psmsb');
+ if(!session||!afterModule()||!app||app.classList.contains('en-mode-open')||cur().v==='archive')return;
+ if(ph.classList.contains('psy-approved-active')){window.__enApprovedPsy.save().then(()=>{window.__enPsyBridge.exit();openMS()}).catch(()=>{});return}
+ const sessions=psySessions();
+ if(!activeSession()){
+  const today=localSessionDate();
+  const started=sessions.filter(item=>!item.completed&&item.modeDraft).sort((a,b)=>b.date.localeCompare(a.date));
+  const todaySessions=sessions.filter(item=>item.date===today&&!item.completed&&!item.fromMode);
+  const next=upcomingPsy();
+  const selected=started[0]||(todaySessions.length===1?todaySessions[0]:null)||
+   (next?.i===0?afterModule().appointment(next,true):null)||afterModule().createModeSession(today);
+  S.stack.push({v:'session',id:selected.id,tab:'avant',includeInbox:true});render(1);
+ }
+ const item=activeSession();
+ const returnFocus=ph.querySelector('.psy-session-tabs [data-a="ms"]')||ph.querySelector('.psmsb');
  const first=S.mode==='first'?window.__enApprovedPsy?.getState()?.first:null;
  const questions=S.mode==='first'?pratQ().filter(q=>S.first.p['pr_'+q.k]).map(q=>({id:'question:'+q.k,t:q.t})):[];
- S.msDraft||={...session.newDraft(S.notes,S.prep.stars,first,questions),date:localSessionDate()};
+ const prep=sessionPreparation();
+ item.modeDraft||=item.finishedModeDraft?JSON.parse(JSON.stringify(item.finishedModeDraft)):
+  {...session.newDraft(prep.notes,prep.prep.stars,first,questions),date:item.date};
+ window.__vaultAutosave?.();
  closeSheet(1);unlock();
  const overlay=document.createElement('div');
  overlay.dataset.psyModeSession='';
@@ -6907,17 +6982,17 @@ function openMS(){
  ph.inert=true;
  app.appendChild(overlay);
  const close=()=>{overlay.remove();app.classList.remove('en-mode-open');ph.inert=!ph.classList.contains('en-on')};
- session.mount(overlay,S.msDraft,{
+ session.mount(overlay,item.modeDraft,{
   onChange:window.__vaultAutosave,
   pause(){close();returnFocus?.focus({preventScroll:true});window.__vaultPushNow?.()?.catch(()=>{})},
-  finish(){const draft=S.msDraft;if(!draft)return;
+  finish(){const draft=item.modeDraft;if(!draft)return;
    const previous=psySnapshot();
    S.msNotes=draft.note.trim()?{me:[[hm(),draft.note]]}:null;
    S.msCk=Object.fromEntries(draft.checked.map(id=>[id,true]));
-   S.msSubjects=draft.subjects;S.msDone=1;S.sessionDate=draft.date;S.msDraft=null;
+   S.msSubjects=draft.subjects;S.msDone=1;S.sessionDate=item.date;delete item.modeDraft;
    if(S.mode==='first')S.mode='vide';
-   S.stack=[];S.tab='apres';
-   window.__enPsyAfter?.recordMode(previous,psySnapshot(),SEANCES,window.__calE||[]);
+   S.stack.splice(S.stack.indexOf(sessionRoute())+1);sessionRoute().tab='apres';
+   window.__enPsyAfter?.recordMode(previous,psySnapshot(),SEANCES,calendar(),item.id,draft);
    close();render(1);
    B.querySelector('[data-psy-after] .en-home-heading')?.focus({preventScroll:true});
   }
@@ -6996,7 +7071,7 @@ function sheetPas(p,isNew){const reps=['une fois','chaque jour','chaque semaine'
  <button class="ps-btn" data-a="edsave">${isNew?'AJOUTER':'ENREGISTRER'}</button>${isNew?'':'<button class="ps-del" data-a="eddel">retirer ce petit pas</button>'}<p class="ps-s" style="font-size:12px;margin-top:8px">glisse vers le bas pour annuler</p>`}
 
 /* ---------- MES SÉANCES ---------- */
-function seList(){return [...SEANCES]}
+function seList(){const after=afterModule();return SEANCES.filter(record=>!record.afterId||after?.find(record.afterId)?.completed!==false)}
 function tSeances(){if(!SEANCES.length)return`<div class="ps-empty"><div class="pr"><i></i><i></i><i></i></div><p class="ps-t">Ton fil de séances commencera ici.</p><p class="ps-s">Après chaque séance, une perle s'ajoute.</p><button class="ps-btn" data-a="prepgo">PRÉPARER MA SÉANCE</button></div>`+avantApp();
  let L=seList();const tot=L.length;const sj=['toutes',...new Set(L.flatMap(s=>s.suj||[]))];
  if(S.filt!=='toutes')L=L.filter(s=>s.suj.includes(S.filt));if(S.q)L=L.filter(s=>(s.q+' '+s.suj.join(' ')).toLowerCase().includes(S.q.toLowerCase()));
@@ -7070,19 +7145,36 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
  return h}
 
 /* ---------- rendu ---------- */
-const TITLES={tabs:'MON ESPACE PSY',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
-function render(top){const c=cur();if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='';
- if(c.v==='tabs'){const T=[['avant','AVANT'],['apres','APRÈS'],['pas','PETITS PAS'],['seances','MES SÉANCES'],['evol','ÉVOLUTION']];
-  h=`<div class="ps-tabs" id="pstabs">${T.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-k="${t[0]}">${t[1]}</button>`).join('')}</div>`+({avant:tAvant,apres:tApres,pas:tPas,seances:tSeances,evol:tEvol}[S.tab])()}
+const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
+const PSY_PAGES={avant:['AVANT',tAvant],apres:['APRÈS',tApres],pas:['MES PETITS PAS',tPas],seances:['HISTORIQUE DES SÉANCES',tSeances],evol:['MON ÉVOLUTION',tEvol]};
+function render(top){const c=cur();ph.dataset.psyRoute=c.v;if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='',cards;
+ if(c.v==='psyhome'){
+  const sessions=psySessions(),next=upcomingPsy(),home=window.__enPsyHome;
+  const upcoming=next&&{session:afterModule().appointment(next),date:localSessionDate(next.dt),time:next.e.h==null?null:String(next.e.h).padStart(2,'0')+':'+String(next.e.mi||0).padStart(2,'0')};
+  cards=home.cardsFor(sessions,upcoming,localSessionDate(),hm());
+  const records=seList().map(record=>({...record,date:afterModule()?.legacyDate(record)})).filter(record=>record.date);
+  h=home.render({records,items:S.pas});
+ }else if(c.v==='session'){
+  const item=activeSession();
+  if(!item)return back();
+  const date=new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  h=`<nav class="psy-session-tabs" aria-label="Parcours de la séance">
+    <button type="button" data-a="session-tab" data-k="avant"${c.tab==='avant'?' aria-current="page"':''}>Avant</button>
+    <button type="button" data-a="session-tab" data-k="apres"${c.tab==='apres'?' aria-current="page"':''}>Après</button>
+    <button type="button" data-a="ms"><span>Mode séance</span></button></nav>`;
+  h+=c.tab==='avant'?`<p class="psy-session-date">${date}</p>`+tAvant(true):tApres();
+ }else if(c.v==='archive')h=tApres();
+ else if(c.v==='section'){if(c.page==='seances'||c.page==='evol')psySessions();h=PSY_PAGES[c.page][1]()}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
- TT.textContent=TITLES[c.v]||'MON ESPACE PSY';
+ TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
+ if(cards){window.__enPsyHome.mount(B,cards,cardPosition);window.__enPsyIcons?.(B)}
  const after=B.querySelector('[data-psy-after]');
- if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:window.__calE||[]});
+ if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,onSelect:openSession,onExit:c.id?back:null});
  if(top)ph.scrollTop=0;
  const tb=$('pstabs');if(tb){const o=tb.querySelector('.on');if(o)tb.scrollLeft=o.offsetLeft-60}
  B.querySelectorAll('[data-col]').forEach(c=>c.scrollLeft=c.scrollWidth);
- const nn=$('psnewnote');if(nn){nn.focus();nn.onkeydown=e=>{if(e.key==='Enter'&&nn.value.trim()){S.notes.push({id:'n'+Date.now(),t:nn.value.trim(),o:'NOTE',pg:'MA NOTE · '+new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'}).toUpperCase(),txt:esc(nn.value.trim()),ck:0});S.addNote=0;render()}if(e.key==='Escape'){S.addNote=0;render()}};nn.onblur=()=>{if(!nn.value.trim()){S.addNote=0;setTimeout(render,120)}}}
+ const nn=$('psnewnote');if(nn){nn.focus();nn.onkeydown=e=>{if(e.key==='Enter'&&nn.value.trim()){S.notes.push({id:'n'+Date.now(),t:nn.value.trim(),o:'NOTE',pg:'MA NOTE · '+new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'}).toUpperCase(),txt:esc(nn.value.trim()),ck:0});S.addNote=0;window.__vaultAutosave?.();render()}if(e.key==='Escape'){S.addNote=0;render()}};nn.onblur=()=>{if(!nn.value.trim()){S.addNote=0;setTimeout(()=>{if(nn.isConnected)render()},120)}}}
  const ns=$('psnewsj');if(ns)ns.onkeydown=e=>{if(e.key==='Enter'&&ns.value.trim()){S.ap.parler.extra.push(ns.value.trim());S.ap.parts.parler=1;render()}};
  const pq=$('psq');if(pq)pq.oninput=()=>{S.q=pq.value;const p=pq.selectionStart;render();const n=$('psq');n.focus();n.setSelectionRange(p,p)};
  const pm=$('pasmot');if(pm)pm.onkeydown=e=>{if(e.key==='Enter'){const p=S.pas.find(x=>x.id===S.pasYay);if(p){p.done=1;p.feel=pm.value.trim()||p.feel;p.day='AUJOURD\'HUI';S.pasYay=null;render()}}};
@@ -7099,18 +7191,22 @@ function closeSheet(now){const d=ph.querySelector('.ps-dim'),s=ph.querySelector(
 function setPath(path,val){const p=path.split('.');let o=S;if(p[0]==='first'){o=S.first.p;p.shift()}else if(p[0]==='ed'){o=S.ed;p.shift()}else if(p[0]==='prep'){o=S.prep;p.shift()}else if(p[0]==='sv'){o=S.sv;p.shift()}else if(p[0]==='ap'){o=S.ap;p.shift()}
  for(let i=0;i<p.length-1;i++){if(o[p[i]]==null)o[p[i]]={};o=o[p[i]]}o[p[p.length-1]]=val}
 B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!f)return;if(f==='paste'){S.paste=e.target.value;return}if(f==='convtxt'){S.convTxt=e.target.value;return}if(f==='rdedit'){S.rd.dire[S.rd.i].t=e.target.value;return}setPath(f,e.target.value);
+ if(activeSession()&&f.startsWith('prep.'))window.__vaultAutosave?.();
  if(f.startsWith('ap.retiens'))S.ap.parts.retiens=1;if(f.startsWith('ap.parler'))S.ap.parts.parler=1;
  if(f==='sv.mo'||f==='sv.an'||f==='sv.dj'||f==='sv.dm'){const a=document.activeElement,pos=a.selectionStart;render();const n=B.querySelector(`[data-f="${f}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}});
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
-ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t)});
-BK.addEventListener('click',e=>{if(cur().v==='tabs'&&S.tab==='apres'&&window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length&&!(S.stack.length===1&&cur().v==='intro')){e.stopImmediatePropagation();back()}},true);
+ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t);if(/^(star|nck|rdnext|rdok|keep)$/.test(t.dataset.a))window.__vaultAutosave?.()});
+BK.addEventListener('click',e=>{if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
 
 /* ---------- actions ---------- */
 function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  switch(a){
- case'tab':S.tab=d.k;render(1);break;
+ case'psy-page':openPsyPage(d.k);break;
+ case'session-open':openSession(d.i,d.k);break;
+ case'session-archive':case'seopen':openArchive(d.i);break;
+ case'session-tab':cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
- case'prep':case'prepgo':go('prep0');break;
+ case'prep':case'prepgo':if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('prep0');break;
  case'prep1':S.prep.step=1;S.prep.ni=0;go('prep');break;
  case'perdue':go('ia',{k:'prep'});break;
  case'ni':S.prep.ni=+d.i;render();break;
@@ -7119,7 +7215,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'ptab':S.prep.tab=d.k;render();break;
  case'pnext':if(S.prep.step<4){S.prep.step++;render(1)}break;
  case'pprev':if(S.prep.step>1){S.prep.step--;render(1)}break;
- case'keep':S.stack=[];render(1);toast('✦ Ta préparation est gardée pour demain');break;
+ case'keep':{const route=sessionRoute();if(route)S.stack.splice(S.stack.indexOf(route)+1);else S.stack=[];render(1);toast('✦ Ta préparation est gardée');break}
  case'ms':openMS();break;
  case'nck':{const n=S.notes.find(x=>x.id===d.i);n.ck=!n.ck;render();break}
  case'norig':{const n=S.notes.find(x=>x.id===d.i);toast('Ouvre '+(n.o==='NOTE'?'ta note':n.o==='VIDER'?'Vider mon sac':'ta '+n.o.toLowerCase()));break}
@@ -7171,9 +7267,6 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'veille':S.veille[d.i]=d.k;render();break;
  /* séances */
  case'filt':S.filt=d.k;render();break;
- case'seopen':{const saved=SEANCES.find(session=>session.id===d.i);
-  if(saved?.afterId&&window.__enPsyAfter){S.tab='apres';render(1);if(window.__enPsyAfter.open(saved.afterId,true))break;S.tab='seances';}
-  S.seTab='apres';go('seance',{i:d.i});break}
  case'setab':S.seTab=d.k;render();break;
  case'evsel':S.evSel=d.i;{const sc=[...B.querySelectorAll('[data-col]')].map(c=>c.scrollLeft);render();B.querySelectorAll('[data-col]').forEach((c,i)=>c.scrollLeft=sc[i])}break;
  case'phi':S.phI=+d.i;render();break;
@@ -7263,8 +7356,9 @@ function enVrac(){const a=S.ap,v=String(a.vrac||'').trim();if(!v){(window.__enTo
  const em=Object.keys(E).filter(e=>new RegExp('\\b'+e.split(' ')[0].slice(0,-1),'i').test(v));if(em.length&&!a.ressens.sel.size){a.ressens.sel=new Set(em);a.ressens.star=em[0]}return true}
 
 /* ---------- intégration avec le journal et les formulaires ---------- */
-window.__psyAbord=(t,pg,txt)=>{S.notes.push({id:'n'+Date.now(),k:'JOURNAL',t,o:'PAGE',pg,txt:String(txt||t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),ck:0});render()};
-window.__enPsyBridge={root:ph,body:B,snapshot:psySnapshot,openMode:openMS,redraw:()=>render(1),openEntry(){S.stack=[{v:'intro'}];render(1)},exit(){S.stack=[];render(1)},
+window.__psyAbord=(t,pg,txt)=>{inbox.notes.push({id:'n'+Date.now(),k:'JOURNAL',t,o:'PAGE',pg,txt:String(txt||t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),ck:0});window.__vaultAutosave?.();if(cur().v==='section'&&cur().page==='avant')render()};
+window.__enPsyBridge={root:ph,body:B,snapshot:psySnapshot,openMode:openMS,openPage:openPsyPage,redraw:()=>render(1),openEntry(){S.stack=[{v:'intro'}];render(1)},exit(){S.stack=[];cardPosition.id=undefined;render(1)},
+ home(){const close=()=>window.__enPsyBridge.exit();if(ph.classList.contains('psy-approved-active'))window.__enApprovedPsy.save().then(close).catch(()=>{});else close()},
  syncPreparation(items,first){
   const keys={topics:'pq_a','attentes:attentes':'at_a','histoire:meaning':'hi_a',confort:'pe_a'};
   for(const item of items){const key=keys[item.key];if(key)S.first.p[key]=item.text;}
@@ -7930,7 +8024,7 @@ const H=$('home'),src=H&&H.querySelector('.nav.nav2');if(!src)return;
 const TABS={home:0,mj:1,mvfiche:2,psy:3};
 const navGo=k=>{if(k==='mj'){window.__mjHome?window.__mjHome():go('mj')}else go(k)};
 function wire(nav,ph){const items=[...nav.children].filter(c=>c.tagName==='SPAN'),keys=['home','mj','mvfiche','psy'];
- items.forEach((s,i)=>{s.dataset.nav=keys[i];s.style.cursor='pointer';s.setAttribute('role','button');s.tabIndex=0;s.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click()}});s.onclick=e=>{e.stopPropagation();if(keys[i]!==ph.id||ph.id==='mj')navGo(keys[i])}});
+ items.forEach((s,i)=>{s.dataset.nav=keys[i];s.style.cursor='pointer';s.setAttribute('role','button');s.tabIndex=0;s.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();s.click()}});s.onclick=e=>{e.stopPropagation();if(keys[i]===ph.id&&ph.id==='psy')window.__enPsyBridge?.home();else if(keys[i]!==ph.id||ph.id==='mj')navGo(keys[i])}});
  const w=nav.querySelector('.navw');w.onclick=e=>{e.stopPropagation();window.__waysIn(ph)}}
 /* accueil : le + ouvre le volet sur place */
 const hw=src.querySelector('.navw');const hw2=hw.cloneNode(true);hw.replaceWith(hw2);wire(src,H);
@@ -8849,7 +8943,7 @@ new MutationObserver(()=>{const r=document.getElementById('rgp');if(r&&r.querySe
  const welcome=()=>{const w=document.querySelector('#owb p');if(w)w.textContent='Content de te revoir'+(window.__P()?', '+window.__P():'')+'.'};document.addEventListener('en-identity-change',welcome);welcome();})();
 
 const nextPsy=window.__enNextPsy,hh=window.__enHH;
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a="enaddpsy"]');if(!b)return;e.stopImmediatePropagation();window.__enShow('calp');setTimeout(()=>window.__calOpen&&window.__calOpen(null,new Date()),250)},true);
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a="enaddpsy"]');if(!b)return;e.stopImmediatePropagation();window.__enShow('calp');setTimeout(()=>{window.__calOpen?.(null,new Date());document.querySelector('#calp .kcar img[data-t="psy"]')?.click()},250)},true);
 /* carte « Demain, ta séance » sur l'accueil */
 function psyCard(){const pv=document.getElementById('psyv');if(!pv)return;const n=nextPsy();const show=n&&n.i<=1;pv.hidden=!show;
  const mot=document.querySelector('#home .mot');if(mot)mot.style.display=show?'none':'';

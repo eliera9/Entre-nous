@@ -133,7 +133,7 @@
           <div data-reading-content></div>
         </section>
         <div class="en-actions en-review-actions">
-          <button type="button" class="en-main-action en-edit-return cursor-interaction" data-edit>Modifier mon retour</button>
+          <button type="button" class="en-main-action en-edit-return cursor-interaction" data-edit>Modifier</button>
           <button type="button" class="en-main-action cursor-interaction" data-finish hidden>Valider ma séance</button>
         </div>
       </section>
@@ -645,6 +645,10 @@
   const newId = () => globalThis.crypto.randomUUID();
   const strings = values => values.filter(value => typeof value === 'string' && value.trim());
   const words = (session, key) => session.rubrics[key]?.paragraphs || [];
+  const calendarKey = (event, date) => 'cal:' + event.id + (event.rep ? ':' + date : '');
+  const calendarTime = event => event.h == null ? null :
+    String(event.h).padStart(2, '0') + ':' + String(event.mi || 0).padStart(2, '0');
+  const occurrenceOf = (event, date) => ({ date, key: calendarKey(event, date), time: calendarTime(event) });
   function newSession(date, fields = {}) {
     return { id: newId(), date, title: '', free: '', rubrics: {}, mode: 'guided', index: 0,
       notes: [], topics: [], extras: [], ...fields };
@@ -657,8 +661,7 @@
       const [year, monthIndex, day] = [event.y, event.m, event.d].map(Number);
       const start = new Date(year, monthIndex, day, event.h ?? 0, event.mi ?? 0);
       if (!Number.isFinite(+start) || start.getDate() !== day) continue;
-      const add = date => out.push({ date: dayKey(date),
-        key: 'cal:' + event.id + (event.rep ? ':' + dayKey(date) : '') });
+      const add = date => out.push(occurrenceOf(event, dayKey(date)));
       if (event.rep === 3) {
         for (let offset = 0; ; offset++) {
           const month = new Date(year, monthIndex + offset, 1);
@@ -678,7 +681,7 @@
     const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     const match = String(record.jl || '').toLowerCase().match(/\b(\d{1,2})\s+([\p{L}]+)(?:\s+(\d{4}))?/u);
     const month = match && months.indexOf(match[2]);
-    const year = match && Number(match[3] || record.y);
+    const year = match && Number(match[3] || record.y || String(record.mo || '').match(/\b\d{4}\b/)?.[0]);
     if (!match || month < 0 || !year) return null;
     const date = dayKey(new Date(year, month, Number(match[1])));
     return validDay(date) ? date : null;
@@ -723,7 +726,8 @@
       if (!date) continue;
       const checked = new Set(old.afterId ? [] : old.suj || []);
       const session = newSession(date, {
-        ...(old.afterId ? { id: old.afterId, title: old.q === 'Mon retour sur la séance' ? '' : old.q || '' } : {}),
+        ...(old.afterId ? { id: old.afterId } : {}),
+        title: old.q === 'Mon retour sur la séance' ? '' : old.q || '',
         historyId: old.id, completed: true,
         topics: [...new Set([...(old.prev || []), ...checked])].map(text => ({ text, checked: checked.has(text) })),
         notes: (old.notes || []).map(([label, time, text]) => ({ label, time, text })),
@@ -758,9 +762,24 @@
   function syncCalendar(state, calendar, now) {
     const occurrences = calendarOccurrences(calendar, now);
     const active = new Set(occurrences.map(item => item.key));
+    for (const item of state.sessions) {
+      if (!item.calendarKey || active.has(item.calendarKey)) continue;
+      const event = calendar.find(entry => entry.t === 'psy' && calendarKey(entry, item.calendarDate) === item.calendarKey);
+      if (!event) continue;
+      const day = new Date(item.calendarDate + 'T23:59:59');
+      const eventDay = new Date(event.y, event.m, event.d);
+      const occurrence = event.rep ? calendarOccurrences([event], day).find(entry => entry.date === item.calendarDate) :
+        Number.isFinite(+eventDay) && eventDay.getDate() === Number(event.d) && occurrenceOf(event, dayKey(eventDay));
+      if (occurrence) {
+        occurrences.push(occurrence);
+        active.add(occurrence.key);
+      }
+    }
     const deleted = new Set(state.deletedCalendarKeys || []);
+    const occurrenceCounts = new Map();
+    for (const { date } of occurrences) occurrenceCounts.set(date, (occurrenceCounts.get(date) || 0) + 1);
     let changed = false;
-    for (const { date, key } of occurrences) {
+    for (const { date, key, time } of occurrences) {
       if (deleted.has(key)) continue;
       const current = state.sessions.find(item => item.calendarKey === key);
       if (current) {
@@ -769,15 +788,18 @@
           current.calendarDate = date;
           changed = true;
         }
+        if (current.calendarTime !== time) { current.calendarTime = time; changed = true; }
         continue;
       }
-      const match = state.sessions.find(item => item.date === date && !item.calendarKey && (item.fromMode || item.historyId));
-      if (match) Object.assign(match, { calendarKey: key, calendarDate: date });
-      else state.sessions.push(newSession(date, { calendarKey: key, calendarDate: date }));
+      const candidates = occurrenceCounts.get(date) === 1 ?
+        state.sessions.filter(item => item.date === date && !item.calendarKey && (item.fromMode || item.historyId)) : [];
+      const match = candidates.length === 1 && candidates[0];
+      if (match) Object.assign(match, { calendarKey: key, calendarDate: date, calendarTime: time });
+      else state.sessions.push(newSession(date, { calendarKey: key, calendarDate: date, calendarTime: time }));
       changed = true;
     }
     const filtered = state.sessions.filter(item => !item.calendarKey || active.has(item.calendarKey) ||
-      item.completed || item.title.trim() || hasContent(item) || item.fromMode);
+      item.completed || item.title.trim() || hasContent(item) || item.fromMode || item.modeDraft || item.preparation);
     if (filtered.length !== state.sessions.length) {
       state.sessions = filtered;
       changed = true;
@@ -792,16 +814,79 @@
   }
   function prepare(legacy, history, calendar) {
     state ||= globalThis.__enKeep('psy-after-v1', { version: 1, sessions: [], migrated: false });
-    const changed = migrate(state, history, legacy);
+    let changed = migrate(state, history, legacy);
+    for (const session of state.sessions) {
+      if (!session.completed || history.some(record => record.id === session.historyId || record.afterId === session.id)) continue;
+      updateHistory(history, session);
+      changed = true;
+    }
     if (syncCalendar(state, calendar, new Date()) || changed) save();
+    return state.sessions;
   }
 
-  function recordMode(previous, current, history, calendar) {
+  function appointment(next, create = false) {
+    if (!next) return null;
+    const date = dayKey(next.dt);
+    const key = calendarKey(next.e, date);
+    if (state.deletedCalendarKeys?.includes(key)) return null;
+    const existing = state.sessions.find(item => item.calendarKey === key);
+    if (existing || !create) return existing || null;
+    const fields = { calendarKey: key, calendarDate: date, calendarTime: calendarTime(next.e) };
+    const session = newSession(date, fields);
+    state.sessions.push(session);
+    save();
+    return session;
+  }
+
+  function migrateModeDraft(draft) {
+    if (!draft) return null;
+    const date = validDay(draft.date) ? draft.date : dayKey(new Date());
+    const candidates = state.sessions.filter(item => item.date === date && !item.completed && !item.fromMode && !item.modeDraft);
+    const session = candidates.length === 1 ? candidates[0] : newSession(date);
+    if (candidates.length !== 1) state.sessions.push(session);
+    session.modeDraft = { ...draft, date };
+    return session;
+  }
+
+  function createModeSession(date) {
+    const session = newSession(date);
+    state.sessions.push(session);
+    return session;
+  }
+
+  function restoreArchive(record) {
+    if (!record) return null;
+    const existing = state.sessions.find(item => item.id === record.afterId || item.historyId === record.id);
+    if (existing) return existing.completed ? existing : null;
+    const recovered = { sessions: [] };
+    migrate(recovered, [record], {});
+    const [session] = recovered.sessions;
+    if (session) { state.sessions.push(session); save(); }
+    return session;
+  }
+
+  function recordMode(previous, current, history, calendar, id, draft) {
     prepare(previous, history, calendar);
     const date = current.sessionDate;
-    const session = state.sessions.find(item => item.date === date && item.calendarKey && !item.fromMode && !item.completed);
+    const session = id ? state.sessions.find(item => item.id === id) :
+      state.sessions.find(item => item.date === date && item.calendarKey && !item.fromMode && !item.completed);
     const context = { ...modeContext(current), fromMode: true };
-    if (session) Object.assign(session, context);
+    if (session) {
+      if (draft && session.fromMode) {
+        const topics = new Map(session.topics.map(topic => [topic.text, topic]));
+        for (const topic of context.topics) topics.set(topic.text, topic);
+        context.topics = [...topics.values()];
+        const previousNote = session.finishedModeDraft?.note?.trim();
+        const notes = [...session.notes];
+        if (previousNote) {
+          const index = notes.findLastIndex(note => note.text === previousNote);
+          if (index !== -1) notes.splice(index, 1);
+        }
+        context.notes = [...notes, ...context.notes.filter(note => !notes.some(existing => existing.text === note.text))];
+      }
+      Object.assign(session, context);
+      if (draft) session.finishedModeDraft = draft;
+    }
     else state.sessions.push(newSession(date, context));
     save();
   }
@@ -847,11 +932,16 @@
 
   function renderContext(editor, session) {
     const get = selector => editor.querySelector(selector);
+    const topics = new Map(session.topics.filter(topic => topic.text?.trim()).map(topic => [topic.text.trim(), topic]));
+    for (const note of session.preparation?.notes || []) {
+      const text = note.t?.trim();
+      if (text && !topics.has(text)) topics.set(text, { text, checked: Boolean(note.ck) });
+    }
     const sources = [
       [get('[data-notes]'), get('[data-recap-notes]'), get('[data-source]'),
         session.notes.filter(note => note.text?.trim()).map(note => element('li', '', note.text))],
       [get('[data-topics]'), get('[data-recap-topics]'), get('.en-topics'),
-        session.topics.map(topic => {
+        [...topics.values()].map(topic => {
           const item = element('li', 'en-topic');
           const text = element('span', 'en-topic-text', topic.text);
           text.append(element('span', 'en-sr', topic.checked ? ' — Coché pendant la séance.' : ' — Non coché pendant la séance.'));
@@ -876,7 +966,7 @@
     get('[data-recap-context]').hidden = !hasContext;
   }
 
-  function mountEditor(host, session, onHome, onFinish) {
+  function mountEditor(host, session, onHome, onFinish, archive) {
     const prefix = 'psy-after-' + session.id;
     const editor = template('editor', prefix).firstElementChild;
     const get = selector => editor.querySelector(selector);
@@ -889,10 +979,11 @@
     const edit = get('[data-edit]');
     const finish = get('[data-finish]');
     const later = get('[data-later]');
+    const review = get('[data-review]');
     const help = get('.en-help');
     const helpPanel = get('.en-help-panel');
     let view = 'write';
-    dateInput.max = dayKey(new Date());
+    dateInput.max = [session.date, dayKey(new Date())].sort().at(-1);
     dateInput.value = session.date;
     personalTitle.value = session.title;
     richWriting.prepareField(free, 'Ce que j’ai envie de garder de cette séance…', 'Mon retour sur la séance');
@@ -917,7 +1008,9 @@
     function controls() {
       personalTitle.closest('.en-title-centered').classList.toggle('en-has-title', Boolean(session.title.trim()));
       finish.hidden = Boolean(session.completed) || !hasContent(session);
-      later.textContent = session.completed ? 'Retour à l’accueil Après' : 'Reprendre plus tard';
+      later.textContent = session.completed ? 'Revenir au récapitulatif' : 'Reprendre plus tard';
+      later.hidden = archive;
+      review.textContent = archive ? 'Enregistrer' : 'Mes mots à revoir';
     }
     function update() {
       const sections = guided.sections();
@@ -930,7 +1023,10 @@
       else delete session.freeHtml;
       session.rubrics = next;
       session.index = guided.index();
-      if (current !== JSON.stringify([session.title, session.free, freeContent.html, next])) session.completed = false;
+      if (current !== JSON.stringify([session.title, session.free, freeContent.html, next])) {
+        if (archive) onFinish(session);
+        else session.completed = false;
+      }
       formatting.refresh();
       controls();
       save();
@@ -969,12 +1065,17 @@
     function showRecap() {
       const sections = guided.sections();
       if (session.free.trim()) sections.unshift({ title: 'Écriture libre', paragraphs: [session.free], choices: [], rich: [session.freeHtml] });
+      const preparation = session.preparation?.prep;
+      if (preparation) {
+        const paragraphs = strings([preparation.start, preparation.gen, ...Object.values(preparation.by || {})]);
+        if (paragraphs.length) sections.unshift({ title: 'Ma préparation', paragraphs, choices: [] });
+      }
       if (session.extras.length) sections.push({ title: 'Mes petits pas', paragraphs: session.extras, choices: [], bullets: true });
       const content = get('[data-reading-content]');
       content.replaceChildren();
       const title = session.title.trim();
       const titleWrap = get('[data-reading-title-wrap]');
-      titleWrap.hidden = !sections.length && !title;
+      titleWrap.hidden = !title;
       titleWrap.open = false;
       get('[data-recap-notes]').open = false;
       get('[data-recap-topics]').open = false;
@@ -1023,7 +1124,8 @@
     function changeDate() {
       if (!dateInput.validity.valid || !validDay(dateInput.value) || dateInput.value === session.date) return;
       session.date = dateInput.value;
-      session.completed = false;
+      if (archive) onFinish(session);
+      else session.completed = false;
       dateDisplay();
       controls();
       save();
@@ -1042,7 +1144,11 @@
     dateToggle.addEventListener('click', () => setDate(dateEditor.hidden));
     help.addEventListener('click', () => setHelp(helpPanel.hidden));
     for (const button of modeButtons) button.addEventListener('click', () => { selectMode(button.dataset.mode); save(); });
-    get('[data-review]').addEventListener('click', showRecap);
+    async function saveRecap() {
+      try { await save(); if (editor.isConnected) showRecap(); }
+      catch { /* Le coffre affiche l’erreur et laisse l’édition ouverte. */ }
+    }
+    review.addEventListener('click', archive ? saveRecap : showRecap);
     edit.addEventListener('click', () => { show('write'); modeButtons.find(button => button.dataset.mode === session.mode)?.focus(); });
     finish.addEventListener('click', () => {
       if (view !== 'review' || !hasContent(session)) return;
@@ -1058,10 +1164,10 @@
     dateDisplay();
     controls();
     show('write');
-    return { showRecap };
+    return { showRecap, backToRecap() { if (!archive || view !== 'write') return false; saveRecap(); return true; } };
   }
 
-  function mount(host, { legacy, history, calendar }) {
+  function mount(host, { legacy, history, calendar, sessionId, onSelect, onExit }) {
     prepare(legacy, history, calendar);
     let active;
     function home(focusId) {
@@ -1074,11 +1180,12 @@
       const date = get('[data-add-date]');
       const add = get('[data-add-session]');
       date.max = dayKey(new Date());
-      get('[data-empty]').hidden = Boolean(state.sessions.length);
-      list.hidden = !state.sessions.length;
       let focus;
       let closeDelete;
-      const sessions = [...state.sessions].sort((a, b) => b.date.localeCompare(a.date));
+      const sessions = state.sessions.filter(item => item.date <= dayKey(new Date()) || item.completed || item.fromMode || item.modeDraft)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      get('[data-empty]').hidden = Boolean(sessions.length);
+      list.hidden = !sessions.length;
       for (const [index, session] of sessions.entries()) {
         const card = template('card').firstElementChild;
         const time = card.querySelector('[data-session-date]');
@@ -1090,7 +1197,7 @@
         button.setAttribute('aria-describedby', time.id);
         card.querySelector('[data-session-status]').textContent = session.completed ? 'Retour terminé' : started ? 'Retour commencé' : 'À écrire';
         card.querySelector('[data-return-label]').textContent = session.completed ? 'Mes mots à revoir' : started ? 'Reprendre mon retour' : 'Commencer à écrire';
-        button.addEventListener('click', () => open(session.id, session.completed));
+        button.addEventListener('click', () => onSelect ? onSelect(session.id, 'apres') : open(session.id, session.completed));
         const remove = card.querySelector('[data-delete-session]');
         const confirm = card.querySelector('[data-delete-confirm]');
         const cancel = confirm.querySelector('[data-cancel-delete]');
@@ -1150,24 +1257,29 @@
         leaving = true;
         try {
           await save();
-          if (active?.session === session && host.isConnected) home(id);
+          if (active?.session === session && host.isConnected) {
+            if (onExit) onExit();
+            else home(id);
+          }
         } catch {
           // Le coffre signale l’échec. Le retour reste ouvert pour réessayer.
         } finally {
           leaving = false;
         }
       }
-      active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item)) };
+      active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item), Boolean(session.completed)) };
       if (recap) active.editor.showRecap();
       else host.closest('.phone')?.scrollTo({ top: 0 });
       return true;
     }
-    home();
-    controller = { host, open, back() { if (!active) return false; active.exit(); return true; } };
+    controller = { host, open, back() { if (!active) return false; if (!active.editor.backToRecap()) active.exit(); return true; } };
+    if (!sessionId || !open(sessionId, state.sessions.find(item => item.id === sessionId)?.completed)) home();
   }
 
   globalThis.__enPsyAfter = {
-    mount, recordMode,
+    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate,
+    find: id => state?.sessions.find(item => item.id === id),
+    isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),
     open: (id, recap) => controller?.host.isConnected && controller.open(id, recap),
     back: () => controller?.host.isConnected && controller.back(),
   };
