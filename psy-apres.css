@@ -408,13 +408,17 @@
 }
 
 [data-psy-after] .en-recap-header { display: grid; margin: 0 0 9px; }
-[data-psy-after] .en-recap-date-row { display: flex; justify-content: center; align-items: center; gap: 4px; }
+[data-psy-after] .en-recap-title-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+}
+[data-psy-after] .en-recap-title-row .en-heading { grid-column: 2; }
 [data-psy-after] .en-edit-return {
   display: grid;
   place-items: center;
-  flex: 0 0 44px;
+  width: 44px;
   height: 44px;
-  margin-inline: -6px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -434,7 +438,7 @@
   text-align: center;
 }
 [data-psy-after] .en-recap-date-line {
-  min-height: 25px;
+  min-height: 22px;
   gap: 6px;
   color: var(--en-accent);
   letter-spacing: .075em;

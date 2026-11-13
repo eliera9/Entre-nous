@@ -105,11 +105,11 @@
       </div>
       <section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
         <header class="en-recap-header">
-          <div class="en-recap-date-row">
-            <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
+          <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
+          <div class="en-recap-title-row">
+            <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
             <button type="button" class="en-edit-return cursor-interaction" data-edit aria-label="Modifier" data-tooltip="Modifier"><i data-lucide="pen-line" aria-hidden="true"></i></button>
           </div>
-          <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
           <details class="en-recap-title-wrap" data-reading-title-wrap hidden>
             <summary class="en-recap-return-title"><span data-reading-title></span></summary>
             <p class="en-recap-full-title" data-full-title></p>
