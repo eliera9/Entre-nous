@@ -17,11 +17,24 @@
   const capitalize = text => text[0].toLocaleUpperCase('fr-FR') + text.slice(1);
   const newest = (a, b) => b.date.localeCompare(a.date) || (b.calendarTime || '').localeCompare(a.calendarTime || '');
 
+  const hasModeNotes = session => Boolean(session?.modeDraft?.note?.trim());
+
   function cardsFor(sessions, next, today, time) {
     const upcoming = next && { id: next.session?.id || 'next', date: next.date, calendarTime: next.time, kind: 'upcoming' };
-    const unfinished = sessions.filter(item => !item.completed && item.id !== upcoming?.id &&
-      (item.date < today || item.date === today && (!item.calendarTime || item.calendarTime <= time) || item.modeDraft || item.fromMode)).sort(newest);
-    const cards = unfinished.map(item => ({ ...item, kind: item.modeDraft ? 'current' : 'return' }));
+    const cards = [];
+    for (const item of sessions) {
+      if (item.completed || item.id === upcoming?.id) continue;
+      if (hasModeNotes(item)) {
+        cards.push({ ...item, kind: 'current' });
+        continue;
+      }
+      const appointmentPassed = item.calendarKey && (item.date < today ||
+        item.date === today && (!item.calendarTime || item.calendarTime <= time));
+      if (item.fromMode || appointmentPassed || globalThis.__enPsyAfter.hasContent(item)) {
+        cards.push({ ...item, kind: 'return' });
+      }
+    }
+    cards.sort(newest);
     if (upcoming) cards.unshift(upcoming);
     return cards;
   }
@@ -143,5 +156,5 @@
     draw();
   }
 
-  globalThis.__enPsyHome = { render, mount, cardsFor };
+  globalThis.__enPsyHome = { render, mount, cardsFor, hasModeNotes };
 })();

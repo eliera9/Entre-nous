@@ -687,8 +687,8 @@
   }
 
   function hasContent(session) {
-    return Boolean(session.free.trim() || session.extras.length ||
-      Object.values(session.rubrics).some(section => section.paragraphs?.length || section.choices?.length));
+    return Boolean(session.free?.trim() || session.extras?.length ||
+      Object.values(session.rubrics || {}).some(section => section.paragraphs?.length || section.choices?.length));
   }
 
   function migrate(state, history, legacy) {
@@ -1212,7 +1212,7 @@
   }
 
   globalThis.__enPsyAfter = {
-    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate,
+    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent,
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),
     open: (id, recap) => controller?.host.isConnected && controller.open(id, recap),

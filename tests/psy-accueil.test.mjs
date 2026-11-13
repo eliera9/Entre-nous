@@ -50,6 +50,34 @@ test('l’absence de séance à poursuivre est visible avec et sans prochain ren
   assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre/);
 });
 
+test('seul du texte dans Mes notes fait apparaître une séance en cours', () => {
+  const { home, returns } = app();
+  returns.prepare({}, [], []);
+  const session = returns.createModeSession('2026-11-11');
+  session.modeDraft = { note: ' \n ', notesOpen: true,
+    subjects: [{ id: 'topic', t: 'Sujet préparé' }], checked: ['topic'] };
+  const cards = () => home.cardsFor([session], null, '2026-11-13', '10:58');
+  assert.equal(home.hasModeNotes(session), false);
+  assert.equal(cards().length, 0);
+
+  session.modeDraft.note = '  Quelques mots  ';
+  assert.equal(home.hasModeNotes(session), true);
+  assert.equal(cards()[0].kind, 'current');
+
+  session.modeDraft.note = '';
+  session.free = 'Retour déjà commencé';
+  assert.equal(cards()[0].kind, 'return');
+});
+
+test('un brouillon vide conserve le prochain rendez-vous et le retour d’un rendez-vous passé', () => {
+  const { home } = app();
+  const upcoming = { id: 'upcoming', date: '2026-11-13', calendarKey: 'cal:1', calendarTime: '11:00', modeDraft: { note: '' } };
+  const past = { id: 'past', date: '2026-11-13', calendarKey: 'cal:2', calendarTime: '08:00', modeDraft: { note: '' } };
+  const next = { session: upcoming, date: upcoming.date, time: upcoming.calendarTime };
+  const cards = home.cardsFor([upcoming, past], next, '2026-11-13', '10:58');
+  assert.deepEqual(clone(cards.map(({ id, kind }) => [id, kind])), [['upcoming', 'upcoming'], ['past', 'return']]);
+});
+
 test('l’historique regroupe les séances sous le mois abrégé et conserve leurs accès', () => {
   const { home } = app();
   const records = [

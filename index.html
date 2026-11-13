@@ -6846,7 +6846,7 @@ function psySessions(){
  return sessions;
 }
 function upcomingPsy(){const after=afterModule();return window.__enNextPsy?.(next=>{
- const session=after.appointment(next);return after.isDeleted(next)||session?.completed||session?.modeDraft||session?.fromMode;
+ const session=after.appointment(next);return after.isDeleted(next)||session?.completed||window.__enPsyHome.hasModeNotes(session)||session?.fromMode;
 })}
 function openSession(id,shortcut){
  psySessions();
@@ -6855,7 +6855,7 @@ function openSession(id,shortcut){
  if(!item)return;
  if(item.completed){go('archive',{id:item.id});return}
  const includeInbox=Boolean(next&&afterModule().appointment(next)?.id===item.id);
- const tab=shortcut==='mode'||!shortcut&&item.modeDraft?'pendant':
+ const tab=shortcut==='mode'||!shortcut&&window.__enPsyHome.hasModeNotes(item)?'pendant':
   shortcut==='apres'||!shortcut&&!includeInbox?'apres':'avant';
  S.stack.push({v:'session',id:item.id,tab,includeInbox});
  if(shortcut==='prep')go('prep0');
@@ -6991,7 +6991,7 @@ function openMS(){
  const sessions=psySessions();
  if(!activeSession()){
   const today=localSessionDate();
-  const started=sessions.filter(item=>!item.completed&&item.modeDraft).sort((a,b)=>b.date.localeCompare(a.date));
+  const started=sessions.filter(item=>!item.completed&&window.__enPsyHome.hasModeNotes(item)).sort((a,b)=>b.date.localeCompare(a.date));
   const todaySessions=sessions.filter(item=>item.date===today&&!item.completed&&!item.fromMode);
   const next=upcomingPsy();
   const selected=started[0]||(todaySessions.length===1?todaySessions[0]:null)||
