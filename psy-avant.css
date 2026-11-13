@@ -1,5 +1,9 @@
 #psy .en-avant-overview, #psy [data-psy-avant-writing] { width: min(100%, 460px); margin-inline: auto; }
 #psy .en-avant-overview { position: relative; }
+#psy .en-avant-empty {
+  margin: 14px 0 0; color: var(--smuted); text-align: center; text-wrap: balance;
+  font: italic 500 15px/1.4 'EN Cormorant Garamond', Georgia, serif;
+}
 #psy .en-avant-date, #psy .en-avant-writing-date {
   display: flex; justify-content: center; align-items: center; gap: 6px;
   min-block-size: 22px; margin: 4px 0 0; color: var(--sacc);

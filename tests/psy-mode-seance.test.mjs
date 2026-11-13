@@ -32,7 +32,7 @@ test('seules les réponses choisies et les sujets préparés passent en Mode sé
 });
 
 test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', () => {
-  const avant = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function aborder()'));
+  const avant = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function aborder()'));
   const render = runInNewContext(avant + ';tAvant', {
     S: { mode: 'first', notes: [], prep: { stars: new Set() } },
     activeSession: () => null, upcomingPsy: () => null,
@@ -62,7 +62,7 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   runInNewContext(avantSource, context);
   context.window = context;
   const preparation = html.slice(html.indexOf('function ensurePreparationStars('), html.indexOf('function psySessions('));
-  const avant = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function sessionTextList('));
+  const avant = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function sessionTextList('));
   const render = runInNewContext(preparation + avant + ';tAvant', context);
   assert.match(render(true), /Sujet conservé/);
   assert.match(render(true), /Préparer ma séance/);
@@ -70,9 +70,9 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   assert.deepEqual(plain(session.preparation.prep.stars), []);
 });
 
-test('la rédaction d’Avant reste accessible dans une séance archivée sans texte', () => {
+test('Avant affiche seulement le message de préparation vide dans une séance terminée', () => {
   const model = {};
-  const script = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function sessionTextList('));
+  const script = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function sessionTextList('));
   const context = {
     S: { notes: [], prep: { stars: new Set() } },
     activeSession: () => model.item, upcomingPsy: () => null,
@@ -82,15 +82,23 @@ test('la rédaction d’Avant reste accessible dans une séance archivée sans t
   const pencil = /<button[^>]+data-a="prepgo"[^>]+aria-label="Modifier"[^>]*>\s*<svg/;
   assert.match(render(), pencil);
   model.item = { date: '2026-11-17', completed: true };
-  const archived = render(true, true);
-  assert.match(archived, pencil);
-  assert.match(archived, /data-a="avant-date"/);
-  assert.match(archived, /data-a="prepgo">Préparer ma séance<\/button>/);
+  for (const prep of [undefined, {writing: {mode: 'guided'}}, {gen: '  '}]) {
+    model.item.preparation = { notes: [], prep };
+    const archived = render(true, true);
+    assert.match(archived, /Aucune préparation enregistrée pour cette séance\./);
+    assert.match(archived, /data-a="avant-date"/);
+    assert.doesNotMatch(archived, /data-a="(?:prepgo|avant-archive-writing)"/);
+  }
   model.item.preparation = { notes: [], prep: { gen: 'Texte déjà rédigé' } };
   assert.match(render(true, true), /data-a="avant-archive-writing">Ma préparation<\/button>/);
+  model.item.preparation.prep = { writing: { answers: { evenements: { choices: ['Une conversation'] } } } };
+  assert.match(render(true, true), /data-a="avant-archive-writing"/);
+  model.item.preparation = { notes: [{ id: '1', t: 'Sujet préparé' }] };
+  assert.match(render(true, true), /Sujet préparé/);
+  assert.match(render(true, true), pencil);
 });
 
-test('toucher Avant ouvre directement la rédaction vide de la fiche confirmée', () => {
+test('toucher Avant sur une fiche terminée sans préparation reste sur la fiche', () => {
   const route = { v: 'archive', tab: 'apres' };
   const item = { completed: true };
   const calls = [];
@@ -105,15 +113,19 @@ test('toucher Avant ouvre directement la rédaction vide de la fiche confirmée'
   runInNewContext(avantSource, context);
   context.window = context;
   const source = html.slice(html.indexOf(" case'session-tab':"), html.indexOf(" case'calrdv':"));
-  const act = runInNewContext(`(a, d) => { switch(a) {${source}} }`, context);
+  const topics = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function emptyAvantPreparation('));
+  const act = runInNewContext(topics + `(a, d) => { switch(a) {${source}} }`, context);
   act('session-tab', { k: 'avant' });
   assert.equal(route.tab, 'avant');
-  assert.deepEqual(calls, ['rédaction']);
+  assert.deepEqual(calls, ['fiche']);
   item.preparation = { prep: { writing: { mode: 'guided' } } };
   act('session-tab', { k: 'avant' });
-  assert.equal(calls.pop(), 'rédaction');
+  assert.equal(calls.pop(), 'fiche');
   item.preparation.prep.gen = 'Texte déjà écrit';
   act('session-tab', { k: 'avant' });
   assert.equal(calls.pop(), 'fiche');
+  item.preparation = { notes: [{ id: '1', t: 'Sujet préparé' }] };
+  act('session-tab', { k: 'avant' });
+  assert.equal(calls.pop(), 'rédaction');
   assert.equal(item.completed, true);
 });

@@ -7025,6 +7025,12 @@ const idea=k=>`<button class="ps-idea" data-a="hint" data-k="${k}">· une idée 
 const fold=(k,lab,n,body)=>`<button class="ps-fold" data-a="fold" data-k="${k}"><span>${lab}</span><span>${n} ${S.ph&&S.ph[k]?'⌃':'⌄'}</span></button>${S.ph&&S.ph[k]?body:''}`;
 
 /* ---------- AVANT ---------- */
+function archivedAvantTopics(item){
+ return item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[];
+}
+function emptyAvantPreparation(){
+ return '<p class="en-avant-empty">Aucune préparation enregistrée pour cette séance.</p>';
+}
 function openAvantWriting(){
  const c=cur();
  if(c.v==='seance'){
@@ -7052,7 +7058,11 @@ function tAvant(scoped=false, archived=false){
  const next=scoped?null:upcomingPsy();
  const item=activeSession()||(next&&afterModule().appointment(next));
  const date=item?.date||(next?localSessionDate(next.dt):null);
- const topics=archived?(item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[]):S.notes;
+ const prep=item?.preparation?.prep;
+ const topics=archived?archivedAvantTopics(item):S.notes;
+ if(archived&&!topics.some(note=>note.t?.trim())&&!avant.entries(prep).length){
+  return `<div class="en-avant-overview">${avant.dateLine(date,{editable:Boolean(date)})}${emptyAvantPreparation()}</div>`;
+ }
  const savedStars=item?.preparation?.prep?.stars;
  const stars=archived?new Set(Array.isArray(savedStars)||savedStars instanceof Set?savedStars:[]):S.prep.stars;
  const priority=topics.filter(note=>stars.has(note.id)||note.star);
@@ -7069,7 +7079,7 @@ function tAvant(scoped=false, archived=false){
  }
  return `<div class="en-avant-overview">
   ${avant.dateLine(date,{editable:Boolean(date)})}
-  ${avantPreparationLine(archived?item?.preparation?.prep:null)}
+  ${avantPreparationLine(archived?prep:null)}
   ${!archived||priority.length?`<section class="en-avant-priorities"><h3>${icon('bookmark')}Mes priorités</h3>
     <p>Ce que j’aimerais lui confier en priorité…</p>
     <ol>${priority.map((note,index)=>`<li class="en-avant-priority"><span class="en-avant-priority-number">${String(index+1).padStart(2,'0')}</span>${topic(note,'en-avant-priority-topic')}${star(note,true)}</li>`).join('')}</ol>
@@ -7289,7 +7299,11 @@ function tSeances(){if(!SEANCES.length)return`<div class="ps-empty"><div class="
  return h+'</div>'+avantApp()}
 function avantApp(){if(!S.sv.mo&&!S.sv.an&&!S.sv.why)return'';return H('AVANT L\'APP')+`<div class="ps-fil"><button class="r" data-a="suivi"><span class="ln"><span class="pe" style="border:.8px dashed var(--sacc)"></span></span><span><span class="d" style="display:block">${S.sv.mo||S.sv.an?'DEPUIS '+esc([S.sv.mo,S.sv.an].filter(Boolean).join(' ').toUpperCase()):'MON SUIVI'}</span><span class="q" style="display:block">Là où j'ai commencé</span><span class="m" style="display:block">${esc([S.sv.ry,S.sv.abPills?S.sv.abPills.filter(p=>p.on).map(p=>p.t).join(', '):''].filter(Boolean).join(' · '))}</span></span></button></div>`}
 function vSeance(o){const s=seList().concat(SEANCES).find(x=>x.id===o.i)||SEANCES[0];const t=S.seTab;const date=s.jl||s.j;let h=`<div style="text-align:center;margin-top:16px">${perle(s.emo,s.star,26)}</div>${date?`<div class="ps-k" style="margin-top:10px">${esc(date.toUpperCase())}</div>`:''}<p class="ps-t">${esc(s.q)}</p><div class="ps-stabs">${[['avant','AVANT'],['pendant','PENDANT'],['apres','APRÈS']].map(x=>`<button class="${t===x[0]?'on':''}" data-a="setab" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`;
- if(t==='avant')h+=avantPreparationLine(s.preparation?.prep)+(s.prev?.length?H('CE QUE J\'AVAIS PRÉVU')+s.prev.map(p=>`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(p)}</span></div>`).join(''):'');
+ if(t==='avant'){
+  if(s.prev?.some(note=>note?.trim())||window.__enPsyAvant.entries(s.preparation?.prep).length){
+   h+=avantPreparationLine(s.preparation?.prep)+(s.prev?.length?H('CE QUE J\'AVAIS PRÉVU')+s.prev.map(p=>`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(p)}</span></div>`).join(''):'');
+  }else h+=emptyAvantPreparation();
+ }
  if(t==='pendant')h+=(s.notes.length?H('MES NOTES')+s.notes.map(n=>`<div class="ps-note" style="border-top:.7px solid var(--sline)"><b>${n[0]}</b><span style="font:12px Figtree,sans-serif;color:var(--smuted);margin-right:6px">${n[1]}</span>${esc(n[2])}</div>`).join(''):`<p class="ps-s" style="margin-top:16px">Aucune note prise pendant cette séance.</p>`);
  if(t==='apres')h+=(s.apres&&Object.values(s.apres).some(Boolean)?partsRows(true,s):`<p class="ps-s" style="margin-top:16px">Rien n'a été écrit après cette séance.</p>`);
  return h}
@@ -7471,8 +7485,11 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
    break;
   }
   cur().tab=d.k;
-  if(cur().v==='archive'&&d.k==='avant'&&!window.__enPsyAvant.entries(activeSession()?.preparation?.prep).length){
-   openAvantWriting();break;
+  if(cur().v==='archive'&&d.k==='avant'){
+   const item=activeSession();
+   if(archivedAvantTopics(item).some(note=>note.t?.trim())&&!window.__enPsyAvant.entries(item?.preparation?.prep).length){
+    openAvantWriting();break;
+   }
   }
   render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
@@ -7548,7 +7565,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'setab':{
   S.seTab=d.k;
   const legacy=SEANCES.find(record=>record.id===cur().i);
-  if(d.k==='avant'&&!window.__enPsyAvant.entries(legacy?.preparation?.prep).length)openAvantWriting();
+  if(d.k==='avant'&&legacy?.prev?.some(note=>note?.trim())&&!window.__enPsyAvant.entries(legacy?.preparation?.prep).length)openAvantWriting();
   else render();
   break;
  }
