@@ -32,7 +32,7 @@ test('seules les réponses choisies et les sujets préparés passent en Mode sé
 });
 
 test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', () => {
-  const avant = html.slice(html.indexOf('function tAvant('), html.indexOf('function aborder()'));
+  const avant = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function aborder()'));
   const render = runInNewContext(avant + ';tAvant', {
     S: { mode: 'first', notes: [], prep: { stars: new Set() } },
     activeSession: () => null, upcomingPsy: () => null,
@@ -62,7 +62,7 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   runInNewContext(avantSource, context);
   context.window = context;
   const preparation = html.slice(html.indexOf('function sessionPreparation('), html.indexOf('function psySessions('));
-  const avant = html.slice(html.indexOf('function tAvant('), html.indexOf('function sessionTextList('));
+  const avant = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function sessionTextList('));
   const render = runInNewContext(preparation + avant + ';tAvant', context);
   assert.match(render(true), /Sujet conservé/);
   assert.match(render(true), /Préparer ma séance/);
@@ -70,9 +70,9 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   assert.deepEqual(plain(session.preparation.prep.stars), []);
 });
 
-test('le crayon d’Avant ouvre la rédaction avec ou sans date et dans une séance archivée', () => {
+test('la rédaction d’Avant reste accessible dans une séance archivée sans texte', () => {
   const model = {};
-  const script = html.slice(html.indexOf('function tAvant('), html.indexOf('function sessionTextList('));
+  const script = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function sessionTextList('));
   const context = {
     S: { notes: [], prep: { stars: new Set() } },
     activeSession: () => model.item, upcomingPsy: () => null,
@@ -85,4 +85,7 @@ test('le crayon d’Avant ouvre la rédaction avec ou sans date et dans une séa
   const archived = render(true, true);
   assert.match(archived, pencil);
   assert.match(archived, /data-a="avant-date"/);
+  assert.match(archived, /data-a="prepgo">Préparer ma séance<\/button>/);
+  model.item.preparation = { notes: [], prep: { gen: 'Texte déjà rédigé' } };
+  assert.match(render(true, true), /data-a="avant-archive-writing">Ma préparation<\/button>/);
 });

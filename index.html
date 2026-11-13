@@ -7021,12 +7021,20 @@ const idea=k=>`<button class="ps-idea" data-a="hint" data-k="${k}">· une idée 
 const fold=(k,lab,n,body)=>`<button class="ps-fold" data-a="fold" data-k="${k}"><span>${lab}</span><span>${n} ${S.ph&&S.ph[k]?'⌃':'⌄'}</span></button>${S.ph&&S.ph[k]?body:''}`;
 
 /* ---------- AVANT ---------- */
+function avantPreparationLine(prep){
+ const avant=window.__enPsyAvant;
+ return `<div class="en-avant-prepare-line">
+  ${prep&&avant.entries(prep).length
+   ?'<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>'
+   :'<button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>'}
+  ${avant.editButton('data-a="prepgo"')}
+ </div>`;
+}
 function tAvant(scoped=false, archived=false){
  const avant=window.__enPsyAvant;
  const next=scoped?null:upcomingPsy();
  const item=activeSession()||(next&&afterModule().appointment(next));
  const date=item?.date||(next?localSessionDate(next.dt):null);
- const hasArchive=Boolean(item?.preparation?.prep&&avant.entries(item.preparation.prep).length);
  const topics=archived?(item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[]):S.notes;
  const stars=archived?new Set(item?.preparation?.prep?.stars||[]):S.prep.stars;
  const priority=topics.filter(note=>stars.has(note.id)||note.star);
@@ -7043,11 +7051,7 @@ function tAvant(scoped=false, archived=false){
  }
  return `<div class="en-avant-overview">
   ${avant.dateLine(date,{editable:Boolean(date)})}
-  <div class="en-avant-prepare-line">
-    ${archived?hasArchive?`<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>`:'':
-      '<button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>'}
-    ${avant.editButton('data-a="prepgo"')}
-  </div>
+  ${avantPreparationLine(archived?item?.preparation?.prep:null)}
   ${!archived||priority.length?`<section class="en-avant-priorities"><h3>${icon('bookmark')}Mes priorités</h3>
     <p>Ce que j’aimerais lui confier en priorité…</p>
     <ol>${priority.map((note,index)=>`<li class="en-avant-priority"><span class="en-avant-priority-number">${String(index+1).padStart(2,'0')}</span>${topic(note,'en-avant-priority-topic')}${star(note,true)}</li>`).join('')}</ol>
@@ -7266,8 +7270,8 @@ function tSeances(){if(!SEANCES.length)return`<div class="ps-empty"><div class="
  if(!L.length)h+=`<p class="ps-s" style="margin-top:16px">Aucune séance ne correspond.</p>`;
  return h+'</div>'+avantApp()}
 function avantApp(){if(!S.sv.mo&&!S.sv.an&&!S.sv.why)return'';return H('AVANT L\'APP')+`<div class="ps-fil"><button class="r" data-a="suivi"><span class="ln"><span class="pe" style="border:.8px dashed var(--sacc)"></span></span><span><span class="d" style="display:block">${S.sv.mo||S.sv.an?'DEPUIS '+esc([S.sv.mo,S.sv.an].filter(Boolean).join(' ').toUpperCase()):'MON SUIVI'}</span><span class="q" style="display:block">Là où j'ai commencé</span><span class="m" style="display:block">${esc([S.sv.ry,S.sv.abPills?S.sv.abPills.filter(p=>p.on).map(p=>p.t).join(', '):''].filter(Boolean).join(' · '))}</span></span></button></div>`}
-function vSeance(o){const s=seList().concat(SEANCES).find(x=>x.id===o.i)||SEANCES[0];const t=S.seTab;let h=`<div style="text-align:center;margin-top:16px">${perle(s.emo,s.star,26)}</div><div class="ps-k" style="margin-top:10px">${s.jl.toUpperCase()}</div><p class="ps-t">${esc(s.q)}</p><div class="ps-stabs">${[['avant','AVANT'],['pendant','PENDANT'],['apres','APRÈS']].map(x=>`<button class="${t===x[0]?'on':''}" data-a="setab" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`;
- if(t==='avant')h+=(s.prev.length?H('CE QUE J\'AVAIS PRÉVU')+s.prev.map(p=>`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(p)}</span></div>`).join(''):`<p class="ps-s" style="margin-top:16px">Pas de préparation gardée pour cette séance.</p>`);
+function vSeance(o){const s=seList().concat(SEANCES).find(x=>x.id===o.i)||SEANCES[0];const t=S.seTab;const date=s.jl||s.j;let h=`<div style="text-align:center;margin-top:16px">${perle(s.emo,s.star,26)}</div>${date?`<div class="ps-k" style="margin-top:10px">${esc(date.toUpperCase())}</div>`:''}<p class="ps-t">${esc(s.q)}</p><div class="ps-stabs">${[['avant','AVANT'],['pendant','PENDANT'],['apres','APRÈS']].map(x=>`<button class="${t===x[0]?'on':''}" data-a="setab" data-k="${x[0]}">${x[1]}</button>`).join('')}</div>`;
+ if(t==='avant')h+=avantPreparationLine(s.preparation?.prep)+(s.prev?.length?H('CE QUE J\'AVAIS PRÉVU')+s.prev.map(p=>`<div class="ps-li"><span class="ck on"></span><span class="tx">${esc(p)}</span></div>`).join(''):'');
  if(t==='pendant')h+=(s.notes.length?H('MES NOTES')+s.notes.map(n=>`<div class="ps-note" style="border-top:.7px solid var(--sline)"><b>${n[0]}</b><span style="font:12px Figtree,sans-serif;color:var(--smuted);margin-right:6px">${n[1]}</span>${esc(n[2])}</div>`).join(''):`<p class="ps-s" style="margin-top:16px">Aucune note prise pendant cette séance.</p>`);
  if(t==='apres')h+=(s.apres&&Object.values(s.apres).some(Boolean)?partsRows(true,s):`<p class="ps-s" style="margin-top:16px">Rien n'a été écrit après cette séance.</p>`);
  return h}
@@ -7360,7 +7364,7 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   }
  }
  else if(c.v==='avant-writing'||c.v==='avant-recap'){
-  h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
+  h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(c.legacyId||sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
  }
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
   h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
@@ -7374,8 +7378,9 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   onViewChange:view=>{c.review=view==='review'}});
  const writer=B.querySelector('[data-psy-avant-writing]');
  if(writer){
-  const item=activeSession(), prep=item?.completed ? item.preparation?.prep : sessionPreparation().prep;
-  const next=item?null:upcomingPsy();
+  const item=activeSession(), legacy=SEANCES.find(record=>record.id===c.legacyId);
+  const prep=legacy?legacy.preparation?.prep:item?.completed?item.preparation?.prep:sessionPreparation().prep;
+  const next=item||legacy?null:upcomingPsy();
   const date=item?.date||(next?localSessionDate(next.dt):null);
   const switchTo=view=>{c.v=view;render(1);B.querySelector('[data-psy-avant-writing] h3')?.focus({preventScroll:true})};
   const savePreparation=()=>window.__vaultAutosave?.();
@@ -7435,6 +7440,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
    Promise.resolve(window.__vaultAutosave?.()).then(()=>{
     if(cur()!==editor)return;
     S.stack.pop();
+    if(editor.legacyId){S.seTab=d.k;render(1);B.querySelector('.ps-stabs .on')?.focus({preventScroll:true});return}
     if(session)session.tab=d.k;else{openPsyPage(d.k);return}
     render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});
    }).catch(()=>{});
@@ -7443,11 +7449,16 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
   cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
  case'prep':case'prepgo':
+  if(cur().v==='seance'){
+   const legacy=SEANCES.find(record=>record.id===cur().i);
+   if(legacy){legacy.preparation||={};legacy.preparation.prep||=newPrep();go('avant-writing',{legacyId:legacy.id});}
+   break;
+  }
   ensureArchivedPreparation(activeSession());
   if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');
   break;
  case'avant-save-note':saveAvantNote();break;
- case'avant-archive-writing':go('avant-recap');break;
+ case'avant-archive-writing':go('avant-recap',cur().v==='seance'?{legacyId:cur().i}:undefined);break;
  case'avant-ai':window.__enPsyAvant.openAI(ph,t);break;
  case'avant-date':{
   const next=activeSession()?null:upcomingPsy(), item=activeSession()||afterModule().appointment(next);
