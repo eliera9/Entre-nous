@@ -2844,7 +2844,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 #psy .ps-s{font:italic 14px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted);text-align:center}
 #psy .ps-h{display:flex;align-items:center;gap:8px;margin:20px 0 6px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.18em;color:var(--sacc)}
 #psy .ps-h:after{content:"";flex:1;height:.7px;background:var(--sline)}
-#psy :where(.rgbody,.ms,.ps-sheet) button:where(:not([data-psy-after] *,[data-psy-avant-writing] [data-session-editor] *)){all:unset;cursor:pointer;box-sizing:border-box}
+#psy :where(.rgbody,.ms,.ps-sheet) button:where(:not([data-psy-after] *,[data-psy-avant-writing] :is([data-session-editor],.en-recap) *)){all:unset;cursor:pointer;box-sizing:border-box}
 #psy .ps-tabs{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin:14px -18px 0;padding:0 18px}
 #psy .ps-tabs button{flex:none;padding:0 0 8px;font:500 10.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.16em;color:var(--smuted);padding-bottom:7px;border-bottom:1.3px solid transparent}
 #psy .ps-tabs button.on{color:var(--sink);border-bottom-color:var(--sacc)}
@@ -6947,6 +6947,11 @@ function ensureArchivedPreparation(item){
   id:'archive:'+index,t:topic.text,o:'SÉANCE',ck:topic.checked
  }))};
  item.preparation.prep||=newPrep();
+ ensurePreparationStars(item.preparation.prep);
+}
+function ensurePreparationStars(prep){
+ if(!(prep.stars instanceof Set))prep.stars=new Set(Array.isArray(prep.stars)?prep.stars:[]);
+ if(!prep.stars.toJSON)Object.defineProperty(prep.stars,'toJSON',{value(){return [...this]}});
 }
 function sessionPreparation(){
  const session=activeSession();if(!session)return inbox;
@@ -6960,9 +6965,8 @@ function sessionPreparation(){
  }
  const preparation=session.preparation;
  preparation.notes||=[];
- const prep=preparation.prep||=newPrep();
- if(!(prep.stars instanceof Set))prep.stars=new Set(prep.stars||[]);
- if(!prep.stars.toJSON)Object.defineProperty(prep.stars,'toJSON',{value(){return [...this]}});
+ preparation.prep||=newPrep();
+ ensurePreparationStars(preparation.prep);
  return preparation;
 }
 for(const key of ['notes','prep'])Object.defineProperty(S,key,{enumerable:true,get:()=>sessionPreparation()[key],set:value=>{sessionPreparation()[key]=value}});
@@ -7049,7 +7053,8 @@ function tAvant(scoped=false, archived=false){
  const item=activeSession()||(next&&afterModule().appointment(next));
  const date=item?.date||(next?localSessionDate(next.dt):null);
  const topics=archived?(item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[]):S.notes;
- const stars=archived?new Set(item?.preparation?.prep?.stars||[]):S.prep.stars;
+ const savedStars=item?.preparation?.prep?.stars;
+ const stars=archived?new Set(Array.isArray(savedStars)||savedStars instanceof Set?savedStars:[]):S.prep.stars;
  const priority=topics.filter(note=>stars.has(note.id)||note.star);
  const icon=name=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
  const star=(note, on)=>archived?'':`<button type="button" class="en-avant-star" data-a="star" data-i="${esc(note.id)}" aria-label="${on?'Retirer des':'Ajouter aux'} priorités : ${esc(note.t)}">${icon('star')}</button>`;
@@ -7400,7 +7405,13 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   if(c.v==='avant-writing')window.__enPsyAvant.mount(writer,{date,prep,save:savePreparation,review:()=>switchTo('avant-recap'),later:()=>{
    back();B.querySelector('.en-avant-prepare')?.focus({preventScroll:true});
   }});
-  else window.__enPsyAvant.mountRecap(writer,{date,prep,edit:()=>{ensureArchivedPreparation(item);switchTo('avant-writing')}});
+  else window.__enPsyAvant.mountRecap(writer,{date,prep,save:savePreparation,
+   edit:()=>{ensureArchivedPreparation(item);switchTo('avant-writing')},
+   confirm:()=>{
+    window.__enPsyBridge.exit();
+    toast('Préparation confirmée');
+   }
+  });
  }
  if(ph.hasAttribute('data-avant-ai')||c.v==='session'&&c.tab==='avant')window.__enPsyIcons?.(B);
  if(top)ph.scrollTop=0;

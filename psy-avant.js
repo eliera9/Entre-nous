@@ -60,8 +60,10 @@
     attentes: 'Ce qui m’aiderait aujourd’hui…',
   };
   const shortDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const recapDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
-  const labelDate = (date, short) => (short ? shortDate : fullDate).format(new Date(date + 'T12:00:00Z'));
+  const labelDate = (date, short = false) => formatDate(date, short ? shortDate : fullDate);
+  const formatDate = (date, formatter) => formatter.format(new Date(date + 'T12:00:00Z'));
   const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
   const el = (tag, className, value) => {
     const node = document.createElement(tag);
@@ -70,12 +72,14 @@
     return node;
   };
 
-  function dateLine(date, { short = false, editable = false } = {}) {
+  function dateLine(date, { short = false, editable = false, recap = false } = {}) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !Number.isFinite(Date.parse(date))) return '';
-    const stamp = `${icon('calendar-days')}<time datetime="${date}">${labelDate(date, short)}</time>`;
+    const label = recap ? formatDate(date, recapDate) : labelDate(date, short);
+    const stamp = `${icon('calendar-days')}<time datetime="${date}">${label}</time>`;
+    if (recap) return `<p class="en-recap-date-line">${stamp}</p>`;
     if (short) return `<p class="en-avant-writing-date">${stamp}</p>`;
     return editable
-      ? `<button type="button" class="en-avant-date" data-a="avant-date" aria-label="Modifier la date de la séance : ${labelDate(date)}">${stamp}</button>`
+      ? `<button type="button" class="en-avant-date" data-a="avant-date" aria-label="Modifier la date de la séance : ${label}">${stamp}</button>`
       : `<p class="en-avant-date">${stamp}</p>`;
   }
 
@@ -91,10 +95,10 @@
     };
   }
 
-  function entries(prep) {
-    prep ??= {};
-    const draft = record(prep);
-    const list = [['Écriture libre', draft.free], ...rubrics.map(([key, title]) => [title, draft.answers[key]])];
+  const hasAnswer = ([, value]) => Boolean(value?.text?.trim() || value?.choices?.length);
+
+  function legacyEntries(prep, draft) {
+    const list = [];
     if (prep.start?.trim()) list.push(['Ma phrase pour commencer', { text: prep.start }]);
     if (prep.gen?.trim() && prep.writing && draft.free.text !== prep.gen) {
       list.push(['Mes mots précédents', { text: prep.gen }]);
@@ -103,8 +107,16 @@
       if (typeof text === 'string' && text.trim()) list.push([id === 'gen' ? 'En général' : 'Mes notes par sujet', { text }]);
     }
     if (prep.quest?.length) list.push(['Mes questions préparées', { choices: prep.quest }]);
-    return list.filter(([, value]) => value?.text?.trim() || value?.choices?.length);
+    return list.filter(hasAnswer);
   }
+
+  function entries(prep) {
+    prep ??= {};
+    const draft = record(prep);
+    return [['Écriture libre', draft.free], ...rubrics.map(([key, title]) => [title, draft.answers[key]])]
+      .filter(hasAnswer).concat(legacyEntries(prep, draft));
+  }
+
 
   function modeTopics(prep) {
     const topics = record(prep).answers.sujets;
@@ -334,22 +346,43 @@
     </button>`;
   }
 
-  function mountRecap(host, { date, prep, edit }) {
-    host.innerHTML = `<section class="en-avant-recap">
-      ${dateLine(date, { short: true })}
-      <div class="en-avant-recap-heading">
-        <h3 class="en-heading" tabindex="-1">Ma préparation pour la séance</h3>
-        ${editButton('data-edit')}
-      </div>
+  function mountRecap(host, { date, prep, edit, save, confirm }) {
+    prep ??= {};
+    const draft = record(prep);
+    host.innerHTML = `<section class="en-reading en-recap" aria-labelledby="psy-avant-recap-title">
+      <header class="en-recap-header">
+        ${dateLine(date, { recap: true })}
+        <div class="en-recap-title-row">
+          <h3 class="en-heading" id="psy-avant-recap-title" tabindex="-1">Récap de ma préparation</h3>
+          ${editButton('data-edit')}
+        </div>
+      </header>
       <div data-avant-summary></div>
+      <div class="en-actions en-review-actions">
+        <button type="button" class="en-main-action en-confirm-session" data-confirm-preparation>
+          <span>Confirmer ma préparation</span>${icon('house')}
+        </button>
+      </div>
     </section>`;
     const content = host.querySelector('[data-avant-summary]');
-    for (const [title, value] of entries(prep)) {
-      const section = el('section','en-recap-rubric');
-      section.append(el('h4','',title));
+    function renderAnswer(parent, [title, value], numeral) {
+      const section = el('section', 'en-recap-rubric');
+      const heading = el(numeral ? 'h5' : 'h4', numeral ? 'en-recap-numbered-heading' : '');
+      if (numeral) {
+        const number = el('span', 'en-recap-rubric-number', numeral);
+        number.setAttribute('aria-hidden', 'true');
+        heading.append(number, el('span', '', title));
+      } else heading.textContent = title;
+      section.append(heading);
       if (value.choices?.length) {
-        const list = el('ul','');
-        for (const choice of value.choices) list.append(el('li','',choice));
+        const list = el('ul', 'en-recap-reperes');
+        list.setAttribute('role', 'list');
+        list.setAttribute('aria-label', 'Idées cochées');
+        for (const choice of value.choices) {
+          const item = document.createElement('li');
+          item.append(el('span', 'en-recap-repere-label', choice));
+          list.append(item);
+        }
         section.append(list);
       }
       if (value.text?.trim()) {
@@ -357,9 +390,40 @@
         writing.write(answer, value.text, value.html, true);
         section.append(answer);
       }
-      content.append(section);
+      parent.append(section);
     }
-    host.querySelector('[data-edit]').addEventListener('click',edit);
+    const free = ['Écriture libre', draft.free];
+    if (hasAnswer(free)) renderAnswer(content, free);
+    const numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+    let index = 0;
+    for (const [key, title, , items] of groups) {
+      const answers = items.map(([id, title]) => [title, draft.answers[id]]).filter(hasAnswer);
+      if (!answers.length) continue;
+      const group = el('section', 'en-avant-recap-group');
+      const heading = el('h4', 'en-avant-recap-group-title', title);
+      heading.id = 'psy-avant-recap-' + key;
+      group.setAttribute('aria-labelledby', heading.id);
+      group.append(heading);
+      for (const answer of answers) renderAnswer(group, answer, numerals[index++]);
+      content.append(group);
+    }
+    for (const answer of legacyEntries(prep, draft)) renderAnswer(content, answer);
+    const pencil = host.querySelector('[data-edit]');
+    const button = host.querySelector('[data-confirm-preparation]');
+    pencil.addEventListener('click', edit);
+    button.hidden = !content.childElementCount;
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = pencil.disabled = true;
+      try {
+        await save();
+        if (host.isConnected) confirm();
+      } catch {
+        // Le coffre signale l’échec et le récap reste ouvert.
+      } finally {
+        button.disabled = pencil.disabled = false;
+      }
+    });
     globalThis.__enPsyIcons?.(host);
   }
 

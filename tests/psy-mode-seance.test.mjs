@@ -61,7 +61,7 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   };
   runInNewContext(avantSource, context);
   context.window = context;
-  const preparation = html.slice(html.indexOf('function sessionPreparation('), html.indexOf('function psySessions('));
+  const preparation = html.slice(html.indexOf('function ensurePreparationStars('), html.indexOf('function psySessions('));
   const avant = html.slice(html.indexOf('function avantPreparationLine('), html.indexOf('function sessionTextList('));
   const render = runInNewContext(preparation + avant + ';tAvant', context);
   assert.match(render(true), /Sujet conservé/);
