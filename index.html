@@ -3840,10 +3840,13 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 /* barre du bas : 5 colonnes égales, + au centre */
 #home .nav.nav2,.phone .nav.nav2{display:grid!important;grid-template-columns:repeat(5,1fr);justify-items:center}
 .phone .nav.nav3{position:absolute;left:0;right:0;bottom:0;top:auto;height:64px;z-index:35;margin:0;border-radius:0;border:0;border-top:.7px solid var(--sline);background:var(--sbg);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;align-items:start;padding-top:10px;box-sizing:border-box}
-/* Psy défile derrière la navigation, ancrée au bas du cadre de l’application. */
+/* La navigation et la flèche Psy partagent le bord inférieur du cadre. */
+#en-app #psy{
+ --psy-frame-bottom:calc(100% - var(--en-viewport-top,0px) - var(--en-viewport-height,var(--en-layout-height)));
+}
 #en-app #psy > .nav.nav3{
  position:fixed;width:min(100%,600px);margin-inline:auto!important;
- bottom:calc(100% - var(--en-viewport-top,0px) - var(--en-viewport-height,var(--en-layout-height)))!important
+ bottom:var(--psy-frame-bottom)!important
 }
 .phone .nav.nav3 span{white-space:nowrap;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.08em;color:var(--smuted);opacity:.8;padding-bottom:4px;cursor:pointer}
 .phone .nav.nav3 span.a{color:var(--sacc);opacity:1}
@@ -4055,6 +4058,11 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 .gtop.still{transition:none}
 .gtop svg{width:16px;height:16px}
 .gtop-sp{display:block;flex:none;height:56px;pointer-events:none}
+#en-app #psy > .gtop{
+ position:fixed;
+ right:calc(max(0px,(100% - 600px)/2) + 16px);
+ bottom:calc(var(--psy-frame-bottom) + 78px + max(0px,var(--en-safe-bottom,0px) - 10px));
+}
 /* ==== Page du jour · refonte (02–03.11.2026) : moments en pastilles ==== */
 #pdj .pjo{margin:2px 0 12px}
 #pdj .pjo[hidden]{display:none}
@@ -8596,14 +8604,16 @@ const A=new Map();
 function arrowOf(ph){let a=A.get(ph);if(a)return a;const b=document.createElement('button');b.type='button';b.className='gtop';b.setAttribute('aria-label','Revenir en haut');b.innerHTML=SVG;ph.appendChild(b);
  a={b,sc:null};A.set(ph,a);b.addEventListener('click',e=>{e.stopPropagation();const s=a.sc||ph;s.scrollTo({top:0,behavior:animOn()?'smooth':'auto'})});return a}
 function bottomOf(ph){/* au-dessus de la barre du bas quand la page en a une */return ph.querySelector('.nav3,.nav2')?78:20}
-function place(ph,a){const st=ph.scrollTop;a.b.style.top=(st+ph.clientHeight-bottomOf(ph)-34)+'px';a.b.classList.toggle('still',!animOn())}
+function place(ph,a){if(ph.id!=='psy')a.b.style.top=(ph.scrollTop+ph.clientHeight-bottomOf(ph)-34)+'px';a.b.classList.toggle('still',!animOn())}
 /* une respiration en fin de page, pour que les dernières commandes ne finissent jamais sous la flèche */
 function room(sc){if(sc.__gsp)return;const d=document.createElement('div');d.className='gtop-sp';d.setAttribute('aria-hidden','true');sc.appendChild(d);sc.__gsp=d}
 function upd(ph,sc){const a=arrowOf(ph);a.sc=sc;room(sc);place(ph,a);a.b.classList.toggle('on',sc.scrollTop>sc.clientHeight*.5)}
 document.addEventListener('scroll',e=>{const sc=e.target;if(!sc||sc.nodeType!==1)return;const ph=sc.classList.contains('phone')?sc:sc.closest('.phone');
  if(!ph||ph.id==='home')return;/* l'accueil a déjà sa flèche */
  /* seulement le défilement vertical de la page elle-même, pas une liste ou un champ */
- if(sc!==ph&&sc.clientHeight<ph.clientHeight*.5)return;if(sc.scrollHeight<=sc.clientHeight+20)return;upd(ph,sc)},true);
+ if(sc!==ph&&(ph.id==='psy'||sc.clientHeight<ph.clientHeight*.5))return;
+ if(sc.scrollHeight<=sc.clientHeight+20){if(ph.id==='psy')A.get(ph)?.b.classList.remove('on');return}
+ upd(ph,sc)},true);
 })();
 </script>
 <script type="text/x-en">(()=>{/* bulle de Plume : actions des nouveaux écrans de Mon journal et rangement de la page du jour (02.11.2026) */
