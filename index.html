@@ -7035,7 +7035,10 @@ function tAvant(scoped=false, archived=false){
  return `<div class="en-avant-overview">
   ${avant.dateLine(date,{editable:Boolean(date)})}
   ${archived?hasArchive?`<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>`:'':
-   '<button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>'}
+   `<div class="en-avant-prepare-line">
+     <button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>
+     <button type="button" class="en-avant-edit-writing" data-a="prepgo" aria-label="Modifier">${icon('pen-line')}</button>
+   </div>`}
   ${!archived||priority.length?`<section class="en-avant-priorities"><h3>${icon('bookmark')}Mes priorités</h3>
     <p>Ce que j’aimerais lui confier en priorité…</p>
     <ol>${priority.map((note,index)=>`<li class="en-avant-priority"><span class="en-avant-priority-number">${String(index+1).padStart(2,'0')}</span>${topic(note,'en-avant-priority-topic')}${star(note,true)}</li>`).join('')}</ol>

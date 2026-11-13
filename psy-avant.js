@@ -63,7 +63,9 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !Number.isFinite(Date.parse(date))) return '';
     const stamp = `${icon('calendar-days')}<time datetime="${date}">${labelDate(date, short)}</time>`;
     if (short) return `<p class="en-avant-writing-date">${stamp}</p>`;
-    return `<p class="en-avant-date">${stamp}</p>${editable ? `<button type="button" class="en-avant-edit-date" data-a="avant-date" aria-label="Modifier la date de la séance">${icon('pen-line')}</button>` : ''}`;
+    return editable
+      ? `<button type="button" class="en-avant-date" data-a="avant-date" aria-label="Modifier la date de la séance : ${labelDate(date)}">${stamp}</button>`
+      : `<p class="en-avant-date">${stamp}</p>`;
   }
 
   function record(prep) {
@@ -362,6 +364,19 @@
       }
     });
     showDialog(root, dialog, opener);
+    const heading = dialog.querySelector('h3');
+    const caption = heading.firstElementChild;
+    function fitTitle() {
+      if (heading.clientWidth && caption.offsetWidth)
+        heading.style.setProperty('--titre-echelle', Math.min(1, heading.clientWidth / caption.offsetWidth));
+    }
+    if (typeof ResizeObserver === 'function') {
+      const observer = new ResizeObserver(fitTitle);
+      observer.observe(heading);
+      observer.observe(caption);
+      dialog.addEventListener('close', () => observer.disconnect(), { once: true });
+    }
+    fitTitle();
   }
 
   function showDialog(root, dialog, opener) {
