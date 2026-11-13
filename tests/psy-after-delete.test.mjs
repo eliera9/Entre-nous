@@ -8,7 +8,7 @@ const between = (start, end) => script.slice(script.indexOf(start), script.index
 const { syncCalendar, deleteSession } = runInNewContext(
   between('  const dayKey', '  function legacyDate') +
   between('  function syncCalendar', '  let state;') +
-  between('  function deleteSession', '  function renderContext') +
+  between('  function deleteSession', '  function mountEditor') +
   ';({syncCalendar, deleteSession})',
   { crypto: { randomUUID: (() => { let id = 0; return () => String(++id); })() } }
 );

@@ -6842,7 +6842,8 @@ function openSession(id,shortcut){
  if(!item)return;
  if(item.completed){go('archive',{id:item.id});return}
  const includeInbox=Boolean(next&&afterModule().appointment(next)?.id===item.id);
- const tab=shortcut==='apres'||!shortcut&&!item.modeDraft&&!includeInbox?'apres':'avant';
+ const tab=shortcut==='mode'||!shortcut&&item.modeDraft?'pendant':
+  shortcut==='apres'||!shortcut&&!includeInbox?'apres':'avant';
  S.stack.push({v:'session',id:item.id,tab,includeInbox});
  if(shortcut==='prep')go('prep0');
  else {render(1);if(shortcut==='mode')openMS()}
@@ -6883,6 +6884,23 @@ function tAvant(scoped=false){
  const empty=S.notes.length?'':`<div class="ps-empty"><p class="ps-s">Rien à aborder pour l'instant.<br>Tes notes s'ajouteront ici au fil des jours.</p></div>`;
  const entry=scoped?'<button type="button" class="ps-btn" data-a="prepgo">Préparer ma séance</button>':window.__enPsyEph();
  return entry+empty+aborder();
+}
+function sessionTextList(title, values){
+ const lines=values.filter(text=>typeof text==='string'&&text.trim());
+ return lines.length?`<section class="psy-session-context"><h3>${title}</h3><ul>${lines.map(text=>`<li>${esc(text)}</li>`).join('')}</ul></section>`:'';
+}
+function sessionPreparedText(item, shownTopics=[]){
+ const {notes,prep}=item.preparation||{};
+ const topics=[...new Set([...(notes||[]).map(note=>note.t),...item.topics.map(topic=>topic.text)])];
+ return sessionTextList('Mes sujets préparés',topics.filter(text=>!shownTopics.includes(text)))+
+  sessionTextList('Ma préparation',[prep?.start,prep?.gen,...Object.values(prep?.by||{})]);
+}
+function sessionDuring(item, archived){
+ const notes=[...item.notes.map(note=>note.text),item.modeDraft?.note];
+ const list=sessionTextList('Notes du Mode séance',[...new Set(notes)]);
+ if(archived&&!list)return '';
+ return `<section class="psy-session-during"><h3>Le fil de ma séance</h3>${list}
+  ${archived?'':'<button type="button" class="ps-btn" data-a="ms">Mode séance</button>'}</section>`;
 }
 function aborder(){
  const n=S.notes;let h=H('À ABORDER');
@@ -6965,10 +6983,10 @@ function openMS(){
   const next=upcomingPsy();
   const selected=started[0]||(todaySessions.length===1?todaySessions[0]:null)||
    (next?.i===0?afterModule().appointment(next,true):null)||afterModule().createModeSession(today);
-  S.stack.push({v:'session',id:selected.id,tab:'avant',includeInbox:true});render(1);
+  S.stack.push({v:'session',id:selected.id,tab:'pendant',includeInbox:true});render(1);
  }
  const item=activeSession();
- const returnFocus=ph.querySelector('.psy-session-tabs [data-a="ms"]')||ph.querySelector('.psmsb');
+ const returnFocus=B.querySelector('[data-a="ms"]')||ph.querySelector('.psmsb');
  const first=S.mode==='first'?window.__enApprovedPsy?.getState()?.first:null;
  const questions=S.mode==='first'?pratQ().filter(q=>S.first.p['pr_'+q.k]).map(q=>({id:'question:'+q.k,t:q.t})):[];
  const prep=sessionPreparation();
@@ -6992,6 +7010,7 @@ function openMS(){
    S.msSubjects=draft.subjects;S.msDone=1;S.sessionDate=item.date;delete item.modeDraft;
    if(S.mode==='first')S.mode='vide';
    S.stack.splice(S.stack.indexOf(sessionRoute())+1);sessionRoute().tab='apres';
+   sessionRoute().review=false;
    window.__enPsyAfter?.recordMode(previous,psySnapshot(),SEANCES,calendar(),item.id,draft);
    close();render(1);
    B.querySelector('[data-psy-after] .en-home-heading')?.focus({preventScroll:true});
@@ -7154,23 +7173,30 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;if(window.__enApprove
   cards=home.cardsFor(sessions,upcoming,localSessionDate(),hm());
   const records=seList().map(record=>({...record,date:afterModule()?.legacyDate(record)})).filter(record=>record.date);
   h=home.render({records,items:S.pas});
- }else if(c.v==='session'){
-  const item=activeSession();
+ }else if(c.v==='session'||c.v==='archive'){
+  const archived=c.v==='archive';
+  const item=afterModule()?.find(c.id);
   if(!item)return back();
+  const tab=c.tab||(archived?'apres':'avant');
   const date=new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  h=`<nav class="psy-session-tabs" aria-label="Parcours de la séance">
-    <button type="button" data-a="session-tab" data-k="avant"${c.tab==='avant'?' aria-current="page"':''}>Avant</button>
-    <button type="button" data-a="session-tab" data-k="apres"${c.tab==='apres'?' aria-current="page"':''}>Après</button>
-    <button type="button" data-a="ms"><span>Mode séance</span></button></nav>`;
-  h+=c.tab==='avant'?`<p class="psy-session-date">${date}</p>`+tAvant(true):tApres();
- }else if(c.v==='archive')h=tApres();
+  h=`<nav class="psy-session-tabs" aria-label="Parcours de la séance">${[['avant','Avant'],['pendant','Pendant'],['apres','Après']].map(([key,label])=>
+    `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}><span>${label}</span></button>`).join('')}</nav>`;
+  if(tab==='apres')h+=tApres();
+  else{
+   const content=tab==='pendant'?sessionDuring(item,archived):
+    archived?sessionPreparedText(item):tAvant(true)+sessionPreparedText(item,S.notes.map(note=>note.t));
+   if(content)h+=`<p class="psy-session-date">${date}</p>`+content;
+  }
+ }
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol')psySessions();h=PSY_PAGES[c.page][1]()}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
  TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
  if(cards){window.__enPsyHome.mount(B,cards,cardPosition);window.__enPsyIcons?.(B)}
  const after=B.querySelector('[data-psy-after]');
- if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,onSelect:openSession,onExit:c.id?back:null});
+ if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,
+  review:c.review,onSelect:openSession,onExit:c.id?back:null,onConfirm:window.__enPsyBridge.exit,
+  onViewChange:view=>{c.review=view==='review'}});
  if(top)ph.scrollTop=0;
  const tb=$('pstabs');if(tb){const o=tb.querySelector('.on');if(o)tb.scrollLeft=o.offsetLeft-60}
  B.querySelectorAll('[data-col]').forEach(c=>c.scrollLeft=c.scrollWidth);

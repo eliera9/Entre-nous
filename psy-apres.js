@@ -58,21 +58,6 @@
         <h3 class="en-heading" id="psy-after-entry-title"><span class="en-heading-label">Mon retour sur la séance<button type="button" class="en-help cursor-interaction" aria-label="À propos des deux façons d’écrire" aria-expanded="false" aria-controls="psy-after-information"><span aria-hidden="true">i</span></button></span></h3>
         <aside class="en-help-panel" id="psy-after-information" aria-label="Les deux façons d’écrire" aria-live="polite" hidden><p>Je peux utiliser les deux.</p></aside>
       </header>
-      <aside class="en-context" data-context aria-label="Le fil de ma séance">
-        <div class="en-context-content" data-context-content>
-          <h4 class="en-context-title">Le fil de ma séance</h4>
-            <details class="en-note-fold" data-notes>
-              <summary class="cursor-interaction"><span class="en-row-label"><span class="en-row-art" aria-hidden="true"><i data-lucide="notebook"></i></span><span id="psy-after-notes-label">Mes notes</span></span><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
-              <ul class="en-source en-note-list" data-source>
-                </ul>
-            </details>
-            <details class="en-topic-group" data-topics>
-              <summary class="cursor-interaction"><span class="en-row-label"><span class="en-row-art" aria-hidden="true"><i data-lucide="list"></i></span><span id="psy-after-topics-label">Mes sujets préparés</span></span><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
-              <ul class="en-topics">
-                </ul>
-            </details>
-        </div>
-      </aside>
       <section class="en-entry-composition" aria-labelledby="psy-after-entry-title">
         <div class="en-ways" aria-label="Ma façon de garder une trace">
           <button type="button" class="en-way cursor-interaction" data-mode="free" aria-pressed="false" aria-controls="psy-after-free"><i data-lucide="pen-line" aria-hidden="true"></i><span class="en-way-name">Écriture libre</span></button>
@@ -92,16 +77,22 @@
               <i data-lucide="x" aria-hidden="true"></i>
             </button>
           </div>
-          <div data-format-tools></div>
-          <p class="en-format-feedback" data-format-feedback role="status"></p>
+          <div data-format-controls>
+            <div data-format-tools></div>
+            <p class="en-format-feedback" data-format-feedback role="status"></p>
+          </div>
         </div>
         <div id="psy-after-free" data-pane="free" hidden>
-          <div class="en-text" id="psy-after-free-text"></div>
+          <div class="en-free-box" data-format-anchor>
+            <div class="en-text" id="psy-after-free-text"></div>
+          </div>
         </div>
         <div id="psy-after-guided" data-pane="guided" hidden>
           <nav class="en-rubric-nav" aria-label="Parcourir les rubriques">
             <button type="button" class="en-arrow cursor-interaction" data-rubric-prev aria-label="Rubrique précédente"><span><i data-lucide="chevron-left" aria-hidden="true"></i></span></button>
-            <div class="en-rubric-title" aria-live="polite" aria-atomic="true"><h4 data-rubric-title></h4><span class="en-count" data-rubric-count></span></div>
+            <div class="en-rubric-title" data-format-anchor>
+              <h4 data-rubric-title></h4><span class="en-count" data-rubric-count aria-live="polite" aria-atomic="true"></span>
+            </div>
             <button type="button" class="en-arrow cursor-interaction" data-rubric-next aria-label="Rubrique suivante"><span><i data-lucide="chevron-right" aria-hidden="true"></i></span></button>
           </nav>
           <div data-rubric-editors></div>
@@ -114,27 +105,21 @@
       </div>
       <section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
         <header class="en-recap-header">
-          <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
+          <div class="en-recap-date-row">
+            <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
+            <button type="button" class="en-edit-return cursor-interaction" data-edit aria-label="Modifier" data-tooltip="Modifier"><i data-lucide="pen-line" aria-hidden="true"></i></button>
+          </div>
           <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
           <details class="en-recap-title-wrap" data-reading-title-wrap hidden>
             <summary class="en-recap-return-title"><span data-reading-title></span></summary>
             <p class="en-recap-full-title" data-full-title></p>
           </details>
         </header>
-        <div class="en-context en-recap-context" data-recap-context hidden>
-          <details class="en-note-fold" data-recap-notes hidden>
-            <summary><h4 class="en-recap-caption">Mes notes</h4><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
-          </details>
-          <details class="en-topic-group" data-recap-topics hidden>
-            <summary><h4 class="en-recap-caption">Mes sujets préparés</h4><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
-          </details>
-        </div>
         <section class="en-recap-return" data-recap-return hidden>
           <div data-reading-content></div>
         </section>
         <div class="en-actions en-review-actions">
-          <button type="button" class="en-main-action en-edit-return cursor-interaction" data-edit>Modifier</button>
-          <button type="button" class="en-main-action cursor-interaction" data-finish hidden>Valider ma séance</button>
+          <button type="button" class="en-main-action en-confirm-session cursor-interaction" data-finish hidden><span>Confirmer ma séance</span><i data-lucide="house" aria-hidden="true"></i></button>
         </div>
       </section>
 </div>`,
@@ -579,17 +564,6 @@
     }
 
     let activeIndex = 0;
-    function fitTitle() {
-      if (!title.clientWidth) return;
-      let size = 16;
-      title.classList.remove('en-wrap');
-      title.style.fontSize = size + 'px';
-      while (title.scrollWidth > title.clientWidth + 1 && size > 10.5) {
-        size -= .5;
-        title.style.fontSize = size + 'px';
-      }
-      title.classList.toggle('en-wrap', title.scrollWidth > title.clientWidth + 1);
-    }
     function showRubric(index) {
       if (index < 0 || index >= panels.length) return;
       panels[activeIndex].panel.hidden = true;
@@ -598,11 +572,9 @@
       entry.panel.hidden = false;
       entry.refresh?.();
       title.textContent = entry.rubric.title;
-      title.dataset.tooltip = entry.rubric.title;
-      count.textContent = (index + 1) + ' / ' + panels.length;
+      count.textContent = (index + 1) + '/' + panels.length;
       previous.disabled = index === 0;
       next.disabled = index === panels.length - 1;
-      fitTitle();
     }
     previous.addEventListener('click', () => { showRubric(activeIndex - 1); onChange(); });
     next.addEventListener('click', () => { showRubric(activeIndex + 1); onChange(); });
@@ -622,7 +594,7 @@
         };
       }).filter(entry => entry.paragraphs.length || entry.choices.length);
     }
-    return { sections, fitTitle, index: () => activeIndex };
+    return { sections, index: () => activeIndex };
   }
 
   function template(name, prefix = 'psy-after') {
@@ -930,43 +902,7 @@
     return true;
   }
 
-  function renderContext(editor, session) {
-    const get = selector => editor.querySelector(selector);
-    const topics = new Map(session.topics.filter(topic => topic.text?.trim()).map(topic => [topic.text.trim(), topic]));
-    for (const note of session.preparation?.notes || []) {
-      const text = note.t?.trim();
-      if (text && !topics.has(text)) topics.set(text, { text, checked: Boolean(note.ck) });
-    }
-    const sources = [
-      [get('[data-notes]'), get('[data-recap-notes]'), get('[data-source]'),
-        session.notes.filter(note => note.text?.trim()).map(note => element('li', '', note.text))],
-      [get('[data-topics]'), get('[data-recap-topics]'), get('.en-topics'),
-        [...topics.values()].map(topic => {
-          const item = element('li', 'en-topic');
-          const text = element('span', 'en-topic-text', topic.text);
-          text.append(element('span', 'en-sr', topic.checked ? ' — Coché pendant la séance.' : ' — Non coché pendant la séance.'));
-          const mark = element('span', 'en-mark', topic.checked ? '✓' : '');
-          mark.setAttribute('aria-hidden', 'true');
-          item.append(text, mark);
-          return item;
-        })],
-    ];
-    let hasContext = false;
-    for (const [fold, recap, list, items] of sources) {
-      fold.hidden = !items.length;
-      recap.hidden = !items.length;
-      list.replaceChildren(...items);
-      if (!items.length) continue;
-      const copy = list.cloneNode(true);
-      copy.removeAttribute('data-source');
-      recap.append(copy);
-      hasContext = true;
-    }
-    get('[data-context]').hidden = !hasContext;
-    get('[data-recap-context]').hidden = !hasContext;
-  }
-
-  function mountEditor(host, session, onHome, onFinish, archive) {
+  function mountEditor(host, session, onHome, onFinish, onConfirm, onViewChange, archive) {
     const prefix = 'psy-after-' + session.id;
     const editor = template('editor', prefix).firstElementChild;
     const get = selector => editor.querySelector(selector);
@@ -976,6 +912,8 @@
     const dateEditor = get('[data-date-editor]');
     const personalTitle = get('[data-personal-title]');
     const free = get('[data-pane="free"] .en-text');
+    const formatToggle = get('[data-format-toggle]');
+    const formatControls = get('[data-format-controls]');
     const edit = get('[data-edit]');
     const finish = get('[data-finish]');
     const later = get('[data-later]');
@@ -989,7 +927,6 @@
     richWriting.prepareField(free, 'Ce que j’ai envie de garder de cette séance…', 'Mon retour sur la séance');
     richWriting.write(free, session.free, session.freeHtml);
     get('[data-format-tools]').append(template('format', prefix));
-    renderContext(editor, session);
 
     const guided = mountGuided(get('[data-pane="guided"]'), prefix,
       session.notes.map(note => note.text), session.topics,
@@ -1007,7 +944,7 @@
     }
     function controls() {
       personalTitle.closest('.en-title-centered').classList.toggle('en-has-title', Boolean(session.title.trim()));
-      finish.hidden = Boolean(session.completed) || !hasContent(session);
+      finish.hidden = !session.completed && !hasContent(session);
       later.textContent = session.completed ? 'Revenir au récapitulatif' : 'Reprendre plus tard';
       later.hidden = archive;
       review.textContent = archive ? 'Enregistrer' : 'Mes mots à revoir';
@@ -1031,17 +968,16 @@
       controls();
       save();
     }
-    function fitWriting() {
-      guided.fitTitle();
-      formatting.refresh();
-    }
     function selectMode(mode) {
       session.mode = mode;
       get('[data-writing]').hidden = false;
       for (const button of modeButtons) button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
       for (const pane of editor.querySelectorAll('[data-pane]')) pane.hidden = pane.dataset.pane !== mode;
       formatting.close();
-      fitWriting();
+      const pane = get('[data-pane]:not([hidden])');
+      pane.querySelector('[data-format-anchor]').append(formatToggle);
+      (mode === 'guided' ? pane.querySelector('.en-rubric-nav') : pane.querySelector('.en-free-box')).after(formatControls);
+      formatting.refresh();
     }
     function setHelp(open) {
       helpPanel.hidden = !open;
@@ -1055,21 +991,16 @@
     }
     function show(next) {
       view = next;
+      onViewChange(next);
       for (const panel of editor.querySelectorAll('[data-view]')) panel.hidden = panel.dataset.view !== next;
       setHelp(false);
       setDate(false);
       formatting.close();
-      if (next === 'write') fitWriting();
       host.closest('.phone')?.scrollTo({ top: 0 });
     }
     function showRecap() {
       const sections = guided.sections();
       if (session.free.trim()) sections.unshift({ title: 'Écriture libre', paragraphs: [session.free], choices: [], rich: [session.freeHtml] });
-      const preparation = session.preparation?.prep;
-      if (preparation) {
-        const paragraphs = strings([preparation.start, preparation.gen, ...Object.values(preparation.by || {})]);
-        if (paragraphs.length) sections.unshift({ title: 'Ma préparation', paragraphs, choices: [] });
-      }
       if (session.extras.length) sections.push({ title: 'Mes petits pas', paragraphs: session.extras, choices: [], bullets: true });
       const content = get('[data-reading-content]');
       content.replaceChildren();
@@ -1077,8 +1008,6 @@
       const titleWrap = get('[data-reading-title-wrap]');
       titleWrap.hidden = !title;
       titleWrap.open = false;
-      get('[data-recap-notes]').open = false;
-      get('[data-recap-topics]').open = false;
       get('[data-recap-return]').hidden = !sections.length;
       get('[data-reading-title]').textContent = title || 'Mon retour sur la séance';
       get('[data-full-title]').textContent = title || 'Mon retour sur la séance';
@@ -1150,11 +1079,15 @@
     }
     review.addEventListener('click', archive ? saveRecap : showRecap);
     edit.addEventListener('click', () => { show('write'); modeButtons.find(button => button.dataset.mode === session.mode)?.focus(); });
-    finish.addEventListener('click', () => {
-      if (view !== 'review' || !hasContent(session)) return;
-      session.completed = true;
-      onFinish(session);
-      onHome();
+    finish.addEventListener('click', async () => {
+      if (view !== 'review' || finish.hidden || finish.disabled) return;
+      finish.disabled = edit.disabled = true;
+      if (!session.completed) {
+        session.completed = true;
+        onFinish(session);
+      }
+      try { await onConfirm(); }
+      finally { finish.disabled = edit.disabled = false; }
     });
     later.addEventListener('click', onHome);
     editor.hidden = false;
@@ -1167,7 +1100,7 @@
     return { showRecap, backToRecap() { if (!archive || view !== 'write') return false; saveRecap(); return true; } };
   }
 
-  function mount(host, { legacy, history, calendar, sessionId, onSelect, onExit }) {
+  function mount(host, { legacy, history, calendar, sessionId, review = false, onSelect, onExit, onConfirm = onExit, onViewChange = () => {} }) {
     prepare(legacy, history, calendar);
     let active;
     function home(focusId) {
@@ -1252,13 +1185,13 @@
       const session = state.sessions.find(item => item.id === id);
       if (!session || !host.isConnected) return false;
       let leaving = false;
-      async function exit() {
+      async function leave(destination) {
         if (leaving) return;
         leaving = true;
         try {
           await save();
           if (active?.session === session && host.isConnected) {
-            if (onExit) onExit();
+            if (destination) destination();
             else home(id);
           }
         } catch {
@@ -1267,13 +1200,15 @@
           leaving = false;
         }
       }
-      active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item), Boolean(session.completed)) };
+      const exit = () => leave(onExit);
+      active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item),
+        () => leave(onConfirm), onViewChange, Boolean(session.completed)) };
       if (recap) active.editor.showRecap();
       else host.closest('.phone')?.scrollTo({ top: 0 });
       return true;
     }
     controller = { host, open, back() { if (!active) return false; if (!active.editor.backToRecap()) active.exit(); return true; } };
-    if (!sessionId || !open(sessionId, state.sessions.find(item => item.id === sessionId)?.completed)) home();
+    if (!sessionId || !open(sessionId, review || state.sessions.find(item => item.id === sessionId)?.completed)) home();
   }
 
   globalThis.__enPsyAfter = {
