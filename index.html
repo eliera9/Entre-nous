@@ -6958,10 +6958,12 @@ function sessionPreparation(){
   session.preparation={notes,prep};
   if(includeInbox&&prep.writing){delete inbox.prep.writing;window.__vaultAutosave?.();}
  }
- const stars=session.preparation.prep.stars;
- if(!(stars instanceof Set))session.preparation.prep.stars=new Set(stars||[]);
- if(!session.preparation.prep.stars.toJSON)Object.defineProperty(session.preparation.prep.stars,'toJSON',{value(){return [...this]}});
- return session.preparation;
+ const preparation=session.preparation;
+ preparation.notes||=[];
+ const prep=preparation.prep||=newPrep();
+ if(!(prep.stars instanceof Set))prep.stars=new Set(prep.stars||[]);
+ if(!prep.stars.toJSON)Object.defineProperty(prep.stars,'toJSON',{value(){return [...this]}});
+ return preparation;
 }
 for(const key of ['notes','prep'])Object.defineProperty(S,key,{enumerable:true,get:()=>sessionPreparation()[key],set:value=>{sessionPreparation()[key]=value}});
 function psySessions(){

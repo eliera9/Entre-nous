@@ -49,6 +49,27 @@ test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', 
   assert.match(list.innerHTML, /Rien de déposé/);
 });
 
+test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet de rédaction', () => {
+  const note = { id: '1', t: 'Sujet conservé', o: 'NOTE' };
+  const session = { date: '2026-11-17', preparation: { notes: [note] } };
+  const context = {
+    S: {},
+    activeSession: () => session,
+    esc: String,
+    newPrep: () => ({ stars: new Set() }),
+    Set,
+  };
+  runInNewContext(avantSource, context);
+  context.window = context;
+  const preparation = html.slice(html.indexOf('function sessionPreparation('), html.indexOf('function psySessions('));
+  const avant = html.slice(html.indexOf('function tAvant('), html.indexOf('function sessionTextList('));
+  const render = runInNewContext(preparation + avant + ';tAvant', context);
+  assert.match(render(true), /Sujet conservé/);
+  assert.match(render(true), /Préparer ma séance/);
+  assert.equal(session.preparation.notes[0], note);
+  assert.deepEqual(plain(session.preparation.prep.stars), []);
+});
+
 test('le crayon d’Avant ouvre la rédaction avec ou sans date et dans une séance archivée', () => {
   const model = {};
   const script = html.slice(html.indexOf('function tAvant('), html.indexOf('function sessionTextList('));
