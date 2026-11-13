@@ -77,16 +77,16 @@
       ${items.length ? '' : '<p class="psy-home-empty">Tes petits pas apparaîtront ici.</p>'}</section>`;
   }
 
-  function cardMarkup(card, hasUnfinished) {
+  function cardMarkup(card) {
     const date = card ? dateOf(card.date) : new Date();
     const day = String(date.getDate()).padStart(2, '0');
     const caption = `${weekday.format(date)} ${month.format(date)}`;
     const time = card?.calendarTime;
-    const [title, action, phase] = card ? labels[card.kind] : ['Aucune séance à poursuivre', 'Ajouter un rendez-vous'];
+    const [title, action, phase] = card ? labels[card.kind] : ['Pas de séance prévue', 'Ajouter un rendez-vous'];
     const id = escape(card?.id);
     const open = card ? `data-a="session-open" data-i="${id}"` : 'data-a="enaddpsy"';
     const label = longDate.format(date);
-    return `<div class="title-card-body">
+    return `<div class="title-card-body${card ? '' : ' title-card-empty'}">
       ${card ? `<button type="button" class="psy-card-hit" ${open} aria-label="${title}, ${label}"></button>` : ''}
       <div class="title-date">
         ${card ? '' : `<span class="psy-home-sr">Aujourd’hui, ${label}</span>`}
@@ -94,8 +94,7 @@
         ${time ? `<time datetime="${time}"><span class="time-core">${icon('clock')} ${Number(time.slice(0, 2))} h ${time.slice(3)}</span></time>` : ''}</div>
       <div class="title-card-main"><h3><span class="title-text">${title}</span></h3><div class="action-row">
         <button type="button" class="session-action" ${open}${phase ? ` data-k="${phase}"` : ''}>
-          <span class="action-core">${action} ${icon(card ? 'notebook-pen' : 'calendar-plus')}</span></button></div>
-        ${card && !hasUnfinished ? '<p class="psy-card-status">Aucune séance à poursuivre</p>' : ''}</div></div>`;
+          <span class="action-core">${action} ${icon(card ? 'notebook-pen' : 'calendar-plus')}</span></button></div></div></div>`;
   }
 
   function render({ records, items }) {
@@ -108,13 +107,12 @@
 
   function mount(root, cards, position) {
     const carousel = root.querySelector('[data-psy-carousel]');
-    const hasUnfinished = cards.some(card => card.kind !== 'upcoming');
     let index = Math.max(0, cards.findIndex(card => card.id === position.id));
     let touch;
     let swipedAt = -Infinity;
     function draw() {
       position.id = cards[index]?.id;
-      carousel.innerHTML = `<div class="psy-card-panel" aria-live="polite">${cardMarkup(cards[index], hasUnfinished)}</div>` + (cards.length > 1 ? `
+      carousel.innerHTML = `<div class="psy-card-panel" aria-live="polite">${cardMarkup(cards[index])}</div>` + (cards.length > 1 ? `
         <nav class="card-navigation" aria-label="Cartes de l’Éphéméride">
           <button type="button" class="pager-arrow" data-step="-1" aria-label="Carte précédente">${icon('chevron-left')}</button>
           <div class="pager-markers">${cards.map((card, i) => `<button type="button" class="pager-marker" data-card="${i}"

@@ -30,24 +30,26 @@ test('l’Éphéméride montre le prochain rendez-vous et les séances à poursu
   ]);
 });
 
-test('l’absence de séance à poursuivre est visible avec et sans prochain rendez-vous', () => {
+test('la carte compacte avec la date du jour apparaît quand aucune séance n’est prévue ou à poursuivre', () => {
   const { home } = app();
   const carousel = { addEventListener() {} };
   const root = { querySelector: () => carousel };
   home.mount(root, [], {});
   assert.match(carousel.innerHTML, /Aujourd’hui/);
-  assert.match(carousel.innerHTML, /Aucune séance à poursuivre/);
+  assert.match(carousel.innerHTML, /title-card-empty/);
+  assert.match(carousel.innerHTML, /Pas de séance prévue/);
+  assert.match(carousel.innerHTML, /Ajouter un rendez-vous/);
   assert.match(carousel.innerHTML, /data-a="enaddpsy"/);
 
   const upcoming = { id: 'next', kind: 'upcoming', date: '2026-11-19', calendarTime: '10:00' };
   home.mount(root, [upcoming], {});
   assert.match(carousel.innerHTML, /Prochain rendez-vous/);
   assert.match(carousel.innerHTML, /10 h 00/);
-  assert.match(carousel.innerHTML, /Aucune séance à poursuivre/);
+  assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre|Pas de séance prévue|title-card-empty/);
   assert.match(carousel.innerHTML, /data-k="prep"/);
 
   home.mount(root, [upcoming, { id: 'draft', kind: 'current', date: '2026-11-11' }], {});
-  assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre/);
+  assert.doesNotMatch(carousel.innerHTML, /Aucune séance à poursuivre|Pas de séance prévue|title-card-empty/);
 });
 
 test('seul du texte dans Mes notes fait apparaître une séance en cours', () => {

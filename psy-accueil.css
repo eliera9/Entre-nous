@@ -94,12 +94,16 @@
   background: var(--home-capsule);
 }
 #psy .psy-home .action-core svg { width: 14px; height: 14px; stroke-width: 1.5; }
-#psy .psy-home .psy-card-status {
-  margin: 0;
-  color: var(--home-ink);
-  text-align: center;
-  font: italic 500 14px/1.18 var(--home-garamond);
+#psy .psy-home .psy-card-panel .title-card-body.title-card-empty {
+  box-sizing: border-box;
+  grid-template-columns: minmax(63px, .35fr) minmax(0, 1fr);
+  min-height: 91px;
+  padding: 11px 10px;
 }
+#psy .psy-home .title-card-empty .title-card-main { padding: 0 0 0 8px; }
+#psy .psy-home .title-card-empty h3 { font-size: 19px; line-height: 1.1; letter-spacing: -.015em; }
+#psy .psy-home .title-card-empty .action-row { margin-top: 0; }
+#psy .psy-home .title-card-empty .action-core { gap: 5px; padding: 6px 9px; }
 #psy .psy-home .card-navigation { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; margin: 6px 5px 0; }
 #psy .psy-home :is(.pager-arrow, .pager-marker) {
   display: grid;
