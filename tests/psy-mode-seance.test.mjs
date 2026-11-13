@@ -89,3 +89,31 @@ test('la rédaction d’Avant reste accessible dans une séance archivée sans t
   model.item.preparation = { notes: [], prep: { gen: 'Texte déjà rédigé' } };
   assert.match(render(true, true), /data-a="avant-archive-writing">Ma préparation<\/button>/);
 });
+
+test('toucher Avant ouvre directement la rédaction vide de la fiche confirmée', () => {
+  const route = { v: 'archive', tab: 'apres' };
+  const item = { completed: true };
+  const calls = [];
+  const context = {
+    S: { ap: {} },
+    cur: () => route,
+    activeSession: () => item,
+    openAvantWriting: () => calls.push('rédaction'),
+    render: () => calls.push('fiche'),
+    B: { querySelector: () => null },
+  };
+  runInNewContext(avantSource, context);
+  context.window = context;
+  const source = html.slice(html.indexOf(" case'session-tab':"), html.indexOf(" case'calrdv':"));
+  const act = runInNewContext(`(a, d) => { switch(a) {${source}} }`, context);
+  act('session-tab', { k: 'avant' });
+  assert.equal(route.tab, 'avant');
+  assert.deepEqual(calls, ['rédaction']);
+  item.preparation = { prep: { writing: { mode: 'guided' } } };
+  act('session-tab', { k: 'avant' });
+  assert.equal(calls.pop(), 'rédaction');
+  item.preparation.prep.gen = 'Texte déjà écrit';
+  act('session-tab', { k: 'avant' });
+  assert.equal(calls.pop(), 'fiche');
+  assert.equal(item.completed, true);
+});

@@ -80,15 +80,19 @@
   }
 
   function record(prep) {
-    return prep.writing || {
-      mode: prep.gen?.trim() ? 'free' : 'guided',
-      free: { text: prep.gen || '', html: '' },
-      answers: {},
-      positions: {},
+    const draft = prep.writing;
+    const free = { text: prep.gen || '', html: '', ...draft?.free };
+    return {
+      ...draft,
+      mode: draft?.mode ?? (free.text?.trim() ? 'free' : 'guided'),
+      free,
+      answers: draft?.answers ?? {},
+      positions: draft?.positions ?? {},
     };
   }
 
-  function entries(prep = {}) {
+  function entries(prep) {
+    prep ??= {};
     const draft = record(prep);
     const list = [['Écriture libre', draft.free], ...rubrics.map(([key, title]) => [title, draft.answers[key]])];
     if (prep.start?.trim()) list.push(['Ma phrase pour commencer', { text: prep.start }]);

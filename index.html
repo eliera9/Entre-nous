@@ -7021,6 +7021,19 @@ const idea=k=>`<button class="ps-idea" data-a="hint" data-k="${k}">· une idée 
 const fold=(k,lab,n,body)=>`<button class="ps-fold" data-a="fold" data-k="${k}"><span>${lab}</span><span>${n} ${S.ph&&S.ph[k]?'⌃':'⌄'}</span></button>${S.ph&&S.ph[k]?body:''}`;
 
 /* ---------- AVANT ---------- */
+function openAvantWriting(){
+ const c=cur();
+ if(c.v==='seance'){
+  const legacy=SEANCES.find(record=>record.id===c.i);
+  if(!legacy)return;
+  legacy.preparation||={};
+  legacy.preparation.prep||=newPrep();
+  go('avant-writing',{legacyId:legacy.id});
+  return;
+ }
+ ensureArchivedPreparation(activeSession());
+ if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');
+}
 function avantPreparationLine(prep){
  const avant=window.__enPsyAvant;
  return `<div class="en-avant-prepare-line">
@@ -7446,17 +7459,13 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
    }).catch(()=>{});
    break;
   }
-  cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
- case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
- case'prep':case'prepgo':
-  if(cur().v==='seance'){
-   const legacy=SEANCES.find(record=>record.id===cur().i);
-   if(legacy){legacy.preparation||={};legacy.preparation.prep||=newPrep();go('avant-writing',{legacyId:legacy.id});}
-   break;
+  cur().tab=d.k;
+  if(cur().v==='archive'&&d.k==='avant'&&!window.__enPsyAvant.entries(activeSession()?.preparation?.prep).length){
+   openAvantWriting();break;
   }
-  ensureArchivedPreparation(activeSession());
-  if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');
-  break;
+  render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
+ case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
+ case'prep':case'prepgo':openAvantWriting();break;
  case'avant-save-note':saveAvantNote();break;
  case'avant-archive-writing':go('avant-recap',cur().v==='seance'?{legacyId:cur().i}:undefined);break;
  case'avant-ai':window.__enPsyAvant.openAI(ph,t);break;
@@ -7525,7 +7534,13 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'veille':S.veille[d.i]=d.k;render();break;
  /* séances */
  case'filt':S.filt=d.k;render();break;
- case'setab':S.seTab=d.k;render();break;
+ case'setab':{
+  S.seTab=d.k;
+  const legacy=SEANCES.find(record=>record.id===cur().i);
+  if(d.k==='avant'&&!window.__enPsyAvant.entries(legacy?.preparation?.prep).length)openAvantWriting();
+  else render();
+  break;
+ }
  case'evsel':S.evSel=d.i;{const sc=[...B.querySelectorAll('[data-col]')].map(c=>c.scrollLeft);render();B.querySelectorAll('[data-col]').forEach((c,i)=>c.scrollLeft=sc[i])}break;
  case'phi':S.phI=+d.i;render();break;
  /* première ouverture / mon suivi */
