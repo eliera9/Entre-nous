@@ -277,7 +277,8 @@ function save(force){
   const chosenName=st['lifeform-approved-v1']?.answers?.surnom;
   const rg=st.rg,approvedName=chosenName?.state==='answered'&&chosenName.verified===true?chosenName.rows?.[0]?.name:'';
   const greetingName=String((rg?.appellation!==0&&String(rg?.petit||'').trim())||rg?.prenom||(!rg&&approvedName)||META.nm||'').replace(/[<>"&]/g,'').trim().slice(0,50);
-  const rec=W.code?{v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Date.now(),nm:greetingName}:null;
+  const syncFrom=CLOUD.syncFrom?.();
+  const rec=W.code?{v:2,w:JSON.parse(JSON.stringify(W)),box:await seal(DEK,{ls:M.ls,st}),at:Math.max(Date.now(),(syncFrom||0)+1),nm:greetingName,...(syncFrom===undefined?{}:{syncFrom})}:null;
   const writes=rec?[[KEY,rec]]:[];
   if(ENROLL.active&&!ENROLL.suspended){const owner=(await CLOUD.session())?.user?.id||null;const draft=await enrollmentStore.encode({progress:enrollmentMeta(),data:{ls:M.ls,st},dek:DEKRAW,wraps:W,name:greetingName,vaultAt:rec?.at??null},owner);writes.push([ENROLL_KEY,draft]);}
   if(ENROLL.startedAt||ENROLL.suspended)await dbWriteEntries(writes,!ENROLL.active||ENROLL.suspended);else if(rec)await dbPut(KEY,rec);last=s;M.st=st;dirty=JSON.stringify({ls:M.ls,st:snapshot()})!==s;if(rec)CLOUD.push(rec);};
@@ -325,7 +326,37 @@ window.__vaultRestoreFile=async file=>{const payload=JSON.parse(await file.text(
 
 /* ---------- compte en ligne (Supabase) : on n'y envoie que le coffre déjà chiffré ---------- */
 const SB='https://aoafqsipzymeehcswzto.supabase.co',SBK='sb_publishable_aLrH54IP-QcApvBF6jEfcw_Rb3x9GgH';
-const CLOUD=(()=>{let S=null,loaded=false,pt=null;
+const CLOUD=(()=>{let S=null,loaded=false,pt=null,queue=Promise.resolve(),baseline;
+ const observe=record=>baseline=record?.at??null;
+ function conflict(){
+  const message='Un autre appareil a enregistré une version du carnet. Tes changements sont gardés sur cet appareil. La synchronisation est suspendue pour préserver les deux versions.';
+  if(window.__enCloudErr===message)return;
+  window.__enCloudErr=message;
+  const alert=document.createElement('div');alert.className='en-toast on';alert.setAttribute('role','alert');alert.textContent=message;
+  document.body.appendChild(alert);setTimeout(()=>alert.remove(),9500);
+ }
+ async function upload(record, owner){
+  if(!navigator.onLine||!owner||S?.user.id!==owner)return;
+  const resource='coffres?user_id=eq.'+encodeURIComponent(owner);
+  let expected=baseline===undefined?record.syncFrom:baseline;
+  if(expected===undefined){
+   const remote=await rest('GET',resource+'&select=coffre');
+   if(remote[0]&&remote[0].coffre?.at!==record.at){conflict();return;}
+   expected=remote[0]?.coffre?.at??null;
+  }
+  const body={coffre:record,maj:new Date(record.at).toISOString()};
+  const result=expected===null?
+   await rest('POST','coffres?on_conflict=user_id&select=maj',{...body,user_id:owner},{Prefer:'resolution=ignore-duplicates,return=representation'}):
+   await rest('PATCH',resource+'&maj=eq.'+encodeURIComponent(new Date(expected).toISOString())+'&select=maj',body,{Prefer:'return=representation'});
+  if(!result?.length){conflict();return;}
+  observe(record);window.__enCloudOk=Date.now();window.__enCloudErr='';
+  const db=await idb();
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE),read=store.get(KEY);
+   read.onsuccess=()=>{const current=read.result;if(current?.at===record.at||current?.syncFrom===expected)store.put({...current,syncFrom:record.at},KEY)};
+   tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(tx.error);
+  });
+ }
  const load=async()=>{if(!loaded){try{S=await dbGet('session')||null}catch(e){S=null}loaded=true}return S};
  const keep=async s=>{S=s?{access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at||Math.floor(Date.now()/1000)+(s.expires_in||3600),user:{id:s.user.id,email:s.user.email,created_at:s.user.created_at}}:null;if(S)await dbPut('session',S);else await dbDel('session')};
  const err=async r=>{let j={};try{j=await r.json()}catch(e){}const m=(j.msg||j.error_description||j.message||j.error||'')+'';
@@ -353,7 +384,11 @@ const CLOUD=(()=>{let S=null,loaded=false,pt=null;
   async resend(email){await auth('resend',{type:'signup',email});return true},
   async signOut(){try{const t=await token();if(t)await fetch(SB+'/auth/v1/logout',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t}})}catch(e){}await keep(null);ENROLL.suspended=true;await dbDel(ENROLL_KEY)},
   async pull(){await load();if(!S)return null;const r=await rest('GET','coffres?select=coffre,maj&user_id=eq.'+S.user.id);return r&&r[0]?r[0].coffre:null},
-  push(rec){clearTimeout(pt);pt=setTimeout(async()=>{try{await load();if(!S||!navigator.onLine)return;await rest('POST','coffres?on_conflict=user_id',{user_id:S.user.id,coffre:rec,maj:new Date(rec.at).toISOString()},{Prefer:'resolution=merge-duplicates,return=minimal'});window.__enCloudOk=Date.now()}catch(e){window.__enCloudErr=e.message}},2500)},
+  observe, conflict,
+  syncFrom:()=>baseline,
+  push(rec){clearTimeout(pt);const owner=S?.user.id;pt=setTimeout(()=>{
+   queue=queue.then(async()=>{try{await load();await upload(rec,owner);}catch(e){window.__enCloudErr=e.message}});
+  },2500)},
   async deleteAccount(){await load();if(!S)return {ok:true,local:true};const t=await token();if(!t)throw new Error('Connecte-toi d’abord pour supprimer ton compte en ligne.');
    await CLOUD.wipe();const r=await fetch(SB+'/rest/v1/rpc/supprimer_mon_compte',{method:'POST',headers:{apikey:SBK,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:'{}'});
    const gone=r.ok;await keep(null);return {ok:true,account:gone}},
@@ -384,7 +419,10 @@ window.__enCloud=CLOUD;
 window.__enWipeLocal=async()=>{globalThis.__enWiping=true;try{const d=await idb();await new Promise(r=>{const t=d.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=t.onerror=t.onabort=()=>r()});d.close()}catch(e){}try{sessionStorage.clear()}catch(e){}};
 window.__enMail='';CLOUD.session().then(x=>{if(x&&x.user)window.__enMail=x.user.email}).catch(()=>{});
 /* « J'ai déjà un carnet » : on récupère le coffre en ligne puis l'écran de code */
-window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;ENROLL.suspended=true;await dbWriteEntries([[KEY,rec]],true);location.reload();return true};
+window.__vaultAdopt=async rec=>{if(!rec||!rec.box)return false;ENROLL.suspended=true;
+ const previous=await dbGet(KEY),writes=[[KEY,{...rec,syncFrom:rec.at}]];
+ if(previous?.box&&previous.at!==rec.at)writes.push(['sync-previous',previous]);
+ await dbWriteEntries(writes,true);location.reload();return true};
 window.__vaultPushNow=()=>save(true);
 let autosavePending=null,autosaveRequested=false;
 window.__vaultAutosave=()=>{
@@ -611,7 +649,20 @@ async function boot(){
  if(await recoveryPage())return;
  let v=null;try{v=await dbGet(KEY)}catch(e){}
  /* connectée : si le coffre en ligne est plus récent (autre appareil), on le prend */
- try{if(navigator.onLine&&await CLOUD.session()){const r=await Promise.race([CLOUD.pull(),new Promise(res=>setTimeout(()=>res(null),4000))]);if(r&&r.box&&(!v||(r.at||0)>(v.at||0))){v=r;await dbPut(KEY,r)}}}catch(e){}
+ try{if(navigator.onLine&&await CLOUD.session()){
+  const timeout={};
+  const remote=await Promise.race([CLOUD.pull(),new Promise(resolve=>setTimeout(()=>resolve(timeout),4000))]);
+  if(remote!==timeout){
+   const pending=v&&Object.hasOwn(v,'syncFrom')&&v.syncFrom!==v.at;
+   if(remote?.box&&pending&&v.at!==remote.at&&v.syncFrom!==remote.at){
+    CLOUD.observe({at:v.syncFrom});CLOUD.conflict();
+   }else if(remote?.box){
+    CLOUD.observe(remote);
+    if(!v||v.at===remote.at||!pending&&remote.at>v.at){v={...remote,syncFrom:remote.at};await dbPut(KEY,v);}
+    else {v={...v,syncFrom:remote.at};await dbPut(KEY,v);CLOUD.push(v);}
+   }else{CLOUD.observe(null);if(v?.box)CLOUD.push(v);}
+  }else if(v&&Object.hasOwn(v,'syncFrom'))CLOUD.observe({at:v.syncFrom});
+ }}catch(e){}
  enrollmentStore=window.__enEnrollmentTools.createDraftStore({crypto,get:dbGet,put:dbPut});
  const owner=(await CLOUD.session())?.user?.id||null;let draft=null;try{draft=await enrollmentStore.read(owner,v);}catch(error){console.warn('Le brouillon d’inscription ne peut pas être repris.');}
  if(draft){await useDek(draft.dek);W=draft.wraps||{code:null,sec:null};M.ls=draft.data.ls||{};M.st=draft.data.st||{};META.nm=draft.name||'';Object.assign(ENROLL,draft.progress,{restoring:true,suspended:false});mount(false);window.__profil=window.__enKeep('profil',{});runScripts();return;}
@@ -626,17 +677,28 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 (()=>{/* 6 · Psy : la prochaine séance vient du calendrier */
 const J=['DIM.','LUN.','MAR.','MER.','JEU.','VEN.','SAM.'],MOC=['JANV.','FÉVR.','MARS','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'],MOL=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-function nextPsy(exclude=()=>false){const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
- const E=(window.__calE||[]).filter(e=>e.t==='psy').sort((a,b)=>(a.h||0)*60+(a.mi||0)-(b.h||0)*60-(b.mi||0));
- const horizon=Math.max(120,...E.map(e=>Math.round((new Date(e.y,e.m,e.d)-t0)/864e5)+36).filter(Number.isFinite));
- for(let i=0;i<horizon;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);for(const e of E){const s=new Date(e.y,e.m,e.d);let on=false;
-  if(e.rep){if(dt>=s){const k=Math.round((dt-s)/864e5);on=e.rep===1?k%7===0:e.rep===2?k%14===0:e.rep===3?dt.getDate()===e.d:false}}else on=+s===+dt;
-  if(on){const at=new Date(dt);at.setHours(e.h||0,e.mi||0);const next={e,dt,i};if(at<now&&i===0||exclude(next))continue;return next}}}return null}
-const hh=e=>(e.h??0)+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
+function nextPsy(exclude=()=>false){
+ const now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const entries=(window.__calE||[]).filter(e=>e.t==='psy'),dates=window.__enPsyDate;
+ const horizon=Math.max(120,...entries.flatMap(e=>[dates.eventDate(e),...Object.values(e.psyMoves||{}).map(move=>move.date)])
+  .map(value=>Math.ceil((new Date(value+'T12:00:00')-t0)/864e5)+2).filter(Number.isFinite));
+ for(let i=0;i<horizon;i++){
+  const dt=new Date(t0);dt.setDate(t0.getDate()+i);
+  const slots=dates.onDate(entries,dates.iso(dt)).sort((a,b)=>(a.h??-1)*60+(a.mi||0)-(b.h??-1)*60-(b.mi||0));
+  for(const e of slots){
+   const at=new Date(dt);at.setHours(e.h??0,e.mi||0);
+   const next={e,dt,i};
+   if(i===0&&e.h!=null&&at<now||exclude(next))continue;
+   return next;
+  }
+ }
+ return null;
+}
+const hh=e=>e.h==null?'':e.h+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
 window.__enPsyEph=()=>{const n=nextPsy();
  if(!n)return `<div class="ps-eph"><div class="d"><b>✦</b><small>À VENIR</small></div><div class="m"><p>Pas encore de séance prévue</p><span>ajoute-la à ton calendrier</span></div><button class="ps-btn2" data-a="enaddpsy">AJOUTER</button></div>`;
  const rel=n.i===0?'aujourd’hui':n.i===1?'demain':'dans '+n.i+' jours';const ou=['au cabinet','en visio'][n.e.ou||0]||'au cabinet';
- return `<div class="ps-eph"><div class="d"><b>${n.dt.getDate()}</b><small>${J[n.dt.getDay()]} ${MOC[n.dt.getMonth()]}</small></div><div class="m"><p>Ta séance</p><span>${hh(n.e)} · ${ou}<br>${rel}</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>`};
+ return `<div class="ps-eph"><div class="d"><b>${n.dt.getDate()}</b><small>${J[n.dt.getDay()]} ${MOC[n.dt.getMonth()]}</small></div><div class="m"><p>Ta séance</p><span>${hh(n.e)?hh(n.e)+' · ':''}${ou}<br>${rel}</span></div><button class="ps-btn2" data-a="prep">PRÉPARER</button></div>`};
 window.__enPsySeance=(L,ap)=>{const d=/^\d{4}-\d{2}-\d{2}$/.test(ap.date||'')?new Date(ap.date+'T12:00:00'):new Date();const sel=ap.ressens&&ap.ressens.sel?[...ap.ressens.sel]:[];
  const id=ap.sessionId||(ap.sessionId='s'+Date.now());const record={id,y:d.getFullYear(),mo:MOL[d.getMonth()].toUpperCase()+' '+d.getFullYear(),j:JL[d.getDay()].toUpperCase()+' '+d.getDate(),jl:JL[d.getDay()]+' '+d.getDate()+' '+MOL[d.getMonth()]+' '+d.getFullYear(),
   q:(ap.retiens&&ap.retiens.a)?'« '+ap.retiens.a+' »':'',emo:sel,star:(ap.ressens&&ap.ressens.star)||sel[0]||'',suj:ap.subjects||[],prev:ap.prev||[],notes:ap.notes||[],
@@ -737,6 +799,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="accueil-valide.js" defer></script>
 <link rel="stylesheet" href="psy-approved.css">
 <link rel="stylesheet" href="psy-apres.css">
+<link rel="stylesheet" href="psy-avant.css">
 <link rel="stylesheet" href="psy-accueil.css">
 <link rel="stylesheet" href="psy-mode-seance.css">
 <script src="vendor/lucide.min.js" defer></script>
@@ -746,6 +809,8 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="psy-approved.js" defer></script>
 <script src="psy-apres-ecriture.js" defer></script>
 <script src="psy-apres.js" defer></script>
+<script src="psy-avant.js" defer></script>
+<script src="psy-date.js" defer></script>
 <script src="psy-accueil.js" defer></script>
 <script src="psy-mode-seance.js" defer></script>
 </head>
@@ -6362,12 +6427,13 @@ const dow=dt=>(dt.getDay()+6)%7;
 const D=(y,m,d)=>new Date(y,m,d);
 function occurs(e,dt){if(e.t==='anniv'||(e.t==='moi'&&e.chaque))return e.m===dt.getMonth()&&e.d===dt.getDate()&&(!e.y||dt.getFullYear()>=e.y);
  const s=D(e.y,e.m,e.d);if(e.t==='psy'&&e.rep){if(dt<s)return false;const days=Math.round((dt-s)/864e5);if(e.rep===1)return days%7===0;if(e.rep===2)return days%14===0;if(e.rep===3)return dt.getDate()===e.d}return same(s,dt)}
-const evOn=dt=>E.filter(e=>occurs(e,dt)).sort((a,b)=>(a.h??-1)-(b.h??-1));
+const evOn=dt=>[...E.filter(e=>e.t!=='psy'&&occurs(e,dt)),...window.__enPsyDate.onDate(E,window.__enPsyDate.iso(dt))]
+ .sort((a,b)=>(a.h??-1)-(b.h??-1)||(a.mi||0)-(b.mi||0));
 const col=e=>e.t==='anniv'?RC.joyeux:e.t==='moi'?RC.fierte:RC[e.res]||'#A9989C';
 const ico=e=>e.t==='anniv'?'illus/ajout2/anniv.webp':e.t==='moi'?'illus/ajout2/moi.webp':'illus/ressenti-'+(e.res||'neutre')+'.webp';
 const hh=e=>e.h==null?'':e.h+' h'+(e.mi?' '+String(e.mi).padStart(2,'0'):'');
 const isT=dt=>same(dt,TODAY),past=dt=>dt<TODAY&&!isT(dt);
-const R=e=>'<div class="kr" role="button" tabindex="0" data-id="'+e.id+'"><img alt="" src="'+ico(e)+'">'+String(e.n||'').replace(/[<>&"]/g,'')+'<em>'+hh(e)+'</em></div>';
+const R=e=>`<div class="kr" role="button" tabindex="0" data-id="${e.id}"${e.originalDate?` data-occurrence="${e.originalDate}" data-occurrence-day="${e.date}"`:''}><img alt="" src="${ico(e)}">${String(e.n||'').replace(/[<>&"]/g,'')}<em>${hh(e)}</em></div>`;
 const PGL=p=>'<div class="kr" role="button" tabindex="0" data-page="'+p[2]+'"><span class="kdt" style="box-shadow:inset 0 0 0 1.4px '+p[0]+'"></span><i>ma page du jour</i><em>›</em></div>';
 function toast(t){const el=document.createElement('span');el.className='ktoast';el.textContent=t;el.style.top=(ph.scrollTop+ph.clientHeight-60)+'px';ph.appendChild(el);setTimeout(()=>el.remove(),1800)}
 function detail(dt){const r=evOn(dt),p=PG[key(dt)];let h='<p class="kcap">'+JN[dow(dt)]+' '+dt.getDate()+' '+MN[dt.getMonth()]+(isT(dt)?' · aujourd’hui':'')+'</p>'+r.map(R).join('');if(p)h+=PGL(p);if(!r.length&&!p)h+='<p class="kit" style="margin:6px 0">Rien ce jour-là.</p>';return h}
@@ -6397,7 +6463,7 @@ function bind(n){
   c.onclick=()=>{if(long)return;cur=D(cur.getFullYear(),cur.getMonth(),+c.dataset.d);n.querySelectorAll('.kbig .c').forEach(x=>x.classList.toggle('sel',+x.dataset.d===cur.getDate()&&!x.classList.contains('td')));const det=n.querySelector('.kdet');det.style.transition='opacity .2s';det.style.opacity=0;setTimeout(()=>{det.innerHTML=detail(cur);bindRows(det);det.style.opacity=1},200)}});
  n.querySelectorAll('.kstrip [data-k]').forEach(c=>c.onclick=()=>{const [y,m,d]=c.dataset.k.split('-').map(Number);cur=D(y,m,d);refresh()});
  bindRows(n)}
-function bindRows(n){n.querySelectorAll('[data-id]').forEach(r=>r.onclick=()=>openSheet(E.find(e=>e.id===+r.dataset.id)));n.querySelectorAll('[data-page]').forEach(r=>r.onclick=()=>{if(window.__acOpenDay)window.__acOpenDay(r.dataset.page);else goTo('mj')});n.querySelectorAll('[role="button"]').forEach(r=>r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click()}})}
+function bindRows(n){n.querySelectorAll('[data-id]').forEach(r=>r.onclick=()=>openSheet(E.find(e=>String(e.id)===r.dataset.id),r.dataset.occurrenceDay?new Date(r.dataset.occurrenceDay+'T00:00:00'):undefined,r.dataset.occurrence));n.querySelectorAll('[data-page]').forEach(r=>r.onclick=()=>{if(window.__acOpenDay)window.__acOpenDay(r.dataset.page);else goTo('mj')});n.querySelectorAll('[role="button"]').forEach(r=>r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();r.click()}})}
 function refresh(){const v=st.querySelector('.kview');v.innerHTML=html();bind(v);title()}
 function show(v){const old=st.querySelector('.kview'),n=document.createElement('div');n.className='kview';view=v;n.innerHTML=html();bind(n);
  ph.querySelectorAll('.kseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));title();
@@ -6417,7 +6483,24 @@ function wheel(cols,on){const w=document.createElement('div');w.className='kwh';
   col.addEventListener('click',e=>{const d=e.target.closest('[data-i]');if(d)col.scrollTo({top:+d.dataset.i*28,behavior:'smooth'})});init.push(()=>{col.scrollTop=c[1]*28;mark()})});
  requestAnimationFrame(()=>init.forEach(f=>f()));return w}
 /* ---------- volet d'ajout / modification ---------- */
-function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;const s=ev?JSON.parse(JSON.stringify(ev)):{t:'rdv',n:'',y:dt0.getFullYear(),m:dt0.getMonth(),d:dt0.getDate(),h:9,mi:0,res:'neutre',rap:1,rep:1,ou:0,prep:1,veille:1,chaque:1,genre:0,mot:'',lieu:'',note:''};
+function openSheet(ev,dt0,occurrenceDay){
+ if(ph.querySelector('.kov'))return;
+ if(ev?.originalDate){occurrenceDay=ev.originalDate;dt0=new Date(ev.date+'T00:00:00');ev=E.find(entry=>entry.id===ev.id)}
+ if(occurrenceDay&&ev?.rep&&window.__enPsyDate.valid(occurrenceDay)){
+  const oldDate=window.__enPsyDate.iso(dt0),old=ev.psyMoves?.[occurrenceDay]||ev;
+  window.__enPsyDate.edit(ph,document.activeElement,{oldDate,old,original:occurrenceDay,event:ev,calendar:E,
+   consequence:'Les autres dates de la série resteront à leur place.',
+   onApply:async candidate=>{
+    if(!E.includes(ev))throw new Error('Le rendez-vous a changé. Rouvre-le depuis le calendrier.');
+    const previous={...ev};
+    Object.assign(ev,window.__enPsyDate.calendarChange(ev,ev,candidate));window.__enPsyBridge?.refreshCalendar();
+    try { await window.__vaultPushNow?.(); }
+    catch(error){if(!Object.hasOwn(previous,'psyMoves'))delete ev.psyMoves;Object.assign(ev,previous);window.__enPsyBridge?.refreshCalendar();throw error;}
+   },onSave:()=>{cur=new Date((ev.psyMoves?.[occurrenceDay]?.date||occurrenceDay)+'T00:00:00');refresh()},
+   onSeries:()=>openSheet(ev,dt0)
+  });return;
+ }
+ const edit=!!ev;const s=ev?JSON.parse(JSON.stringify(ev)):{t:'rdv',n:'',y:dt0.getFullYear(),m:dt0.getMonth(),d:dt0.getDate(),h:9,mi:0,res:'neutre',rap:1,rep:1,ou:0,prep:1,veille:1,chaque:1,genre:0,mot:'',lieu:'',note:''};
  window.__calCur=s;let ti=TY.findIndex(x=>x[0]===s.t);
  const o=document.createElement('div');o.className='kov';o.style.top=ph.scrollTop+'px';o.style.height=ph.clientHeight+'px';
  o.innerHTML='<div class="ksh"><div class="gr"></div><div class="t">'+(edit?'MODIFIER':'AJOUTER')+'</div><div class="fl"><i></i>✦<i></i></div><div class="kcar'+(edit?' lock':'')+'">'+TY.map(t=>'<img alt="" data-t="'+t[0]+'" src="illus/ajout2/'+t[0]+'.webp">').join('')+'</div><div class="knm"></div><div class="kdots"'+(edit?' hidden':'')+'></div><div class="kform"></div><button type="button" class="ksave">ENREGISTRER</button>'+(edit?'<button type="button" class="kdel">supprimer cette date</button>':'<p class="khint">glisse vers le bas pour annuler</p>')+'<div class="kok"><b>✦</b>C’est noté.</div></div>';
@@ -6441,7 +6524,7 @@ function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;co
  function note(k,lab){line(k,lab,()=>s[k]?'écrite':'ajouter',(x,up)=>{x.innerHTML='<textarea placeholder="un petit mot…"></textarea>';const ta=x.querySelector('textarea');ta.value=s[k]||'';ta.oninput=()=>{s[k]=ta.value;up()};setTimeout(()=>ta.focus({preventScroll:true}),60)})}
  const dateLbl=()=>s.t==='rdv'||s.t==='psy'?JN[dow(D(s.y,s.m,s.d))].slice(0,3)+'. '+s.d+' '+AB[s.m]:s.d+' '+MN[s.m]+(s.t==='moi'&&s.y?' '+s.y:'');
  function date(withYear){line('date','date',dateLbl,(x,up)=>{const YS=[...Array(withYear?81:6)].map((_,i)=>withYear?1950+i:new Date().getFullYear()+i);const yi=Math.max(0,YS.indexOf(s.y));x.appendChild(wheel([[[...Array(31)].map((_,i)=>i+1),s.d-1],[MN,s.m]].concat(withYear!==false?[[YS,yi]]:[]),v=>{s.d=v[0]+1;s.m=v[1];if(v[2]!=null)s.y=YS[v[2]];const mx=D(s.y||new Date().getFullYear(),s.m+1,0).getDate();if(s.d>mx)s.d=mx;up();const ago=form.querySelector('.kago');if(ago)ago.textContent=agoT()}))})}
- function hour(){line('h','heure',()=>hh(s),(x,up)=>x.appendChild(wheel([[[...Array(24)].map((_,i)=>i+' h'),s.h],[['00','15','30','45'],[0,15,30,45].indexOf(s.mi)]],v=>{s.h=v[0];s.mi=[0,15,30,45][v[1]];up()})))}
+ function hour(){line('h','heure',()=>hh(s)||'non renseignée',(x,up)=>x.appendChild(wheel([[['Non renseignée',...Array.from({length:24},(_,i)=>i+' h')],s.h==null?0:s.h+1],[['00','15','30','45'],Math.max(0,[0,15,30,45].indexOf(s.mi))]],v=>{s.h=v[0]?v[0]-1:null;s.mi=v[0]?[0,15,30,45][v[1]]:0;up()})))}
  function ress(){const w=document.createElement('div');w.className='kres';w.innerHTML='<span class="k">ressenti</span><div class="kresr">'+RS.map(r=>'<button type="button" aria-label="'+r[1]+'" data-r="'+r[0]+'" style="--c:'+r[2]+'" class="'+(s.res===r[0]?'on':'')+'"><img alt="" src="illus/ressenti-'+r[0]+'.webp"></button>').join('')+'</div><div class="kresn">'+(RS.find(r=>r[0]===s.res)||RS[3])[1]+'</div>';
   w.querySelectorAll('button').forEach(b=>b.onclick=()=>{s.res=b.dataset.r;w.querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===b));w.querySelector('.kresn').textContent=RS.find(r=>r[0]===s.res)[1];b.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})});form.appendChild(w);setTimeout(()=>{const on=w.querySelector('.on');if(on)on.scrollIntoView({inline:'center',block:'nearest'})},80)}
  const agoT=()=>{if(!s.y)return '';const n=TODAY.getFullYear()-s.y-((TODAY.getMonth()<s.m||(TODAY.getMonth()===s.m&&TODAY.getDate()<s.d))?1:0);return n>0?'il y a '+n+' an'+(n>1?'s':''):''};
@@ -6461,12 +6544,45 @@ function openSheet(ev,dt0){if(ph.querySelector('.kov'))return;const edit=!!ev;co
    line('souv','relier un souvenir',()=>'choisir',x=>x.innerHTML='<p class="knote">Tes souvenirs de la boîte apparaîtront ici.</p>')}}
  car();
  o.querySelector('.ksave').onclick=()=>{if((!s.n||!s.n.trim())&&s.t==='psy')s.n='Ma psy';if(!s.n||!s.n.trim()){const b=form.querySelector('.kbig2');b.scrollIntoView({block:'center'});b.focus({preventScroll:true});b.style.borderBottomColor='#C26A7E';(window.__enToast||(()=>{}))(s.t==='anniv'?'Écris d’abord son prénom.':'Donne-lui d’abord un nom, tout en haut.');return}
-  if(edit){const i=E.findIndex(e=>e.id===ev.id);E[i]=s}else{s.id=uid++;E.push(s)}
-  const k=o.querySelector('.kok');k.classList.add('on');setTimeout(()=>{close();if(s.t==='rdv'||s.t==='psy')cur=D(s.y,s.m,s.d);else if(!edit)cur=D(cur.getFullYear(),s.m,s.d);refresh()},1000)};
+  if(s.t==='psy'){
+   const dates=window.__enPsyDate,picked=dates.eventDate(s),old=edit?dates.eventDate(ev):picked;
+   if(!dates.valid(picked)||Number(picked.slice(-2))!==Number(s.d)){window.__enToast?.('Choisis une date valide.');return}
+   const changed=edit&&(old!==picked||s.h!==ev.h||s.mi!==ev.mi);
+   const conflict=dates.overlaps(E,{...s,date:picked,originalDate:old},ev);
+   if(changed||conflict||!edit){
+    window.__enPsyDate.edit(ph,o.querySelector('.ksave'),{oldDate:old,old:ev||s,initial:{...s,date:picked},event:ev||s,original:old,calendar:E,
+     consequence:edit?'La séance liée sera mise à jour dans ton espace Psy.':'Le rendez-vous sera ajouté à ton calendrier.',
+     onApply:async candidate=>{
+      const [y,m,d]=candidate.date.split('-').map(Number);
+      Object.assign(s,{y,m:m-1,d,h:candidate.h,mi:candidate.mi,hf:candidate.hf,mf:candidate.mf});
+      storeEvent(false);
+      try { await window.__vaultPushNow?.(); }
+      catch(error){
+       const index=E.indexOf(s);
+       if(index!==-1){if(edit)E[index]=ev;else{E.splice(index,1);delete s.id;}}
+       window.__enPsyBridge?.refreshCalendar();throw error;
+      }
+     },onSave:finish
+    });return;
+   }
+  }
+  storeEvent();finish();
+  function storeEvent(persist=true){
+   if(edit){const i=E.findIndex(e=>e.id===ev.id);if(i<0||E[i]!==ev)throw new Error('Le rendez-vous a changé. Rouvre-le depuis le calendrier.');E[i]=s}
+   else if(!s.id){s.id=uid++;E.push(s)}
+   if(s.t==='psy')window.__enPsyBridge?.refreshCalendar();
+   if(persist)window.__vaultAutosave?.();
+  }
+  function finish(){const k=o.querySelector('.kok');k.classList.add('on');setTimeout(()=>{
+   close();if(s.t==='rdv'||s.t==='psy')cur=D(s.y,s.m,s.d);else if(!edit)cur=D(cur.getFullYear(),s.m,s.d);refresh();
+  },1000)}
+ };
  const del=o.querySelector('.kdel');if(del)del.onclick=()=>{const i=E.findIndex(e=>e.id===ev.id),gone=E.splice(i,1)[0];close();refresh();
-  const p=document.createElement('div');p.className='kpill';p.style.top=(ph.scrollTop+ph.clientHeight-64)+'px';p.innerHTML='Date supprimée <button type="button">ANNULER</button>';ph.appendChild(p);const t=setTimeout(()=>p.remove(),5000);p.querySelector('button').onclick=()=>{clearTimeout(t);E.splice(i,0,gone);p.remove();refresh()}}}
+  if(gone?.t==='psy')updatePsyCalendar();
+  const p=document.createElement('div');p.className='kpill';p.style.top=(ph.scrollTop+ph.clientHeight-64)+'px';p.innerHTML='Date supprimée <button type="button">ANNULER</button>';ph.appendChild(p);const t=setTimeout(()=>p.remove(),5000);p.querySelector('button').onclick=()=>{clearTimeout(t);E.splice(i,0,gone);if(gone?.t==='psy')updatePsyCalendar();p.remove();refresh()}}}
 show('m');
-window.__calOpen=openSheet;window.__calE=E;window.__calDay=d=>{cur=new Date(d);show('j')};
+function updatePsyCalendar(){window.__enPsyBridge?.refreshCalendar();window.__vaultAutosave?.();}
+window.__calOpen=openSheet;window.__calE=E;window.__enCalRefresh=refresh;window.__calDay=d=>{cur=new Date(d);show('j')};
 /* accès depuis l'accueil */
 const cw=$('calw');if(cw)cw.addEventListener('click',e=>{if(e.target.closest('button'))return;goTo('calp')});
 })();</script>
@@ -6822,16 +6938,18 @@ reset('first');{const saved=window.__enLive&&window.__enLive('psy',psySnapshot);
 const inbox={notes:S.notes,prep:S.prep};
 const calendar=()=>window.__calE||[];
 const afterModule=()=>window.__enPsyAfter;
-const sessionRoute=()=>S.stack.findLast(route=>route.v==='session');
+const sessionRoute=()=>S.stack.findLast(route=>route.v==='session'||route.v==='archive');
 const activeSession=()=>afterModule()?.find(sessionRoute()?.id);
 const cardPosition={};
 function sessionPreparation(){
  const session=activeSession();if(!session)return inbox;
  if(!session.preparation){
+  if(session.completed)return inbox;
   const includeInbox=sessionRoute().includeInbox;
   const prep=includeInbox?JSON.parse(JSON.stringify({...inbox.prep,stars:[...inbox.prep.stars]})):newPrep();
   const notes=includeInbox?JSON.parse(JSON.stringify(inbox.notes)):[];
   session.preparation={notes,prep};
+  if(includeInbox&&prep.writing){delete inbox.prep.writing;window.__vaultAutosave?.();}
  }
  const stars=session.preparation.prep.stars;
  if(!(stars instanceof Set))session.preparation.prep.stars=new Set(stars||[]);
@@ -6854,15 +6972,16 @@ function openSession(id,shortcut){
  const item=id==='next'?afterModule().appointment(next,true):afterModule().find(id);
  if(!item)return;
  if(item.completed){go('archive',{id:item.id});return}
- const includeInbox=Boolean(next&&afterModule().appointment(next)?.id===item.id);
+ const includeInbox=id==='next'||Boolean(next&&afterModule().appointment(next)?.id===item.id);
  const tab=shortcut==='mode'||!shortcut&&window.__enPsyHome.hasModeNotes(item)?'pendant':
   shortcut==='apres'||!shortcut&&!includeInbox?'apres':'avant';
  S.stack.push({v:'session',id:item.id,tab,includeInbox});
- if(shortcut==='prep')go('prep0');
+ if(shortcut==='prep'){sessionPreparation();go('avant-writing');}
  else {render(1);if(shortcut==='mode')openMS()}
 }
 function openPsyPage(page){
  if(!PSY_PAGES[page]||cur().v==='section'&&cur().page===page)return;
+ if(page==='avant'&&!ph.classList.contains('psy-approved-active')){psySessions();if(upcomingPsy()){openSession('next');return;}}
  if(ph.classList.contains('psy-approved-active')){window.__enApprovedPsy.save().then(()=>{S.stack=[];go('section',{page})}).catch(()=>{});return}
  go('section',{page});
 }
@@ -6893,20 +7012,43 @@ const idea=k=>`<button class="ps-idea" data-a="hint" data-k="${k}">· une idée 
 const fold=(k,lab,n,body)=>`<button class="ps-fold" data-a="fold" data-k="${k}"><span>${lab}</span><span>${n} ${S.ph&&S.ph[k]?'⌃':'⌄'}</span></button>${S.ph&&S.ph[k]?body:''}`;
 
 /* ---------- AVANT ---------- */
-function tAvant(scoped=false){
- const empty=S.notes.length?'':`<div class="ps-empty"><p class="ps-s">Rien à aborder pour l'instant.<br>Tes notes s'ajouteront ici au fil des jours.</p></div>`;
- const entry=scoped?'<button type="button" class="ps-btn" data-a="prepgo">Préparer ma séance</button>':window.__enPsyEph();
- return entry+empty+aborder();
+function tAvant(scoped=false, archived=false){
+ const avant=window.__enPsyAvant;
+ const next=scoped?null:upcomingPsy();
+ const item=activeSession()||(next&&afterModule().appointment(next));
+ const date=item?.date||(next?localSessionDate(next.dt):null);
+ const hasArchive=Boolean(item?.preparation&&avant.entries(item.preparation.prep).length);
+ const topics=archived?(item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[]):S.notes;
+ const stars=archived?new Set(item?.preparation?.prep?.stars||[]):S.prep.stars;
+ const priority=topics.filter(note=>stars.has(note.id)||note.star);
+ const icon=name=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
+ const star=(note, on)=>archived?'':`<button type="button" class="en-avant-star" data-a="star" data-i="${esc(note.id)}" aria-label="${on?'Retirer des':'Ajouter aux'} priorités : ${esc(note.t)}">${icon('star')}</button>`;
+ const topic=(note, cls)=>archived?`<span class="${cls}">${esc(note.t)}</span>`:
+  `<button type="button" class="${cls}" data-a="norig" data-i="${esc(note.id)}">${esc(note.t)}</button>`;
+ const byTheme=new Map();
+ for(const note of topics){
+  if(priority.includes(note))continue;
+  const theme=note.theme||({'PAGE':'Journal intime','NOTE':'Mes notes','SÉANCE':'Séances','MON SUIVI':'Mon suivi','MON IA':'Avec l’IA'})[note.o]||note.o||'Mes notes';
+  if(!byTheme.has(theme))byTheme.set(theme,[]);
+  byTheme.get(theme).push(note);
+ }
+ return `<div class="en-avant-overview">
+  ${avant.dateLine(date,{editable:Boolean(date)})}
+  ${archived?hasArchive?`<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>`:'':
+   '<button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>'}
+  ${!archived||priority.length?`<section class="en-avant-priorities"><h3>${icon('bookmark')}Mes priorités</h3>
+    <p>Ce que j’aimerais lui confier en priorité…</p>
+    <ol>${priority.map((note,index)=>`<li class="en-avant-priority"><span class="en-avant-priority-number">${String(index+1).padStart(2,'0')}</span>${topic(note,'en-avant-priority-topic')}${star(note,true)}</li>`).join('')}</ol>
+  </section>`:''}
+  ${!archived||byTheme.size?`<section class="en-avant-other"><h3>À aborder</h3>${!topics.length?'<p class="ps-s">Rien à aborder pour l’instant.</p>':''}${[...byTheme].map(([theme,notes])=>`<section><h4>${esc(theme)}</h4>
+    ${notes.map(note=>`<div class="ps-li">${archived?'':`<button type="button" class="ck${note.ck?' on':''}" data-a="nck" data-i="${esc(note.id)}" aria-label="Sujet abordé" aria-pressed="${Boolean(note.ck)}"></button>`}
+     ${topic(note,'tx')}${star(note,false)}</div>`).join('')}</section>`).join('')}
+    ${!archived&&S.addNote?`<div class="ps-li"><label class="en-sr" for="psnewnote">Nouveau sujet</label><input class="tx" id="psnewnote" placeholder="ce que je veux lui dire…"><button type="button" data-a="avant-save-note" aria-label="Ajouter le sujet">${icon('check')}</button></div>`:''}
+    ${archived?'':'<button type="button" class="ps-add" data-a="addnote">+ ajouter une note</button>'}</section>`:''}</div>`;
 }
 function sessionTextList(title, values){
  const lines=values.filter(text=>typeof text==='string'&&text.trim());
  return lines.length?`<section class="psy-session-context"><h3>${title}</h3><ul>${lines.map(text=>`<li>${esc(text)}</li>`).join('')}</ul></section>`:'';
-}
-function sessionPreparedText(item, shownTopics=[]){
- const {notes,prep}=item.preparation||{};
- const topics=[...new Set([...(notes||[]).map(note=>note.t),...item.topics.map(topic=>topic.text)])];
- return sessionTextList('Mes sujets préparés',topics.filter(text=>!shownTopics.includes(text)))+
-  sessionTextList('Ma préparation',[prep?.start,prep?.gen,...Object.values(prep?.by||{})]);
 }
 function sessionDuring(item, archived){
  const notes=[...item.notes.map(note=>note.text),item.modeDraft?.note];
@@ -7004,7 +7146,7 @@ function openMS(){
  const questions=S.mode==='first'?pratQ().filter(q=>S.first.p['pr_'+q.k]).map(q=>({id:'question:'+q.k,t:q.t})):[];
  const prep=sessionPreparation();
  item.modeDraft||=item.finishedModeDraft?JSON.parse(JSON.stringify(item.finishedModeDraft)):
-  {...session.newDraft(prep.notes,prep.prep.stars,first,questions),date:item.date};
+  {...session.newDraft(prep.notes,prep.prep.stars,first,[...questions,...window.__enPsyAvant.modeTopics(prep.prep)]),date:item.date};
  window.__vaultAutosave?.();
  closeSheet(1);unlock();
  const overlay=document.createElement('div');
@@ -7177,9 +7319,10 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
  return h}
 
 /* ---------- rendu ---------- */
-const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
+const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE','avant-writing':'PRÉPARER MA SÉANCE','avant-recap':'PRÉPARER MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
 const PSY_PAGES={avant:['AVANT',tAvant],apres:['APRÈS',tApres],pas:['MES PETITS PAS',tPas],seances:['HISTORIQUE DES SÉANCES',tSeances],evol:['MON ÉVOLUTION',tEvol]};
-function render(top){const c=cur();ph.dataset.psyRoute=c.v;if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='',cards;
+function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('data-avant-ai');
+ if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='',cards;
  if(c.v==='psyhome'){
   const sessions=psySessions(),next=upcomingPsy(),home=window.__enPsyHome;
   const upcoming=next&&{session:afterModule().appointment(next),date:localSessionDate(next.dt),time:next.e.h==null?null:String(next.e.h).padStart(2,'0')+':'+String(next.e.mi||0).padStart(2,'0')};
@@ -7191,17 +7334,21 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;if(window.__enApprove
   const item=afterModule()?.find(c.id);
   if(!item)return back();
   const tab=c.tab||(archived?'apres':'avant');
-  const date=new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const date=item.date?new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
   h=`<nav class="psy-session-tabs" aria-label="Parcours de la séance">${[['avant','Avant'],['pendant','Pendant'],['apres','Après']].map(([key,label])=>
     `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}><span>${label}</span></button>`).join('')}</nav>`;
   if(tab==='apres')h+=tApres();
+  else if(tab==='avant'){h+=tAvant(true,archived);ph.dataset.avantAi='';}
   else{
-   const content=tab==='pendant'?sessionDuring(item,archived):
-    archived?sessionPreparedText(item):tAvant(true)+sessionPreparedText(item,S.notes.map(note=>note.t));
-   if(content)h+=`<p class="psy-session-date">${date}</p>`+content;
+   const content=sessionDuring(item,archived);
+   if(content)h+=(date?`<p class="psy-session-date">${date}</p>`:'')+content;
   }
  }
- else if(c.v==='section'){if(c.page==='seances'||c.page==='evol')psySessions();h=PSY_PAGES[c.page][1]()}
+ else if(c.v==='avant-writing'||c.v==='avant-recap'){
+  h='<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
+ }
+ else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
+  h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
  TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
@@ -7210,10 +7357,24 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;if(window.__enApprove
  if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,
   review:c.review,onSelect:openSession,onExit:c.id?back:null,onConfirm:window.__enPsyBridge.exit,
   onViewChange:view=>{c.review=view==='review'}});
+ const writer=B.querySelector('[data-psy-avant-writing]');
+ if(writer){
+  const item=activeSession(), prep=item?.completed?item.preparation?.prep:sessionPreparation().prep;
+  const next=item?null:upcomingPsy();
+  const date=item?.date||(next?localSessionDate(next.dt):null);
+  const switchTo=view=>{c.v=view;render(1);B.querySelector('[data-psy-avant-writing] h3')?.focus({preventScroll:true})};
+  const savePreparation=()=>window.__vaultAutosave?.();
+  if(c.v==='avant-writing')window.__enPsyAvant.mount(writer,{date,prep,save:savePreparation,review:()=>switchTo('avant-recap')});
+  else window.__enPsyAvant.mountRecap(writer,{date,prep,edit:item?.completed?null:()=>switchTo('avant-writing')});
+ }
+ if(ph.hasAttribute('data-avant-ai')||c.v==='session'&&c.tab==='avant')window.__enPsyIcons?.(B);
  if(top)ph.scrollTop=0;
  const tb=$('pstabs');if(tb){const o=tb.querySelector('.on');if(o)tb.scrollLeft=o.offsetLeft-60}
  B.querySelectorAll('[data-col]').forEach(c=>c.scrollLeft=c.scrollWidth);
- const nn=$('psnewnote');if(nn){nn.focus();nn.onkeydown=e=>{if(e.key==='Enter'&&nn.value.trim()){S.notes.push({id:'n'+Date.now(),t:nn.value.trim(),o:'NOTE',pg:'MA NOTE · '+new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'}).toUpperCase(),txt:esc(nn.value.trim()),ck:0});S.addNote=0;window.__vaultAutosave?.();render()}if(e.key==='Escape'){S.addNote=0;render()}};nn.onblur=()=>{if(!nn.value.trim()){S.addNote=0;setTimeout(()=>{if(nn.isConnected)render()},120)}}}
+ const nn=$('psnewnote');if(nn){nn.focus();nn.onkeydown=e=>{
+  if(e.key==='Enter'){e.preventDefault();saveAvantNote()}
+  if(e.key==='Escape'){S.addNote=0;render()}
+ };}
  const ns=$('psnewsj');if(ns)ns.onkeydown=e=>{if(e.key==='Enter'&&ns.value.trim()){S.ap.parler.extra.push(ns.value.trim());S.ap.parts.parler=1;render()}};
  const pq=$('psq');if(pq)pq.oninput=()=>{S.q=pq.value;const p=pq.selectionStart;render();const n=$('psq');n.focus();n.setSelectionRange(p,p)};
  const pm=$('pasmot');if(pm)pm.onkeydown=e=>{if(e.key==='Enter'){const p=S.pas.find(x=>x.id===S.pasYay);if(p){p.done=1;p.feel=pm.value.trim()||p.feel;p.day='AUJOURD\'HUI';S.pasYay=null;render()}}};
@@ -7235,9 +7396,16 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
  if(f==='sv.mo'||f==='sv.an'||f==='sv.dj'||f==='sv.dm'){const a=document.activeElement,pos=a.selectionStart;render();const n=B.querySelector(`[data-f="${f}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}});
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t);if(/^(star|nck|rdnext|rdok|keep)$/.test(t.dataset.a))window.__vaultAutosave?.()});
-BK.addEventListener('click',e=>{if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
+BK.addEventListener('click',e=>{if(cur().v==='avant-recap'&&!activeSession()?.completed){e.stopImmediatePropagation();cur().v='avant-writing';render(1);return}if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
 
 /* ---------- actions ---------- */
+function saveAvantNote(){
+ const input=$('psnewnote'),text=input?.value.trim();
+ if(!text){input?.focus();return}
+ S.notes.push({id:'n'+crypto.randomUUID(),t:text,o:'NOTE',pg:'MA NOTE',txt:esc(text),ck:0});
+ S.addNote=0;window.__vaultAutosave?.();render();
+ B.querySelector('[data-a="addnote"]')?.focus();
+}
 function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  switch(a){
  case'psy-page':openPsyPage(d.k);break;
@@ -7245,12 +7413,20 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'session-archive':case'seopen':openArchive(d.i);break;
  case'session-tab':cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
- case'prep':case'prepgo':if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('prep0');break;
+ case'prep':case'prepgo':if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');break;
+ case'avant-save-note':saveAvantNote();break;
+ case'avant-archive-writing':go('avant-recap');break;
+ case'avant-ai':window.__enPsyAvant.openAI(ph,t);break;
+ case'avant-date':{
+  const next=activeSession()?null:upcomingPsy(), item=activeSession()||afterModule().appointment(next);
+  window.__enPsyDate.open(ph,t,{item,next,calendar:calendar(),history:SEANCES,onSave:()=>{render();B.querySelector('[data-a="avant-date"]')?.focus()}});
+  break;
+ }
  case'prep1':S.prep.step=1;S.prep.ni=0;go('prep');break;
  case'perdue':go('ia',{k:'prep'});break;
  case'ni':S.prep.ni=+d.i;render();break;
  case'plume':window.__plumeBub?window.__plumeBub(ph,ph.querySelector('.sbplume')):toast('Plume t\'écoute');break;
- case'star':{const s=S.prep.stars;S.prep.too=0;if(s.has(d.i))s.delete(d.i);else if(s.size>=3)S.prep.too=1;else s.add(d.i);S.notes.forEach(n=>n.star=s.has(n.id));render();break}
+ case'star':{const s=S.prep.stars;S.prep.too=0;if(s.has(d.i)||S.notes.some(n=>n.id===d.i&&n.star))s.delete(d.i);else if(s.size>=3)S.prep.too=1;else s.add(d.i);S.notes.forEach(n=>{if(n.id===d.i)n.star=s.has(n.id)});render();if(S.prep.too)toast('Trois priorités sont déjà sélectionnées');[...B.querySelectorAll('[data-a="star"]')].find(b=>b.dataset.i===d.i)?.focus({preventScroll:true});break}
  case'ptab':S.prep.tab=d.k;render();break;
  case'pnext':if(S.prep.step<4){S.prep.step++;render(1)}break;
  case'pprev':if(S.prep.step>1){S.prep.step--;render(1)}break;
@@ -7395,8 +7571,12 @@ function enVrac(){const a=S.ap,v=String(a.vrac||'').trim();if(!v){(window.__enTo
  const em=Object.keys(E).filter(e=>new RegExp('\\b'+e.split(' ')[0].slice(0,-1),'i').test(v));if(em.length&&!a.ressens.sel.size){a.ressens.sel=new Set(em);a.ressens.star=em[0]}return true}
 
 /* ---------- intégration avec le journal et les formulaires ---------- */
-window.__psyAbord=(t,pg,txt)=>{inbox.notes.push({id:'n'+Date.now(),k:'JOURNAL',t,o:'PAGE',pg,txt:String(txt||t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),ck:0});window.__vaultAutosave?.();if(cur().v==='section'&&cur().page==='avant')render()};
-window.__enPsyBridge={root:ph,body:B,snapshot:psySnapshot,openMode:openMS,openPage:openPsyPage,redraw:()=>render(1),openEntry(){S.stack=[{v:'intro'}];render(1)},exit(){S.stack=[];cardPosition.id=undefined;render(1)},
+window.__psyAbord=(t,pg,txt)=>{const note={id:'n'+crypto.randomUUID(),k:'JOURNAL',t,o:'PAGE',pg,txt:esc(txt||t),ck:0};
+ inbox.notes.push(note);const next=upcomingPsy();const item=next&&afterModule().appointment(next);
+ if(item?.preparation&&!item.completed)item.preparation.notes.push({...note});
+ window.__vaultAutosave?.();if(cur().v==='section'&&cur().page==='avant'||cur().v==='session'&&cur().tab==='avant')render()};
+
+window.__enPsyBridge={root:ph,body:B,snapshot:psySnapshot,openMode:openMS,openPage:openPsyPage,redraw:()=>render(1),refreshCalendar:psySessions,openEntry(){S.stack=[{v:'intro'}];render(1)},exit(){S.stack=[];cardPosition.id=undefined;render(1)},
  home(){const close=()=>window.__enPsyBridge.exit();if(ph.classList.contains('psy-approved-active'))window.__enApprovedPsy.save().then(close).catch(()=>{});else close()},
  syncPreparation(items,first){
   const keys={topics:'pq_a','attentes:attentes':'at_a','histoire:meaning':'hi_a',confort:'pe_a'};
@@ -8079,7 +8259,10 @@ document.querySelectorAll('.phone').forEach(ph=>{if(['home','mj','psy','mvfiche'
  ph.addEventListener('scroll',()=>requestAnimationFrame(pos),{passive:true})});
 /* Espace psy : bouton mode séance, à droite avant Plume */
 const P=$('psy');if(P){const pl=P.querySelector('.sbhas .sbplume'),R=pl&&pl.parentNode;if(pl){const b=document.createElement('button');b.type='button';b.className='psmsb';b.setAttribute('aria-label','Mode séance');b.innerHTML='<img class="j" src="illus/menu/psy.webp" alt=""><img class="n" src="illus/menu/psy-nuit.webp" alt="">';pl.before(b);R.classList.add('pdsbr');
- b.onclick=e=>{e.stopPropagation();window.__enPsyBridge?.openMode()}}}
+ b.onclick=e=>{e.stopPropagation();window.__enPsyBridge?.openMode()};
+ const ai=document.createElement('button');ai.type='button';ai.className='en-avant-ai-launch';ai.dataset.a='avant-ai';
+ ai.setAttribute('aria-label','Un coup de pouce pour écrire avec l’IA');ai.innerHTML='<span aria-hidden="true">IA</span>';pl.before(ai);
+}}
 /* pages des onglets : pas de ‹ à la racine, boutons du haut fixes, Plume glisse en bas à droite */
 const ROOT={mj:'MON JOURNAL',psy:'MON ESPACE PSY',mvfiche:null};
 ['mj','psy','mvfiche'].forEach(id=>{const ph=$(id);if(!ph)return;const hd=ph.querySelector('.sbhas');if(!hd)return;
@@ -8403,7 +8586,8 @@ if(hedt){hedt.setAttribute('role','button');hedt.tabIndex=0;hedt.setAttribute('a
 /* ligne du prochain événement — même règle de récurrence que Mon calendrier */
 function occurs(e,dt){if(e.t==='anniv'||(e.t==='moi'&&e.chaque))return e.m===dt.getMonth()&&e.d===dt.getDate()&&(!e.y||dt.getFullYear()>=e.y);
  const s=new Date(e.y,e.m,e.d);if(e.t==='psy'&&e.rep){if(dt<s)return false;const days=Math.round((dt-s)/864e5);if(e.rep===1)return days%7===0;if(e.rep===2)return days%14===0;if(e.rep===3)return dt.getDate()===e.d}return same(s,dt)}
-const evOn=dt=>(window.__calE||[]).filter(e=>occurs(e,dt));
+const evOn=dt=>[...(window.__calE||[]).filter(e=>e.t!=='psy'&&occurs(e,dt)),
+ ...window.__enPsyDate.onDate(window.__calE||[],window.__enPsyDate.iso(dt))];
 const at=(e,dt,h,mi)=>new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),h,mi||0);
 const start=(e,dt)=>e.h==null?null:at(e,dt,e.h,e.mi);
 const end=(e,dt)=>e.h==null?null:e.hf!=null?at(e,dt,e.hf,e.mf):start(e,dt);

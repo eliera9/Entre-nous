@@ -174,8 +174,9 @@
     function currentField() {
       const pane = get('[data-pane]:not([hidden])');
       const activeField = pane && activeFields.get(pane);
-      if (activeField && !activeField.closest('[hidden]')) return activeField;
-      return pane && [...pane.querySelectorAll(fieldSelector)].find(field => !field.closest('[hidden]'));
+      const scope = pane?.querySelector('[data-format-active]') || pane;
+      if (activeField && scope?.contains(activeField) && !activeField.closest('[hidden]')) return activeField;
+      return scope && [...scope.querySelectorAll(fieldSelector)].find(field => !field.closest('[hidden]'));
     }
 
     function refresh() {

@@ -33,7 +33,9 @@ test('seules les réponses choisies et les sujets préparés passent en Mode sé
 test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', () => {
   const avant = html.slice(html.indexOf('function tAvant('), html.indexOf('function aborder()'));
   const render = runInNewContext(avant + ';tAvant', {
-    S: { mode: 'first', notes: [] }, window: { __enPsyEph: () => '' }, aborder: () => '',
+    S: { mode: 'first', notes: [], prep: { stars: new Set() } },
+    activeSession: () => null, upcomingPsy: () => null,
+    window: { __enPsyAvant: { dateLine: () => '' } },
   });
   assert.match(render(), /Rien à aborder/);
   assert.doesNotMatch(render(), /DEPUIS TA DERNIÈRE SÉANCE|Thomas/);

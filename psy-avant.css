@@ -1,0 +1,163 @@
+#psy .en-avant-overview, #psy [data-psy-avant-writing] { width: min(100%, 460px); margin-inline: auto; }
+#psy .en-avant-overview { position: relative; }
+#psy .en-avant-date, #psy .en-avant-writing-date {
+  display: flex; justify-content: center; align-items: center; gap: 6px;
+  min-block-size: 22px; margin: 4px 0 0; color: var(--sacc);
+  font: 500 15px/1.25 'EN Cormorant SC', Georgia, serif; letter-spacing: .075em; text-align: center;
+}
+#psy .en-avant-date svg, #psy .en-avant-writing-date svg { flex: none; width: 12px; height: 12px; stroke-width: 1.4; }
+#psy .en-avant-writing-date {
+  min-height: 44px; margin: 0; color: var(--en-muted); letter-spacing: normal;
+  font: 500 15px/1.35 'EN Cormorant Garamond', Georgia, serif;
+}
+#psy .en-avant-writing-date svg { width: 14px; height: 14px; }
+#psy .en-avant-edit-date {
+  position: absolute; inset-inline-end: 0; inset-block-start: 22px; display: grid; place-items: center;
+  width: 44px; height: 44px; padding: 0; color: var(--sacc);
+}
+#psy .en-avant-edit-date svg { width: 15px; height: 15px; stroke-width: 1.4; }
+#psy .en-avant-prepare {
+  display: grid; place-items: center; width: fit-content; min-height: 44px; margin: 8px auto 22px; padding: 8px 17px;
+  border-radius: 999px; box-shadow: inset 0 0 0 1px var(--sacc); color: var(--sacc);
+  font: 500 11px/1.25 'EN Cormorant SC', Georgia, serif; letter-spacing: .16em;
+}
+#psy .en-avant-priorities h3, #psy .en-avant-other h3 {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 4px; color: var(--sink);
+  font: 500 18px/1.25 'EN Cormorant SC', Georgia, serif;
+}
+#psy .en-avant-priorities h3 svg { width: 15px; height: 15px; color: var(--sacc); stroke-width: 1.35; }
+#psy .en-avant-priorities p { margin: 0 0 8px; color: var(--smuted); font: italic 500 16px/1.25 'EN Cormorant Garamond', Georgia, serif; }
+#psy .en-avant-priorities ol { list-style: none; padding: 0; margin: 0; }
+#psy .en-avant-priority {
+  display: grid; grid-template-columns: 24px minmax(0, 1fr) 44px; align-items: center; min-block-size: 44px; gap: 5px;
+}
+#psy .en-avant-priority + .en-avant-priority { border-top: 1px solid var(--sline); }
+#psy .en-avant-priority-number { font: 500 12px/1 'EN Cormorant SC', Georgia, serif; color: var(--sacc); }
+#psy .en-avant-priority-topic { padding: 8px 0; text-align: left; font: 500 16px/1.25 'EN Cormorant Garamond', Georgia, serif; overflow-wrap: anywhere; }
+#psy .en-avant-star { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; color: var(--sacc); }
+#psy .en-avant-star svg { width: 13px; height: 13px; stroke-width: 1.4; }
+#psy .en-avant-priority .en-avant-star svg { fill: var(--sacc); }
+#psy .en-avant-other { margin-block-start: 18px; }
+#psy .en-avant-other h4 { margin: 10px 0 2px; color: var(--smuted); font: 500 15px/1.2 'EN Cormorant SC', Georgia, serif; }
+#psy .en-avant-other .ps-li .tx { overflow-wrap: anywhere; }
+
+#psy [data-psy-avant-writing] [data-session-editor] { container-type: inline-size; }
+#psy [data-psy-avant-writing] .en-return-heading > .en-heading {
+  font: 500 20px/1.2 'EN Cormorant SC', Georgia, serif;
+  font-size: calc(clamp(19px, 6.4cqw, 26px) - 2px); text-wrap: balance; letter-spacing: .02em;
+}
+#psy .en-avant-modes {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; margin: 0 0 18px;
+  padding: 4px; border: 1px solid var(--en-line); border-radius: 28px;
+}
+#psy .en-avant-modes button {
+  display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px;
+  padding: 7px 4px; border-radius: 22px; font: 500 clamp(13px, 4.65cqw, 17px)/1.12 'EN Cormorant Garamond', Georgia, serif;
+}
+#psy .en-avant-modes button[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--sacc); }
+#psy .en-avant-modes svg { width: 15px; height: 15px; flex: none; stroke-width: 1.2; }
+#psy .en-avant-carousel + .en-avant-carousel { margin-top: 21px; padding-top: 15px; border-top: 1px solid var(--sline); }
+#psy .en-avant-carousel > h4 {
+  display: flex; align-items: center; gap: 9px; margin: 0 0 11px; color: var(--sink);
+  font: 500 18px/1.2 'EN Cormorant SC', Georgia, serif; overflow-wrap: anywhere;
+}
+#psy .en-avant-carousel > h4 svg { width: 15px; height: 15px; flex: none; stroke-width: 1.35; }
+#psy .en-avant-carousel .en-rubric-title { grid-template-columns: minmax(0,1fr) max-content 36px; gap: 3px; }
+#psy .en-avant-carousel .en-rubric-title h5 {
+  margin: 0; color: var(--en-ink); font: 500 16px/1.18 'EN Cormorant SC', Georgia, serif;
+  text-wrap: balance; overflow-wrap: anywhere;
+}
+#psy .en-avant-carousel .en-rubric-nav { margin-bottom: 13px; }
+#psy .en-avant-carousel[data-format-active] .avant-extra-aa { display: none; }
+#psy .en-avant-carousel .avant-extra-aa { font: italic 500 15px/1 'EN Cormorant Garamond', Georgia, serif; }
+#psy [data-psy-avant-writing] .en-free-box { position: relative; }
+#psy [data-psy-avant-writing] .en-free-box [data-tools-anchor] { position: absolute; inset: 0 0 auto auto; }
+#psy [data-psy-avant-writing] .en-free-box .en-text { padding-inline-end: 46px; }
+#psy [data-psy-avant-writing] .en-recap-rubric { overflow-wrap: anywhere; }
+#psy :is(.en-avant-overview, [data-psy-avant-writing],.en-avant-dialog) :is(button, a):focus-visible {
+  outline: 2px solid var(--sacc, #DDB3BB); outline-offset: -2px;
+}
+
+#psy .sbhas .en-avant-ai-launch {
+  display: none; width: 34px; min-height: 44px; flex: 0 0 34px; padding: 0; place-items: center; color: var(--sacc);
+}
+#psy[data-avant-ai] .sbhas .en-avant-ai-launch { display: grid; }
+#psy .en-avant-ai-launch span {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  background: color-mix(in srgb, var(--sacc) 18%, var(--sbg)); font: 500 12px/1 'EN Cormorant SC', Georgia, serif;
+}
+#psy .en-avant-dialog {
+  --sbg: #2A1E26; --sink: #F1DDE0; --smuted: #B88E9C; --sacc: #DDB3BB; --sline: #5A4250;
+  position: fixed; inset: auto 0 0; box-sizing: border-box; margin: 0 auto;
+  width: min(100%, 460px); max-height: calc(100dvh - 12px); padding: 14px 18px max(20px, env(safe-area-inset-bottom));
+  border: 1px solid var(--sline); border-radius: 38px 38px 0 0; background: var(--sbg); color: var(--sink);
+  color-scheme: dark; overscroll-behavior: contain; font: 500 16px/1.3 'EN Cormorant Garamond', Georgia, serif;
+}
+#psy .en-avant-dialog::backdrop { background: rgb(24 16 22 / 65%); }
+#psy .en-avant-dialog [hidden] { display: none !important; }
+#psy .en-avant-dialog header { display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: center; min-height: 73px; gap: 0; }
+#psy .en-avant-dialog h3 { margin: 0; text-align: center; color: var(--sink); font: 500 20px/1.15 'EN Cormorant SC', Georgia, serif; }
+#psy .en-avant-dialog header button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; color: var(--sacc); }
+#psy .en-avant-dialog header button svg { width: 16px; height: 16px; stroke-width: 1.4; }
+#psy .en-avant-ai h3 { position: relative; white-space: nowrap; }
+#psy .en-avant-ai h3::before, #psy .en-avant-ai h3::after { content: ''; position: absolute; left: 50%; top: calc(100% + 7px); }
+#psy .en-avant-ai h3::before {
+  width: 58px; height: 1px; transform: translateX(-50%);
+  background: linear-gradient(to right,var(--sacc) 42%,transparent 42% 58%,var(--sacc) 58%);
+}
+#psy .en-avant-ai h3::after { width: 4px; height: 4px; background: var(--sacc); transform: translate(-50%,-40%) rotate(45deg); }
+@media (max-width: 340px) { #psy .en-avant-ai h3 span { display: inline-block; transform: scaleX(.88); } }
+#psy .en-avant-ai-paths { position: relative; padding: 0; margin: 8px 0 0; list-style: none; }
+#psy .en-avant-ai-paths::before { content: ''; position: absolute; inset: 30px auto 30px 13px; width: 1px; background: var(--sline); }
+#psy .en-avant-ai-paths button {
+  display: grid; grid-template-columns: 27px minmax(0,1fr) 16px; gap: 8px;
+  align-items: center; width: 100%; min-height: 60px; padding: 7px 0; text-align: start;
+}
+#psy .en-avant-ai-icon { position: relative; display: grid; place-items: center; height: 27px; border: 1px solid var(--sline); border-radius: 50%; background: var(--sbg); }
+#psy .en-avant-ai-paths strong { display: block; color: var(--sink); font: 500 16px/1.2 'EN Cormorant SC', Georgia, serif; }
+#psy .en-avant-ai-paths small { display: block; color: var(--sacc); font: italic 500 12px/1.22 'EN Cormorant Garamond', Georgia, serif; }
+#psy .en-avant-ai-paths svg { width: 15px; height: 15px; color: var(--sacc); stroke-width: 1.4; }
+#psy .en-avant-ai h4 { margin: 0; font: 500 18px/1.25 'EN Cormorant SC', Georgia, serif; }
+#psy .en-avant-ai textarea {
+  box-sizing: border-box; width: 100%; margin-block: 10px; padding: 9px 10px; border: 1px solid var(--sline);
+  border-radius: 8px; background: color-mix(in srgb,var(--sacc) 6%,var(--sbg)); color: var(--sink); font: inherit;
+}
+#psy .en-avant-ai-actions, .en-psy-date-actions { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+#psy .en-avant-ai-actions :is(button,a), .en-psy-date-actions button {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 5px 8px;
+  color: var(--sacc); text-underline-offset: 3px; text-decoration: underline;
+}
+
+#psy .en-avant-overview .en-sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+}
+#psy .en-avant-overview input {
+  min-width: 0; background: transparent; color: var(--sink); border: 0; border-bottom: 1px solid var(--sline);
+  font: italic 500 16px/1.3 'EN Cormorant Garamond', Georgia, serif;
+}
+#psy .en-avant-overview [data-a="avant-save-note"] { min-width: 44px; min-height: 44px; color: var(--sacc); }
+#psy .en-avant-overview [data-a="avant-save-note"] svg { width: 16px; height: 16px; }
+#psy :is(.en-psy-date-dialog, .en-avant-ai) { overflow: auto; }
+.en-psy-date-dialog {
+  --sbg: #2A1E26; --sink: #F1DDE0; --smuted: #B88E9C; --sacc: #DDB3BB; --sline: #5A4250;
+  position: fixed; inset: auto 0 0; box-sizing: border-box; width: min(100%,460px); max-height: calc(100dvh - 12px);
+  margin: 0 auto; padding: 16px 20px max(20px, env(safe-area-inset-bottom)); border: 1px solid var(--sline);
+  border-radius: 24px 24px 0 0; background: var(--sbg); color: var(--sink); color-scheme: dark;
+  font: 500 16px/1.3 'EN Cormorant Garamond', Georgia, serif;
+}
+.en-psy-date-dialog::backdrop { background: rgb(24 16 22 / 65%); }
+.en-psy-date-dialog header { display: grid; grid-template-columns: minmax(0,1fr) 44px; align-items: center; }
+.en-psy-date-dialog h3 { margin: 0; font: 500 20px/1.2 'EN Cormorant SC', Georgia, serif; }
+.en-psy-date-dialog button { background: transparent; border: 0; color: var(--sacc); }
+.en-psy-date-dialog [data-close] { width: 44px; height: 44px; }
+.en-psy-date-dialog [data-close] svg { width: 16px; height: 16px; }
+.en-psy-date-dialog [hidden] { display: none !important; }
+.en-psy-date-dialog input {
+  display: block; box-sizing: border-box; width: 100%; min-height: 44px; margin: 4px 0;
+  padding: 5px 7px; background: transparent; color: var(--sink); border: 1px solid var(--sline);
+  border-radius: 6px; font: inherit;
+}
+.en-psy-date-times { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.en-psy-date-dialog :is([data-conflict], [data-error]) { color: var(--sacc); }
+.en-psy-date-dialog [data-error]:empty { display: none; }
+.en-psy-date-dialog button:disabled { opacity: .5; }

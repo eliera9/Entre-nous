@@ -617,7 +617,7 @@
   const newId = () => globalThis.crypto.randomUUID();
   const strings = values => values.filter(value => typeof value === 'string' && value.trim());
   const words = (session, key) => session.rubrics[key]?.paragraphs || [];
-  const calendarKey = (event, date) => 'cal:' + event.id + (event.rep ? ':' + date : '');
+  const calendarKey = (event, date) => 'cal:' + event.id + (event.rep ? ':' + (event.originalDate || date) : '');
   const calendarTime = event => event.h == null ? null :
     String(event.h).padStart(2, '0') + ':' + String(event.mi || 0).padStart(2, '0');
   const occurrenceOf = (event, date) => ({ date, key: calendarKey(event, date), time: calendarTime(event) });
@@ -633,7 +633,12 @@
       const [year, monthIndex, day] = [event.y, event.m, event.d].map(Number);
       const start = new Date(year, monthIndex, day, event.h ?? 0, event.mi ?? 0);
       if (!Number.isFinite(+start) || start.getDate() !== day) continue;
-      const add = date => out.push(occurrenceOf(event, dayKey(date)));
+      const add = date => {
+        const original = dayKey(date);
+        const move = event.psyMoves?.[original];
+        if (move && dayValue(move.date) > now) return;
+        out.push(occurrenceOf({ ...event, ...move, originalDate: original }, move?.date || original));
+      };
       if (event.rep === 3) {
         for (let offset = 0; ; offset++) {
           const month = new Date(year, monthIndex + offset, 1);
@@ -644,6 +649,10 @@
       } else if (event.rep === 1 || event.rep === 2) {
         for (const date = new Date(start); date <= now; date.setDate(date.getDate() + 7 * event.rep)) add(date);
       } else if (start <= now) add(start);
+      for (const [original, move] of Object.entries(event.psyMoves || {})) {
+        if (dayValue(original) > now && dayValue(move.date) <= now)
+          out.push(occurrenceOf({ ...event, ...move, originalDate: original }, move.date));
+      }
     }
     return out;
   }
@@ -731,16 +740,20 @@
     return true;
   }
 
-  function syncCalendar(state, calendar, now) {
+  function syncCalendar(state, calendar, now, history = []) {
     const occurrences = calendarOccurrences(calendar, now);
     const active = new Set(occurrences.map(item => item.key));
     for (const item of state.sessions) {
       if (!item.calendarKey || active.has(item.calendarKey)) continue;
-      const event = calendar.find(entry => entry.t === 'psy' && calendarKey(entry, item.calendarDate) === item.calendarKey);
+      const [, id, original] = item.calendarKey.split(':');
+      const event = calendar.find(entry => entry.t === 'psy' && String(entry.id) === id);
       if (!event) continue;
-      const day = new Date(item.calendarDate + 'T23:59:59');
+      const nominal = original || item.calendarDate;
+      const day = new Date(nominal + 'T23:59:59');
       const eventDay = new Date(event.y, event.m, event.d);
-      const occurrence = event.rep ? calendarOccurrences([event], day).find(entry => entry.date === item.calendarDate) :
+      const move = event.psyMoves?.[original];
+      const occurrence = event.rep ? move ? occurrenceOf({ ...event, ...move, originalDate: original }, move.date) :
+        calendarOccurrences([event], day).find(entry => entry.key === item.calendarKey) :
         Number.isFinite(+eventDay) && eventDay.getDate() === Number(event.d) && occurrenceOf(event, dayKey(eventDay));
       if (occurrence) {
         occurrences.push(occurrence);
@@ -755,9 +768,8 @@
       if (deleted.has(key)) continue;
       const current = state.sessions.find(item => item.calendarKey === key);
       if (current) {
-        if (current.date === current.calendarDate && current.date !== date && !current.completed) {
-          current.date = date;
-          current.calendarDate = date;
+        if (current.calendarDate !== date) {
+          setDate(current, date, history, { calendarDate: date });
           changed = true;
         }
         if (current.calendarTime !== time) { current.calendarTime = time; changed = true; }
@@ -792,11 +804,11 @@
       updateHistory(history, session);
       changed = true;
     }
-    if (syncCalendar(state, calendar, new Date()) || changed) save();
+    if (syncCalendar(state, calendar, new Date(), history) || changed) save();
     return state.sessions;
   }
 
-  function appointment(next, create = false) {
+  function appointment(next, create = false, persist = true) {
     if (!next) return null;
     const date = dayKey(next.dt);
     const key = calendarKey(next.e, date);
@@ -806,7 +818,7 @@
     const fields = { calendarKey: key, calendarDate: date, calendarTime: calendarTime(next.e) };
     const session = newSession(date, fields);
     state.sessions.push(session);
-    save();
+    if (persist) save();
     return session;
   }
 
@@ -885,6 +897,20 @@
     const index = history.findIndex(item => item.id === record.id);
     if (index < 0) history.unshift(record);
     else history[index] = record;
+  }
+
+  function setDate(session, date, history, fields = {}) {
+    if (!validDay(date)) return;
+    Object.assign(session, fields, { date });
+    if (session.modeDraft) session.modeDraft.date = date;
+    if (session.finishedModeDraft) session.finishedModeDraft.date = date;
+    if (session.completed) {
+      const existing = history.find(record => record.id === session.historyId || record.afterId === session.id);
+      if (existing) {
+        const { y, mo, j, jl } = toHistory(session);
+        Object.assign(existing, { date, y, mo, j, jl });
+      } else updateHistory(history, session);
+    }
   }
 
   function deleteSession(state, history, session) {
@@ -1212,7 +1238,8 @@
   }
 
   globalThis.__enPsyAfter = {
-    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent,
+    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
+    formatTemplate: prefix => template('format', prefix),
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),
     open: (id, recap) => controller?.host.isConnected && controller.open(id, recap),
