@@ -48,6 +48,17 @@
     ]],
   ];
   const rubrics = groups.flatMap(group => group[3]);
+  const placeholders = {
+    evenements: 'Un événement, une conversation ou un moment qui m’a marquée…',
+    essais: 'Un exercice, une habitude ou une façon de réagir que j’ai testée…',
+    reprendre: 'Un sujet laissé en suspens ou une idée qui m’est restée…',
+    ressenti: 'Mon humeur, mon énergie ou ce que je ressens en arrivant…',
+    recurrence: 'Une pensée, une émotion ou une situation qui se répète…',
+    commencer: 'La première chose que j’aimerais lui dire…',
+    sujets: 'Les sujets ou les situations dont j’aimerais lui parler…',
+    questions: 'Ce que j’aimerais lui demander ou éclaircir…',
+    attentes: 'Ce qui m’aiderait aujourd’hui…',
+  };
   const shortDate = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
   const labelDate = (date, short) => (short ? shortDate : fullDate).format(new Date(date + 'T12:00:00Z'));
@@ -99,7 +110,7 @@
 
   const formatButton = `<button type="button" class="en-format-toggle" data-format-toggle aria-label="Outils d’écriture" aria-expanded="false" aria-controls="psy-avant-format-tools-panel"><span class="en-format-aa" aria-hidden="true">Aa</span>${icon('x')}</button>`;
   const arrow = (key, label, name) => `<button type="button" class="en-arrow" data-${key} aria-label="${label}"><span>${icon(name)}</span></button>`;
-  function mount(host, { date, prep, save, review }) {
+  function mount(host, { date, prep, save, review, later }) {
     const draft = record(prep);
     host.innerHTML = `<section data-session-editor aria-labelledby="psy-avant-writing-title">
       <header class="en-return-heading">${dateLine(date, { short: true })}
@@ -114,12 +125,17 @@
       </div>
       <div id="psy-avant-guided" data-pane="guided" hidden></div>
       <div data-format-controls>${formatButton}<p class="en-format-feedback" data-format-feedback role="status"></p></div>
-      <div class="en-actions"><button type="button" class="en-main-action" data-view-recap>Voir le récap</button></div>
+      <div class="en-actions">
+        <button type="button" class="en-main-action" data-view-recap disabled>Voir le récap</button>
+        <button type="button" class="en-quiet-action" data-later>Reprendre plus tard</button>
+      </div>
     </section>`;
     const editor = host.firstElementChild;
     const get = selector => editor.querySelector(selector);
     const tools = get('[data-format-controls]');
     const toggle = get('[data-format-toggle]');
+    const recapButton = get('[data-view-recap]');
+    const laterButton = get('[data-later]');
     const toolbar = globalThis.__enPsyAfter.formatTemplate('psy-avant');
     const size = toolbar.querySelector('[data-change="fontSize"]');
     size?.closest('label')?.remove();
@@ -134,11 +150,14 @@
     for (const [key, title, symbol, items] of groups) {
       const group = el('section', 'en-avant-carousel');
       group.setAttribute('aria-labelledby', 'psy-avant-' + key);
+      group.setAttribute('aria-roledescription', 'carrousel');
       group.innerHTML = `<h4 id="psy-avant-${key}">${icon(symbol)}<span>${title}</span></h4>
-        <div class="en-rubric-nav">
+        <div class="en-rubric-nav" role="group" aria-label="Parcourir les rubriques">
           ${arrow('previous','Rubrique précédente','chevron-left')}
           <div class="en-rubric-title">
-            <h5 data-question></h5><span class="en-count" data-count aria-live="polite"></span><div data-tools-anchor></div>
+            <div class="en-rubric-progress" aria-live="polite" aria-atomic="true">
+              <h5 data-question></h5><span class="en-count" data-count></span>
+            </div><div data-tools-anchor></div>
           </div>
           ${arrow('next','Rubrique suivante','chevron-right')}
         </div><div data-questions></div>`;
@@ -164,11 +183,13 @@
           list.append(choice);
         }
         options.append(list);
-        const field = el('div','en-prose');
-        writing.prepareField(field, 'Écrire quelques mots…', label);
+        const box = el('div', 'en-free-box');
+        const field = el('div', 'en-text');
+        writing.prepareField(field, placeholders[id], label);
         writing.write(field, stored?.text || '', stored?.html || '');
         sections[id] = { section, field, list };
-        section.append(options, field);
+        box.append(field);
+        section.append(options, box);
         questions.append(section);
         controls.set(field, { id, group });
       }
@@ -183,8 +204,11 @@
       };
       let index = Math.min(items.length - 1, Math.max(0, draft.positions[key] | 0));
       const step = offset => {
-        index = Math.min(items.length - 1, Math.max(0, index + offset));
+        const nextIndex = index + offset;
+        if (nextIndex < 0 || nextIndex >= items.length) return;
+        index = nextIndex;
         draft.positions[key] = index;
+        formatting.close();
         show(index);
         activate(group);
         persist();
@@ -217,8 +241,15 @@
       persist();
     });
     let activeGroup;
+    let leaving = false;
+    const updateActions = () => {
+      const hasContent = entries({ ...prep, writing: draft }).length > 0;
+      recapButton.disabled = leaving || !hasContent;
+      laterButton.disabled = leaving;
+    };
     function persist() {
       prep.writing = draft;
+      updateActions();
       save();
     }
     function rememberAnswer(id) {
@@ -229,9 +260,12 @@
     }
     const anchors = [...body.querySelectorAll('[data-tools-anchor]')];
     for (const anchor of anchors) {
-      const button = el('button','en-format-toggle avant-extra-aa','Aa');
+      const button = el('button', 'en-format-toggle avant-extra-aa');
       button.type = 'button';
       button.setAttribute('aria-label','Outils d’écriture');
+      const label = el('span', 'en-format-aa', 'Aa');
+      label.setAttribute('aria-hidden', 'true');
+      button.append(label);
       button.addEventListener('click', () => {
         activate(anchor.closest('.en-avant-carousel'));
         toggle.click();
@@ -240,13 +274,15 @@
       anchor.append(button);
     }
     function activate(group) {
-      if (activeGroup === group) return;
-      formatting.close();
-      if (activeGroup) activeGroup.removeAttribute('data-format-active');
-      activeGroup = group;
-      group.toggleAttribute('data-format-active', true);
-      group.querySelector('[data-tools-anchor]').prepend(toggle);
-      group.querySelector('.en-rubric-nav').after(tools);
+      if (activeGroup !== group) {
+        formatting.close();
+        if (activeGroup) activeGroup.removeAttribute('data-format-active');
+        activeGroup = group;
+        group.toggleAttribute('data-format-active', true);
+        group.querySelector('[data-tools-anchor]').prepend(toggle);
+      }
+      const fieldBox = group.querySelector('.en-avant-answer:not([hidden]) .en-free-box');
+      if (fieldBox.nextElementSibling !== tools) fieldBox.after(tools);
       formatting.refresh();
     }
     body.addEventListener('focusin', event => {
@@ -269,14 +305,17 @@
     }
     for (const button of modeButtons) button.addEventListener('click', () => { mode(button.dataset.mode); persist(); });
     mode(draft.mode);
-    get('[data-view-recap]').addEventListener('click', async event => {
-      const button = event.currentTarget;
-      button.disabled = true;
+    updateActions();
+    async function exit(to) {
+      leaving = true;
+      updateActions();
       prep.writing = draft;
-      try { await save(); if (host.isConnected) review(); }
+      try { await save(); if (host.isConnected) to(); }
       catch { /* Le coffre affiche l’erreur et conserve l’écran de rédaction. */ }
-      finally { button.disabled = false; }
-    });
+      finally { leaving = false; updateActions(); }
+    }
+    recapButton.addEventListener('click', () => exit(review));
+    laterButton.addEventListener('click', () => exit(later));
     globalThis.__enPsyIcons?.(editor);
   }
 

@@ -2844,7 +2844,7 @@ figcaption{font-size:12px;color:var(--muted);text-align:center}
 #psy .ps-s{font:italic 14px/1.4 'Cormorant Garamond',Georgia,serif;color:var(--smuted);text-align:center}
 #psy .ps-h{display:flex;align-items:center;gap:8px;margin:20px 0 6px;font:500 10px/1 'Cormorant SC',Georgia,serif;letter-spacing:.18em;color:var(--sacc)}
 #psy .ps-h:after{content:"";flex:1;height:.7px;background:var(--sline)}
-#psy :where(.rgbody,.ms,.ps-sheet) button:where(:not([data-psy-after] *)){all:unset;cursor:pointer;box-sizing:border-box}
+#psy :where(.rgbody,.ms,.ps-sheet) button:where(:not([data-psy-after] *,[data-psy-avant-writing] [data-session-editor] *)){all:unset;cursor:pointer;box-sizing:border-box}
 #psy .ps-tabs{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin:14px -18px 0;padding:0 18px}
 #psy .ps-tabs button{flex:none;padding:0 0 8px;font:500 10.5px/1 'Cormorant SC',Georgia,serif;letter-spacing:.16em;color:var(--smuted);padding-bottom:7px;border-bottom:1.3px solid transparent}
 #psy .ps-tabs button.on{color:var(--sink);border-bottom-color:var(--sacc)}
@@ -7329,8 +7329,12 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
  return h}
 
 /* ---------- rendu ---------- */
-const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE','avant-writing':'PRÉPARER MA SÉANCE','avant-recap':'PRÉPARER MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
+const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE','avant-writing':'MA SÉANCE','avant-recap':'PRÉPARER MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
 const PSY_PAGES={avant:['AVANT',tAvant],apres:['APRÈS',tApres],pas:['MES PETITS PAS',tPas],seances:['HISTORIQUE DES SÉANCES',tSeances],evol:['MON ÉVOLUTION',tEvol]};
+function sessionTabs(tab, hasSession=true){
+ return `<nav class="psy-session-tabs" aria-label="Parcours de la séance">${[['avant','Avant'],['pendant','Pendant'],['apres','Après']].map(([key,label])=>
+  `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}${!hasSession&&key==='pendant'?' disabled':''}><span>${label}</span></button>`).join('')}</nav>`;
+}
 function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('data-avant-ai');
  if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='',cards;
  if(c.v==='psyhome'){
@@ -7345,8 +7349,7 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   if(!item)return back();
   const tab=c.tab||(archived?'apres':'avant');
   const date=item.date?new Date(item.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
-  h=`<nav class="psy-session-tabs" aria-label="Parcours de la séance">${[['avant','Avant'],['pendant','Pendant'],['apres','Après']].map(([key,label])=>
-    `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}><span>${label}</span></button>`).join('')}</nav>`;
+  h=sessionTabs(tab);
   if(tab==='apres')h+=tApres();
   else if(tab==='avant'){h+=tAvant(true,archived);ph.dataset.avantAi='';}
   else{
@@ -7355,7 +7358,7 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   }
  }
  else if(c.v==='avant-writing'||c.v==='avant-recap'){
-  h='<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
+  h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
  }
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
   h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
@@ -7374,7 +7377,9 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   const date=item?.date||(next?localSessionDate(next.dt):null);
   const switchTo=view=>{c.v=view;render(1);B.querySelector('[data-psy-avant-writing] h3')?.focus({preventScroll:true})};
   const savePreparation=()=>window.__vaultAutosave?.();
-  if(c.v==='avant-writing')window.__enPsyAvant.mount(writer,{date,prep,save:savePreparation,review:()=>switchTo('avant-recap')});
+  if(c.v==='avant-writing')window.__enPsyAvant.mount(writer,{date,prep,save:savePreparation,review:()=>switchTo('avant-recap'),later:()=>{
+   back();B.querySelector('.en-avant-prepare')?.focus({preventScroll:true});
+  }});
   else window.__enPsyAvant.mountRecap(writer,{date,prep,edit:()=>{ensureArchivedPreparation(item);switchTo('avant-writing')}});
  }
  if(ph.hasAttribute('data-avant-ai')||c.v==='session'&&c.tab==='avant')window.__enPsyIcons?.(B);
@@ -7421,7 +7426,19 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'psy-page':openPsyPage(d.k);break;
  case'session-open':openSession(d.i,d.k);break;
  case'session-archive':case'seopen':openArchive(d.i);break;
- case'session-tab':cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
+ case'session-tab':
+  if(cur().v==='avant-writing'){
+   if(d.k==='avant')break;
+   const editor=cur(), session=sessionRoute();
+   Promise.resolve(window.__vaultAutosave?.()).then(()=>{
+    if(cur()!==editor)return;
+    S.stack.pop();
+    if(session)session.tab=d.k;else{openPsyPage(d.k);return}
+    render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});
+   }).catch(()=>{});
+   break;
+  }
+  cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
  case'prep':case'prepgo':
   ensureArchivedPreparation(activeSession());
