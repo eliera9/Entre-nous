@@ -6941,6 +6941,13 @@ const afterModule=()=>window.__enPsyAfter;
 const sessionRoute=()=>S.stack.findLast(route=>route.v==='session'||route.v==='archive');
 const activeSession=()=>afterModule()?.find(sessionRoute()?.id);
 const cardPosition={};
+function ensureArchivedPreparation(item){
+ if(!item?.completed)return;
+ item.preparation||={notes:(item.topics||[]).map((topic,index)=>({
+  id:'archive:'+index,t:topic.text,o:'SÉANCE',ck:topic.checked
+ }))};
+ item.preparation.prep||=newPrep();
+}
 function sessionPreparation(){
  const session=activeSession();if(!session)return inbox;
  if(!session.preparation){
@@ -7017,7 +7024,7 @@ function tAvant(scoped=false, archived=false){
  const next=scoped?null:upcomingPsy();
  const item=activeSession()||(next&&afterModule().appointment(next));
  const date=item?.date||(next?localSessionDate(next.dt):null);
- const hasArchive=Boolean(item?.preparation&&avant.entries(item.preparation.prep).length);
+ const hasArchive=Boolean(item?.preparation?.prep&&avant.entries(item.preparation.prep).length);
  const topics=archived?(item?.preparation?.notes||item?.topics?.map((entry,index)=>({id:String(index),t:entry.text,o:'SÉANCE',ck:entry.checked}))||[]):S.notes;
  const stars=archived?new Set(item?.preparation?.prep?.stars||[]):S.prep.stars;
  const priority=topics.filter(note=>stars.has(note.id)||note.star);
@@ -7034,11 +7041,11 @@ function tAvant(scoped=false, archived=false){
  }
  return `<div class="en-avant-overview">
   ${avant.dateLine(date,{editable:Boolean(date)})}
-  ${archived?hasArchive?`<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>`:'':
-   `<div class="en-avant-prepare-line">
-     <button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>
-     <button type="button" class="en-avant-edit-writing" data-a="prepgo" aria-label="Modifier">${icon('pen-line')}</button>
-   </div>`}
+  <div class="en-avant-prepare-line">
+    ${archived?hasArchive?`<button type="button" class="en-avant-prepare" data-a="avant-archive-writing">Ma préparation</button>`:'':
+      '<button type="button" class="en-avant-prepare" data-a="prepgo">Préparer ma séance</button>'}
+    ${avant.editButton('data-a="prepgo"')}
+  </div>
   ${!archived||priority.length?`<section class="en-avant-priorities"><h3>${icon('bookmark')}Mes priorités</h3>
     <p>Ce que j’aimerais lui confier en priorité…</p>
     <ol>${priority.map((note,index)=>`<li class="en-avant-priority"><span class="en-avant-priority-number">${String(index+1).padStart(2,'0')}</span>${topic(note,'en-avant-priority-topic')}${star(note,true)}</li>`).join('')}</ol>
@@ -7362,13 +7369,13 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   onViewChange:view=>{c.review=view==='review'}});
  const writer=B.querySelector('[data-psy-avant-writing]');
  if(writer){
-  const item=activeSession(), prep=item?.completed?item.preparation?.prep:sessionPreparation().prep;
+  const item=activeSession(), prep=item?.completed ? item.preparation?.prep : sessionPreparation().prep;
   const next=item?null:upcomingPsy();
   const date=item?.date||(next?localSessionDate(next.dt):null);
   const switchTo=view=>{c.v=view;render(1);B.querySelector('[data-psy-avant-writing] h3')?.focus({preventScroll:true})};
   const savePreparation=()=>window.__vaultAutosave?.();
   if(c.v==='avant-writing')window.__enPsyAvant.mount(writer,{date,prep,save:savePreparation,review:()=>switchTo('avant-recap')});
-  else window.__enPsyAvant.mountRecap(writer,{date,prep,edit:item?.completed?null:()=>switchTo('avant-writing')});
+  else window.__enPsyAvant.mountRecap(writer,{date,prep,edit:()=>{ensureArchivedPreparation(item);switchTo('avant-writing')}});
  }
  if(ph.hasAttribute('data-avant-ai')||c.v==='session'&&c.tab==='avant')window.__enPsyIcons?.(B);
  if(top)ph.scrollTop=0;
@@ -7416,7 +7423,10 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'session-archive':case'seopen':openArchive(d.i);break;
  case'session-tab':cur().tab=d.k;render(1);B.querySelector('[data-a="session-tab"][aria-current]')?.focus({preventScroll:true});break;
  case'calrdv':toast('Ouvre ta séance dans le calendrier');break;
- case'prep':case'prepgo':if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');break;
+ case'prep':case'prepgo':
+  ensureArchivedPreparation(activeSession());
+  if(!sessionRoute()&&upcomingPsy())openSession('next','prep');else go('avant-writing');
+  break;
  case'avant-save-note':saveAvantNote();break;
  case'avant-archive-writing':go('avant-recap');break;
  case'avant-ai':window.__enPsyAvant.openAI(ph,t);break;

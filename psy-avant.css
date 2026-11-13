@@ -18,12 +18,14 @@
   content: ''; position: absolute; inset: -11px -4px;
 }
 #psy button.en-avant-date:hover time { text-decoration: underline; text-underline-offset: 3px; }
-#psy .en-avant-prepare-line {
+#psy .en-avant-prepare-line, #psy .en-avant-recap-heading {
   display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center;
-  margin: 8px 0 22px;
 }
-#psy .en-avant-prepare-line .en-avant-prepare { grid-column: 2; margin-block: 0; }
+#psy .en-avant-prepare-line { margin: 8px 0 22px; }
+#psy .en-avant-prepare-line .en-avant-prepare, #psy .en-avant-recap-heading h3 { grid-column: 2; grid-row: 1; margin-block: 0; }
+#psy .en-avant-recap-heading h3 { overflow-wrap: anywhere; }
 #psy .en-avant-edit-writing {
+  grid-column: 3; grid-row: 1; justify-self: end;
   position: relative; display: grid; place-items: center; width: 44px; height: 44px;
   padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--sink);
 }

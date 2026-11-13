@@ -280,11 +280,25 @@
     globalThis.__enPsyIcons?.(editor);
   }
 
+  // Render the pencil with the button so it is visible before the icon library loads.
+  function editButton(action) {
+    return `<button type="button" class="en-avant-edit-writing" ${action} aria-label="Modifier">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 20h9"/>
+        <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>
+      </svg>
+    </button>`;
+  }
+
   function mountRecap(host, { date, prep, edit }) {
     host.innerHTML = `<section class="en-avant-recap">
-      ${dateLine(date, { short: true })}<h3 class="en-heading" tabindex="-1">Ma préparation pour la séance</h3>
+      ${dateLine(date, { short: true })}
+      <div class="en-avant-recap-heading">
+        <h3 class="en-heading" tabindex="-1">Ma préparation pour la séance</h3>
+        ${editButton('data-edit')}
+      </div>
       <div data-avant-summary></div>
-      ${edit ? '<div class="en-actions"><button type="button" class="en-main-action" data-edit>Modifier</button></div>' : ''}
     </section>`;
     const content = host.querySelector('[data-avant-summary]');
     for (const [title, value] of entries(prep)) {
@@ -302,7 +316,7 @@
       }
       content.append(section);
     }
-    if (edit) host.querySelector('[data-edit]').addEventListener('click',edit);
+    host.querySelector('[data-edit]').addEventListener('click',edit);
     globalThis.__enPsyIcons?.(host);
   }
 
@@ -392,5 +406,5 @@
     dialog.showModal();
   }
 
-  globalThis.__enPsyAvant = { mount, mountRecap, dateLine, labelDate, entries, modeTopics, openAI, showDialog };
+  globalThis.__enPsyAvant = { mount, mountRecap, editButton, dateLine, labelDate, entries, modeTopics, openAI, showDialog };
 })();

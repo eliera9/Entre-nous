@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 
 const script = await readFile(new URL('../psy-mode-seance.js', import.meta.url), 'utf8');
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const avantSource = await readFile(new URL('../psy-avant.js', import.meta.url), 'utf8');
 const context = {};
 runInNewContext(script, context);
 const { newDraft } = context.__enPsyModeSession;
@@ -35,7 +36,7 @@ test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', 
   const render = runInNewContext(avant + ';tAvant', {
     S: { mode: 'first', notes: [], prep: { stars: new Set() } },
     activeSession: () => null, upcomingPsy: () => null,
-    window: { __enPsyAvant: { dateLine: () => '' } },
+    window: { __enPsyAvant: { dateLine: () => '', editButton: () => '' } },
   });
   assert.match(render(), /Rien à aborder/);
   assert.doesNotMatch(render(), /DEPUIS TA DERNIÈRE SÉANCE|Thomas/);
@@ -46,4 +47,21 @@ test('Avant et Mes dépôts n’ajoutent aucune entrée d’exemple au carnet', 
   const deposits = runInNewContext(html.slice(start, end) + ';render', { window: { __deposes: [] }, list });
   assert.deepEqual(plain(deposits()), []);
   assert.match(list.innerHTML, /Rien de déposé/);
+});
+
+test('le crayon d’Avant ouvre la rédaction avec ou sans date et dans une séance archivée', () => {
+  const model = {};
+  const script = html.slice(html.indexOf('function tAvant('), html.indexOf('function sessionTextList('));
+  const context = {
+    S: { notes: [], prep: { stars: new Set() } },
+    activeSession: () => model.item, upcomingPsy: () => null,
+  };
+  runInNewContext(avantSource, context);
+  const render = runInNewContext(script + ';tAvant', { ...context, window: context, esc: String });
+  const pencil = /<button[^>]+data-a="prepgo"[^>]+aria-label="Modifier"[^>]*>\s*<svg/;
+  assert.match(render(), pencil);
+  model.item = { date: '2026-11-17', completed: true };
+  const archived = render(true, true);
+  assert.match(archived, pencil);
+  assert.match(archived, /data-a="avant-date"/);
 });
