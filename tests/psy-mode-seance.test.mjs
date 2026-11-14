@@ -36,7 +36,7 @@ test('un petit pas de séance rejoint la liste existante une seule fois, même a
     S: { get pas() { return items.filter(step => step.f === 'psy'); } },
     crypto: { randomUUID: () => 'test' },
     cur: () => route,
-    render: () => { renderCount++; },
+    back: () => { renderCount++; },
     esc: value => value,
     B: { querySelector: selector => selector.includes('status') ? status : { focus() {} } },
   };
@@ -64,6 +64,21 @@ test('un petit pas de séance rejoint la liste existante une seule fois, même a
   items[0].f = 'soin';
   items[0].done = 1;
   assert.match(view(session), /Avec ma psy · Fait/);
+  assert.doesNotMatch(view(session), /<form/);
+  assert.match(view(session, true), /Ajouter mon petit pas/);
+  assert.match(view(session, true, 'ptest'), /Enregistrer les modifications/);
+
+  mount(section, session, 'ptest');
+  field.value = 'Mon petit pas reformulé';
+  form.elements.origin.value = 'seule';
+  await submitForm({ preventDefault() {} });
+
+  assert.equal(status.textContent, 'Petit pas modifié.');
+  assert.equal(items.length, 3);
+  assert.equal(items[0].t, 'Mon petit pas reformulé');
+  assert.equal(items[0].origin, 'seule');
+  assert.equal(items[0].done, 1);
+  assert.equal(items[0].f, 'soin');
 });
 
 test('le Mode séance ouvre un carnet neuf avec une liste vide et les notes repliées', () => {

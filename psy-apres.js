@@ -610,11 +610,13 @@
     time.textContent = longDate.format(dayValue(date));
   }
 
-  function readOnlyRecapHeader(session, title, prefix) {
+  function recapHeader(session, title, prefix, onEdit) {
     const header = template('recap', prefix).querySelector('.en-recap-header');
     setRecapDate(header.querySelector('[data-reading-date]'), session.date);
     header.querySelector('.en-heading').textContent = title;
-    header.querySelector('[data-edit]').remove();
+    const edit = header.querySelector('[data-edit]');
+    if (onEdit) edit.addEventListener('click', onEdit);
+    else edit.remove();
     header.querySelector('[data-reading-title-wrap]').remove();
     return header;
   }
@@ -1564,7 +1566,7 @@
 
   globalThis.__enPsyAfter = {
     mount, mountPendant, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
-    readOnlyRecapHeader,
+    recapHeader,
     formatTemplate: prefix => template('format', prefix),
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),

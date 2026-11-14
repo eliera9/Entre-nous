@@ -7301,28 +7301,33 @@ function vVrac(){const n=allNotes();return` <button class="ps-ia" data-a="ia" da
 
 /* ---------- PETITS PAS ---------- */
 const sessionStepOrigins={psy:'Avec ma psy',seule:'Seule'};
-function sessionSteps(item){
- const items=(window.__PP?.items||S.pas).filter(step=>step.sessionId===item.id);
+const stepsForSession=item=>(window.__PP?.items||S.pas).filter(step=>step.sessionId===item.id);
+function sessionSteps(item, editing=false, editingId){
+ const items=stepsForSession(item);
+ const selected=editing&&items.find(step=>step.id===editingId);
  return `<section data-psy-after data-session-steps aria-labelledby="psy-step-recap-title">
   <div class="en-reading en-recap" data-session-steps-header></div>
-  ${items.length?`<ul class="psy-session-steps">${items.map(step=>`<li><span>${esc(step.t)}</span>
+  ${items.length?`<ul class="psy-session-steps">${items.map(step=>`<li>${editing?
+   `<button type="button" data-a="session-step-edit-item" data-i="${esc(step.id)}" aria-pressed="${step===selected}">${esc(step.t)}</button>`:
+   `<span>${esc(step.t)}</span>`}
    ${step.origin||step.done?`<small>${esc([sessionStepOrigins[step.origin],step.done?'Fait':''].filter(Boolean).join(' · '))}</small>`:''}</li>`).join('')}</ul>`:'<p class="psy-session-steps-empty">Aucun petit pas pour cette séance.</p>'}
-  <form class="psy-session-step-form">
+  ${editing?`<form class="psy-session-step-form">
    <label for="psy-session-step-text">Mon petit pas</label>
-   <textarea id="psy-session-step-text" name="step" rows="2" required placeholder="Écris une petite action à essayer…"></textarea>
+   <textarea id="psy-session-step-text" name="step" rows="2" required placeholder="Écris une petite action à essayer…">${esc(selected?.t||'')}</textarea>
    <fieldset><legend>Comment je l’ai trouvé</legend><div class="psy-session-step-origins">${Object.entries(sessionStepOrigins).map(([key,label])=>
-    `<label><input type="radio" name="origin" value="${key}"><span>${label}</span></label>`).join('')}</div></fieldset>
-   <button type="submit" class="en-main-action">Ajouter mon petit pas</button>
-  </form>
+    `<label><input type="radio" name="origin" value="${key}"${selected?.origin===key?' checked':''}><span>${label}</span></label>`).join('')}</div></fieldset>
+   <button type="submit" class="en-main-action">${selected?'Enregistrer les modifications':'Ajouter mon petit pas'}</button>
+  </form>`:''}
   <p class="psy-session-step-status" role="status"></p>
-  <button type="button" class="en-quiet-action" data-a="session-steps-all">Voir mes petits pas</button>
+  ${editing?'':'<button type="button" class="en-quiet-action" data-a="session-steps-all">Voir mes petits pas</button>'}
  </section>`;
 }
-function mountSessionSteps(section,item){
+function mountSessionSteps(section,item,editingId){
  const form=section.querySelector('form');
  const field=form.elements.step;
  const submit=form.querySelector('[type="submit"]');
- let pending;
+ const selected=stepsForSession(item).find(step=>step.id===editingId);
+ let pending=selected;
  field.addEventListener('input',()=>field.setCustomValidity(''));
  form.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -7342,9 +7347,9 @@ function mountSessionSteps(section,item){
   try{
    await window.__vaultAutosave?.();
    if(!section.isConnected||cur()!==route)return;
-   render();
-   B.querySelector('.psy-session-step-status').textContent='Ajouté à Mes petits pas.';
-   B.querySelector('.psy-session-step-form button').focus({preventScroll:true});
+   back();
+   B.querySelector('.psy-session-step-status').textContent=selected?'Petit pas modifié.':'Ajouté à Mes petits pas.';
+   B.querySelector('[data-session-steps] [data-edit]').focus({preventScroll:true});
   }catch{
    // Le coffre signale l’échec. Le formulaire permet de réessayer avec le même petit pas.
   }finally{submit.disabled=false;}
@@ -7484,13 +7489,17 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   else if(tab==='petit-pas')h+=sessionSteps(item);
   else h+='<div data-psy-after data-psy-pendant></div>';
  }
+ else if(c.v==='session-steps-edit'){
+  if(!currentSession)return back();
+  h=sessionSteps(currentSession,true,c.stepId);
+ }
  else if(c.v==='avant-writing'||c.v==='avant-recap'){
   h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(c.legacyId||sessionRoute()),Boolean(sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
  }
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
   h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
- TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:TITLES[c.v]||'MON ESPACE PSY';
+ TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:c.v==='session-steps-edit'?TITLES.session:TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
  if(cards){window.__enPsyHome.mount(B,cards,cardPosition);window.__enPsyIcons?.(B)}
  const during=B.querySelector('[data-psy-pendant]');
@@ -7502,8 +7511,13 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
  }
  const steps=B.querySelector('[data-session-steps]');
  if(steps){
-  steps.querySelector('[data-session-steps-header]').append(afterModule().readOnlyRecapHeader(currentSession,'Mes petits pas de séance','psy-step'));
-  mountSessionSteps(steps,currentSession);
+  const editing=c.v==='session-steps-edit';
+  const title=editing?'Modifier mes petits pas':'Mes petits pas de séance';
+  steps.querySelector('[data-session-steps-header]').append(afterModule().recapHeader(currentSession,title,'psy-step',editing?null:()=>{
+   go('session-steps-edit');
+   B.querySelector('#psy-step-recap-title')?.focus({preventScroll:true});
+  }));
+  if(editing)mountSessionSteps(steps,currentSession,c.stepId);
   window.__enPsyIcons?.(steps);
  }
  const after=B.querySelector('[data-psy-after]:not([data-psy-pendant],[data-session-steps])');
@@ -7558,7 +7572,7 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
  if(f==='sv.mo'||f==='sv.an'||f==='sv.dj'||f==='sv.dm'){const a=document.activeElement,pos=a.selectionStart;render();const n=B.querySelector(`[data-f="${f}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}});
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t);if(/^(star|nck|rdnext|rdok|keep)$/.test(t.dataset.a))window.__vaultAutosave?.()});
-BK.addEventListener('click',e=>{if(cur().v==='avant-recap'&&!activeSession()?.completed){e.stopImmediatePropagation();cur().v='avant-writing';render(1);return}if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
+BK.addEventListener('click',e=>{if(cur().v==='session-steps-edit'){e.stopImmediatePropagation();back();B.querySelector('[data-session-steps] [data-edit]')?.focus({preventScroll:true});return}if(cur().v==='avant-recap'&&!activeSession()?.completed){e.stopImmediatePropagation();cur().v='avant-writing';render(1);return}if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
 
 /* ---------- actions ---------- */
 function saveAvantNote(){
@@ -7574,6 +7588,12 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'session-open':openSession(d.i,d.k);break;
  case'session-archive':case'seopen':openArchive(d.i);break;
  case'session-steps-all':window.__enShow('mpp');break;
+ case'session-step-edit-item':
+  cur().stepId=cur().stepId===d.i?undefined:d.i;
+  render();
+  if(cur().stepId)B.querySelector('#psy-session-step-text')?.focus();
+  else B.querySelector('[data-session-steps] [data-i="'+CSS.escape(d.i)+'"]')?.focus({preventScroll:true});
+  break;
  case'session-tab':
   if(cur().v==='avant-writing'){
    if(d.k==='avant')break;
