@@ -115,3 +115,32 @@ test('Pendant remplace et efface les anciennes notes sans dupliquer la note en c
   assert.equal(session.finishedModeDraft.noteEdits, undefined);
   assert.deepEqual(plain(history[0].notes).map(note => note[2]), ['Première note réécrite', 'Dernière note réécrite']);
 });
+
+test('Pendant renomme un sujet coché dans une séance existante sans garder l’ancien intitulé', () => {
+  const { after } = model();
+  const history = [{
+    id: 'ancienne', date: '2026-11-09', q: 'Séance passée',
+    prev: ['Mon sujet', 'Sujet inchangé'],
+    suj: ['Mon sujet'],
+  }];
+  const [session] = after.prepare({}, history, []);
+  const draft = {
+    subjects: [{ id: 'a', t: 'Mon sujet', editedTitle: 'Mon sujet reformulé' }, { id: 'b', t: 'Sujet inchangé' }],
+    checked: ['a'],
+    note: '',
+  };
+  const mode = {
+    sessionDate: session.date,
+    msSubjects: [{ id: 'a', t: 'Mon sujet reformulé' }, { id: 'b', t: 'Sujet inchangé' }],
+    msCk: { a: true },
+  };
+
+  after.recordMode({}, mode, history, [], session.id, draft);
+
+  assert.deepEqual(plain(session.topics), [
+    { text: 'Mon sujet reformulé', checked: true },
+    { text: 'Sujet inchangé', checked: false },
+  ]);
+  assert.deepEqual(plain(session.finishedModeDraft.subjects), mode.msSubjects);
+  assert.deepEqual(plain(history[0].prev), ['Mon sujet reformulé', 'Sujet inchangé']);
+});

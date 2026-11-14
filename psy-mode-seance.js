@@ -66,10 +66,11 @@
     for (const subject of draft.subjects) {
       const row = doc.createElement('li');
       row.innerHTML = '<label class="en-topic"><span class="en-topic-name"></span><span class="en-selector"><input type="checkbox"><span class="en-check-mark" aria-hidden="true">' + check + '</span></span></label>';
-      row.querySelector('.en-topic-name').textContent = subject.t;
+      const title = subject.editedTitle || subject.t;
+      row.querySelector('.en-topic-name').textContent = title;
       const input = row.querySelector('input');
       input.checked = draft.checked.includes(subject.id);
-      input.setAttribute('aria-label', 'Sujet abordé : ' + subject.t);
+      input.setAttribute('aria-label', 'Sujet abordé : ' + title);
       input.addEventListener('change', () => {
         draft.checked = draft.checked.filter(id => id !== subject.id);
         if (input.checked) draft.checked.push(subject.id);

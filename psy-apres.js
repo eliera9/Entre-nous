@@ -632,25 +632,40 @@
       }
       const body = entry.bullets ? element('ul', 'en-recap-words') : section;
       if (entry.bullets) body.setAttribute('role', 'list');
-      if (entry.checked) body.dataset.pendantTopics = '';
+      if (entry.topics) body.dataset.pendantTopics = '';
       entry.paragraphs.forEach((paragraph, index) => {
         const html = entry.rich?.[index];
         const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', entry.bullets ? '' : 'en-recap-words');
         if (html) node.classList.add('en-formatted');
-        richWriting.write(node, paragraph, html, true);
-        if (entry.checked) {
-          const checked = entry.checked[index];
-          const label = element('label', 'en-pendant-topic');
+        if (entry.topics) {
+          const topic = entry.topics[index];
+          const row = element(entry.onRename ? 'div' : 'label', 'en-pendant-topic');
           const checkbox = element('input');
           checkbox.type = 'checkbox';
-          checkbox.checked = checked;
+          checkbox.checked = topic.checked;
           const mark = element('span', 'en-pendant-check');
           mark.setAttribute('aria-hidden', 'true');
-          const text = element('span', 'en-pendant-topic-text');
-          text.append(...node.childNodes);
-          label.append(checkbox, mark, text);
-          checkbox.addEventListener('change', () => entry.onCheck(paragraph, checkbox.checked));
-          node.append(label);
+          if (entry.onRename) {
+            const input = element('input', 'en-pendant-topic-text');
+            input.type = 'text';
+            input.value = topic.text;
+            input.setAttribute('aria-label', 'Sujet ' + (index + 1));
+            const nameCheckbox = () => checkbox.setAttribute('aria-label', input.value.trim() || topic.text);
+            nameCheckbox();
+            input.addEventListener('input', () => {
+              const text = input.value.trim();
+              if (text) entry.onRename(topic.id, text);
+              nameCheckbox();
+            });
+            input.addEventListener('blur', () => { input.value = entry.currentTitle(topic.id); nameCheckbox(); });
+            row.append(checkbox, mark, input);
+          } else {
+            row.append(checkbox, mark, element('span', 'en-pendant-topic-text', paragraph));
+          }
+          checkbox.addEventListener('change', () => entry.onCheck(topic.id, checkbox.checked));
+          node.append(row);
+        } else {
+          richWriting.write(node, paragraph, html, true);
         }
         body.append(node);
       });
@@ -913,9 +928,9 @@
     const context = { ...modeContext(current), fromMode: true };
     if (session) {
       if (draft) {
-        const topics = new Map(session.topics.map(topic => [topic.text, topic]));
-        for (const topic of context.topics) topics.set(topic.text, topic);
-        context.topics = [...topics.values()];
+        const originals = new Set((draft.subjects || current.msSubjects || []).map(subject => subject.t));
+        const retained = session.topics.filter(topic => !originals.has(topic.text));
+        context.topics.push(...retained);
         const notes = previousPendantNotes(session, draft)
           .filter(note => note.text.trim())
           .map(({ index, ...note }) => note);
@@ -926,7 +941,8 @@
       Object.assign(session, context);
       if (draft) {
         const { replacesLegacyNote, noteEdits, ...finishedDraft } = draft;
-        session.finishedModeDraft = finishedDraft;
+        const { msSubjects = [] } = current;
+        session.finishedModeDraft = { ...finishedDraft, subjects: msSubjects };
       }
       if (session.completed) updateHistory(history, session);
     }
@@ -1151,12 +1167,17 @@
   }
 
   function pendantTopics(session, draft) {
-    const topics = new Map();
-    for (const subject of draft?.subjects || []) {
-      if (subject.t?.trim()) topics.set(subject.t, Boolean(draft.checked?.includes(subject.id)));
-    }
-    for (const topic of session.topics || []) {
-      if (topic.text?.trim() && !topics.has(topic.text)) topics.set(topic.text, Boolean(topic.checked));
+    const subjects = draft?.subjects || [];
+    const known = new Set(subjects.map(subject => subject.t));
+    const checked = new Set(draft?.checked || []);
+    const topics = subjects.map(subject => ({
+      id: subject.id, text: subject.editedTitle || subject.t, checked: checked.has(subject.id),
+    }));
+    for (const [index, topic] of (session.topics || []).entries()) {
+      if (topic.text?.trim() && !known.has(topic.text)) {
+        topics.push({ id: 'past:' + index, text: topic.text, checked: Boolean(topic.checked) });
+        known.add(topic.text);
+      }
     }
     return topics;
   }
@@ -1211,12 +1232,22 @@
     tools.append(element('span', 'en-format-aa', 'Aa'), closeTools);
     pencil.before(tools);
 
-    function toggleTopic(text, checked) {
+    function toggleTopic(id, checked) {
       const active = startEdit();
-      const subject = active.subjects.find(entry => entry.t === text);
-      if (!subject) return;
-      active.checked = active.checked.filter(id => id !== subject.id);
-      if (checked) active.checked.push(subject.id);
+      active.checked = active.checked.filter(key => key !== id);
+      if (checked) active.checked.push(id);
+      save();
+    }
+
+    function subjectById(id) {
+      return draft.subjects.find(subject => subject.id === id);
+    }
+
+    function renameTopic(id, text) {
+      const subject = subjectById(id);
+      if (!subject || (subject.editedTitle || subject.t) === text) return;
+      if (text === subject.t) delete subject.editedTitle;
+      else subject.editedTitle = text;
       save();
     }
 
@@ -1229,11 +1260,16 @@
       content.replaceChildren();
       noteFields.clear();
       renderRecapSections(content, [
-        { title: 'Sujets préparés', numeral: 'I', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true, onCheck: toggleTopic },
+        { title: 'Sujets préparés', numeral: 'I', paragraphs: topics.map(topic => topic.text), topics, choices: [], bullets: true,
+          onCheck: toggleTopic, onRename: editable ? renameTopic : null,
+          currentTitle: id => {
+            const subject = subjectById(id);
+            return subject?.editedTitle || subject?.t || '';
+          } },
         { title: 'Mes notes', numeral: 'II', paragraphs: [], choices: [] },
       ]);
       const topicsSection = content.firstElementChild;
-      if (!topics.size) topicsSection.append(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
+      if (!topics.length) topicsSection.append(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
       const notesSection = content.lastElementChild;
       const noteHeading = notesSection.firstElementChild;
       const box = element('div', 'en-pendant-note-box');
@@ -1328,7 +1364,7 @@
       if (editing) leaveEditing(false);
       else {
         openEditor();
-        noteFields.keys().next().value?.focus({ preventScroll: true });
+        (get('input.en-pendant-topic-text') || noteFields.keys().next().value)?.focus({ preventScroll: true });
       }
     });
     tools.addEventListener('click', openEditor);
