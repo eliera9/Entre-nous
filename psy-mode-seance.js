@@ -63,7 +63,8 @@
     host.innerHTML = markup;
 
     const topics = host.querySelector('.en-topics');
-    for (const subject of draft.subjects) {
+    const subjects = draft.subjects.filter(subject => !subject.removed);
+    for (const subject of subjects) {
       const row = doc.createElement('li');
       row.innerHTML = '<label class="en-topic"><span class="en-topic-name"></span><span class="en-selector"><input type="checkbox"><span class="en-check-mark" aria-hidden="true">' + check + '</span></span></label>';
       const title = subject.editedTitle || subject.t;
@@ -78,7 +79,7 @@
       });
       topics.append(row);
     }
-    topics.hidden = !draft.subjects.length;
+    topics.hidden = !subjects.length;
     host.querySelector('.en-empty').hidden = !topics.hidden;
 
     const details = host.querySelector('details');

@@ -7239,7 +7239,7 @@ async function finishModeSession(item){
   const mode={
    msNotes:draft.note.trim()?{me:[[hm(),draft.note]]}:null,
    msCk:Object.fromEntries(draft.checked.map(id=>[id,true])),
-   msSubjects:draft.subjects.map(({id,t,editedTitle})=>({id,t:editedTitle||t})),msDone:1,sessionDate:item.date,
+   msSubjects:draft.subjects.filter(subject=>!subject.removed).map(({id,t,editedTitle})=>({id,t:editedTitle||t})),msDone:1,sessionDate:item.date,
   };
   if(!item.completed){
    Object.assign(S,mode);

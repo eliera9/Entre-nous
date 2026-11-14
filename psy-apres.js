@@ -646,19 +646,57 @@
           const mark = element('span', 'en-pendant-check');
           mark.setAttribute('aria-hidden', 'true');
           if (entry.onRename) {
-            const input = element('input', 'en-pendant-topic-text');
-            input.type = 'text';
+            const editor = element('div', 'en-pendant-topic-editor');
+            const input = element('textarea', 'en-pendant-topic-text');
+            input.rows = 1;
             input.value = topic.text;
             input.setAttribute('aria-label', 'Sujet ' + (index + 1));
-            const nameCheckbox = () => checkbox.setAttribute('aria-label', input.value.trim() || topic.text);
-            nameCheckbox();
+
+            function updateField() {
+              editor.dataset.value = input.value;
+              checkbox.setAttribute('aria-label', input.value.trim() || topic.text);
+            }
+
+            function removeIfEmpty(event) {
+              if (event.isComposing || input.value.trim()) return;
+              event.preventDefault();
+              if (!entry.onRemove(topic.id)) return;
+              // Detach the row before focusing a neighbour, so blur cannot restore it.
+              input.removeEventListener('blur', restoreTitle);
+              const previous = node.previousElementSibling;
+              const neighbour = previous || node.nextElementSibling;
+              const target = neighbour?.querySelector('textarea') || entry.nextField();
+              node.remove();
+              [...body.querySelectorAll('textarea')].forEach((field, position) => {
+                field.setAttribute('aria-label', 'Sujet ' + (position + 1));
+              });
+              if (!body.childElementCount) {
+                body.replaceWith(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
+              }
+              target?.focus({ preventScroll: true });
+              if (previous && target) target.setSelectionRange(target.value.length, target.value.length);
+            }
+
+            function restoreTitle() {
+              input.value = entry.currentTitle(topic.id);
+              updateField();
+            }
+
+            updateField();
             input.addEventListener('input', () => {
               const text = input.value.trim();
               if (text) entry.onRename(topic.id, text);
-              nameCheckbox();
+              updateField();
             });
-            input.addEventListener('blur', () => { input.value = entry.currentTitle(topic.id); nameCheckbox(); });
-            row.append(checkbox, mark, input);
+            input.addEventListener('blur', restoreTitle);
+            input.addEventListener('keydown', event => {
+              if (event.key === 'Backspace' || event.key === 'Delete') removeIfEmpty(event);
+            });
+            input.addEventListener('beforeinput', event => {
+              if (event.inputType === 'deleteContentBackward' || event.inputType === 'deleteContentForward') removeIfEmpty(event);
+            });
+            editor.append(input);
+            row.append(checkbox, mark, editor);
           } else {
             row.append(checkbox, mark, element('span', 'en-pendant-topic-text', paragraph));
           }
@@ -1170,7 +1208,7 @@
     const subjects = draft?.subjects || [];
     const known = new Set(subjects.map(subject => subject.t));
     const checked = new Set(draft?.checked || []);
-    const topics = subjects.map(subject => ({
+    const topics = subjects.filter(subject => !subject.removed).map(subject => ({
       id: subject.id, text: subject.editedTitle || subject.t, checked: checked.has(subject.id),
     }));
     for (const [index, topic] of (session.topics || []).entries()) {
@@ -1251,6 +1289,16 @@
       save();
     }
 
+    function removeTopic(id) {
+      const subject = subjectById(id);
+      if (!subject || subject.removed) return false;
+      // Keep the original title in the draft so it cannot be reintroduced from the previous recap.
+      subject.removed = true;
+      draft.checked = draft.checked.filter(key => key !== id);
+      save();
+      return true;
+    }
+
     function display(readingDraft, editable) {
       const topics = pendantTopics(session, readingDraft);
       const earlier = previousPendantNotes(session, readingDraft);
@@ -1261,7 +1309,8 @@
       noteFields.clear();
       renderRecapSections(content, [
         { title: 'Sujets préparés', numeral: 'I', paragraphs: topics.map(topic => topic.text), topics, choices: [], bullets: true,
-          onCheck: toggleTopic, onRename: editable ? renameTopic : null,
+          onCheck: toggleTopic, onRename: editable ? renameTopic : null, onRemove: removeTopic,
+          nextField: () => noteFields.keys().next().value,
           currentTitle: id => {
             const subject = subjectById(id);
             return subject?.editedTitle || subject?.t || '';
@@ -1364,7 +1413,7 @@
       if (editing) leaveEditing(false);
       else {
         openEditor();
-        (get('input.en-pendant-topic-text') || noteFields.keys().next().value)?.focus({ preventScroll: true });
+        (get('textarea.en-pendant-topic-text') || noteFields.keys().next().value)?.focus({ preventScroll: true });
       }
     });
     tools.addEventListener('click', openEditor);
