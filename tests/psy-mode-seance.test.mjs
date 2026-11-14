@@ -11,6 +11,61 @@ runInNewContext(script, context);
 const { newDraft } = context.__enPsyModeSession;
 const plain = value => JSON.parse(JSON.stringify(value));
 
+test('un petit pas de séance rejoint la liste existante une seule fois, même après un échec de sauvegarde', async () => {
+  const existing = { id: 'independant', t: 'Une action personnelle', f: 'soin' };
+  const previous = { id: 'ancien', t: 'Un pas d’une autre séance', f: 'psy', sessionId: 'autre' };
+  const items = [existing, previous];
+  const route = { tab: 'petit-pas' };
+  let storeAttempts = 0;
+  let renderCount = 0;
+  let submitForm;
+  const field = { value: '  Tester une idée  ', addEventListener() {} };
+  const submit = { disabled: false };
+  const status = {};
+  const form = {
+    elements: { step: field, origin: { value: 'psy' } },
+    querySelector: () => submit,
+    addEventListener: (_, listener) => { submitForm = listener; },
+  };
+  const section = { isConnected: true, querySelector: () => form };
+  const scope = {
+    window: {
+      __PP: { items, emit() {} },
+      __vaultAutosave: async () => { if (++storeAttempts === 1) throw new Error('Coffre indisponible'); },
+    },
+    S: { get pas() { return items.filter(step => step.f === 'psy'); } },
+    crypto: { randomUUID: () => 'test' },
+    cur: () => route,
+    render: () => { renderCount++; },
+    esc: value => value,
+    B: { querySelector: selector => selector.includes('status') ? status : { focus() {} } },
+  };
+  const bridge = html.slice(html.indexOf('function enPushPas('), html.indexOf('function sessionLabel('));
+  const steps = html.slice(html.indexOf('const sessionStepOrigins='), html.indexOf('function tPas()'));
+  const { mount, view } = runInNewContext(bridge + steps + '({ mount: mountSessionSteps, view: sessionSteps })', scope);
+  const session = { id: 'seance', date: '2026-11-14' };
+
+  mount(section, session);
+  await submitForm({ preventDefault() {} });
+  field.value = 'Tester une autre idée';
+  await submitForm({ preventDefault() {} });
+
+  assert.equal(renderCount, 1);
+  assert.equal(status.textContent, 'Ajouté à Mes petits pas.');
+  assert.equal(items.length, 3);
+  assert.deepEqual(plain(items[0]), {
+    id: 'ptest', sessionId: 'seance', t: 'Tester une autre idée', origin: 'psy',
+    why: '', r: '', rep: 'une fois', when: 'CETTE SEMAINE', done: 0, f: 'psy', fam: 'psy',
+  });
+  assert.equal(items[1], existing);
+  assert.match(view(session), /Tester une autre idée/);
+  assert.doesNotMatch(view(session), /Un pas d’une autre séance|Une action personnelle/);
+  assert.match(view({ ...session, id: 'autre' }), /Un pas d’une autre séance/);
+  items[0].f = 'soin';
+  items[0].done = 1;
+  assert.match(view(session), /Avec ma psy · Fait/);
+});
+
 test('le Mode séance ouvre un carnet neuf avec une liste vide et les notes repliées', () => {
   assert.deepEqual(plain(newDraft([], new Set(), null, [])), {
     subjects: [], checked: [], note: '', notesOpen: false,

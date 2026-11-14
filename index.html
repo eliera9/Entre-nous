@@ -7300,6 +7300,61 @@ function vVrac(){const n=allNotes();return` <button class="ps-ia" data-a="ia" da
  <button class="ps-btn" data-a="range">PLUME RANGE</button><button class="ps-lk" data-a="ia" data-k="apres"><u>ou l'analyser avec ChatGPT ou Claude</u></button>`}
 
 /* ---------- PETITS PAS ---------- */
+const sessionStepOrigins={psy:'Avec ma psy',seule:'Seule'};
+const sessionStepDate=new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+function sessionSteps(item){
+ const date=sessionStepDate.format(new Date(item.date+'T12:00:00Z'));
+ const items=(window.__PP?.items||S.pas).filter(step=>step.sessionId===item.id);
+ return `<section data-psy-after data-session-steps aria-labelledby="psy-step-title">
+  <header class="en-recap-header">
+   <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time datetime="${esc(item.date)}">${date}</time></p>
+   <h3 class="en-heading" id="psy-step-title">Mes petits pas de séance</h3>
+  </header>
+  ${items.length?`<ul class="psy-session-steps">${items.map(step=>`<li><span>${esc(step.t)}</span>
+   ${step.origin||step.done?`<small>${esc([sessionStepOrigins[step.origin],step.done?'Fait':''].filter(Boolean).join(' · '))}</small>`:''}</li>`).join('')}</ul>`:'<p class="psy-session-steps-empty">Aucun petit pas pour cette séance.</p>'}
+  <form class="psy-session-step-form">
+   <label for="psy-session-step-text">Mon petit pas</label>
+   <textarea id="psy-session-step-text" name="step" rows="2" required placeholder="Écris une petite action à essayer…"></textarea>
+   <fieldset><legend>Comment je l’ai trouvé</legend><div class="psy-session-step-origins">${Object.entries(sessionStepOrigins).map(([key,label])=>
+    `<label><input type="radio" name="origin" value="${key}"><span>${label}</span></label>`).join('')}</div></fieldset>
+   <button type="submit" class="en-main-action">Ajouter mon petit pas</button>
+  </form>
+  <p class="psy-session-step-status" role="status"></p>
+  <button type="button" class="en-quiet-action" data-a="session-steps-all">Voir mes petits pas</button>
+ </section>`;
+}
+function mountSessionSteps(section,item){
+ const form=section.querySelector('form');
+ const field=form.elements.step;
+ const submit=form.querySelector('[type="submit"]');
+ let pending;
+ field.addEventListener('input',()=>field.setCustomValidity(''));
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(submit.disabled)return;
+  const text=field.value.trim();
+  if(!text){field.setCustomValidity('Écris ton petit pas.');field.reportValidity();return;}
+  submit.disabled=true;
+  const origin=form.elements.origin.value;
+  if(!pending){
+   pending={id:'p'+crypto.randomUUID(),sessionId:item.id,t:text,origin,why:'',r:'',rep:'une fois',when:'CETTE SEMAINE',done:0};
+   enPushPas(pending);
+  }else{
+   Object.assign(pending,{t:text,origin});
+   window.__PP?.emit();
+  }
+  const route=cur();
+  try{
+   await window.__vaultAutosave?.();
+   if(!section.isConnected||cur()!==route)return;
+   render();
+   B.querySelector('.psy-session-step-status').textContent='Ajouté à Mes petits pas.';
+   B.querySelector('.psy-session-step-form button').focus({preventScroll:true});
+  }catch{
+   // Le coffre signale l’échec. Le formulaire permet de réessayer avec le même petit pas.
+  }finally{submit.disabled=false;}
+ });
+}
 function tPas(){const P=S.pas;let h='';
  if(!P.length&&S.mode!=='soir')return`<div class="ps-empty"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));display:flex;align-items:center;justify-content:center"><img alt="" src="${ico('pas')}" style="width:26px"></div><p class="ps-t">Pas encore de petit pas.</p><p class="ps-s">Ta psy t'a proposé quelque chose à essayer ?<br>Ou tu as une envie à toi ?</p></div><p class="ps-s" style="text-align:left;margin-top:14px">Plume a quelques idées :</p>${['Marcher 10 minutes après le travail','Écrire 3 gratitudes ce soir','Envoyer un message à quelqu\'un qui compte'].map(t=>`<button class="ps-sug" data-a="pasidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}<button class="ps-btn" data-a="pasnew">+ UN PETIT PAS</button>`;
  if(S.mode==='avant'){const cur=P.filter(p=>!p.done&&!S.veille[p.id]);if(cur.length)h+=`<div class="ps-card" style="margin-top:14px;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg))"><div class="ps-k">TA SÉANCE EST DEMAIN</div><p class="ps-t" style="font-size:16px">Que fait-on de tes petits pas en cours ?</p>${cur.map(p=>`<div class="ps-li"><span class="tx">${esc(p.t)}</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="c">CONTINUER</button><span class="ps-tag" style="color:var(--sline)">·</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="a">ARCHIVER</button></div>`).join('')}<p class="ps-s" style="margin-top:6px;font-size:12.5px">Sans réponse, ils passent dans « les séances d'avant ».</p></div>`}
@@ -7407,9 +7462,11 @@ function vFirstPage(o){const f=S.first.p,k=o.k;let h='';
 /* ---------- rendu ---------- */
 const TITLES={psyhome:'ACCUEIL PSY',session:'MA SÉANCE',archive:'MA SÉANCE','avant-writing':'MA SÉANCE','avant-recap':'PRÉPARER MA SÉANCE',intro:'FAIRE CONNAISSANCE',raconter:'FAIRE CONNAISSANCE',suivi:'MON SUIVI',prep0:'PRÉPARER MA SÉANCE',prep:'PRÉPARER MA SÉANCE',ia:'MON IA',copy:'MON IA',iaback:'MON IA',read:'PLUME LIT',parts:'APRÈS · PAR PARTIES',part:'APRÈS',vrac:'APRÈS · EN VRAC',seance:'MES SÉANCES',firstr:'MA PREMIÈRE SÉANCE',firsthub:'MA PREMIÈRE SÉANCE',fpage:'MA PREMIÈRE SÉANCE'};
 const PSY_PAGES={avant:['AVANT',tAvant],apres:['APRÈS',tApres],pas:['MES PETITS PAS',tPas],seances:['HISTORIQUE DES SÉANCES',tSeances],evol:['MON ÉVOLUTION',tEvol]};
-function sessionTabs(tab, hasSession=true){
- return `<nav class="psy-session-tabs" aria-label="Parcours de la séance">${[['avant','Avant'],['pendant','Pendant'],['apres','Après']].map(([key,label])=>
-  `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}${!hasSession&&key==='pendant'?' disabled':''}><span>${label}</span></button>`).join('')}</nav>`;
+function sessionTabs(tab, canOpenPendant=true, hasSession=canOpenPendant){
+ const tabs=[['avant','Avant'],['pendant','Pendant'],['apres','Après']];
+ if(hasSession)tabs.push(['petit-pas','Petit pas']);
+ return `<nav class="psy-session-tabs"${hasSession?' data-with-session-steps':''} aria-label="Parcours de la séance">${tabs.map(([key,label])=>
+  `<button type="button" data-a="session-tab" data-k="${key}"${tab===key?' aria-current="page"':''}${!canOpenPendant&&key==='pendant'?' disabled':''}><span>${label}</span></button>`).join('')}</nav>`;
 }
 function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('data-avant-ai');
  const currentSession=activeSession();
@@ -7429,10 +7486,11 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   h=sessionTabs(tab);
   if(tab==='apres')h+=tApres();
   else if(tab==='avant'){h+=tAvant(true,archived);ph.dataset.avantAi='';}
+  else if(tab==='petit-pas')h+=sessionSteps(item);
   else h+='<div data-psy-after data-psy-pendant></div>';
  }
  else if(c.v==='avant-writing'||c.v==='avant-recap'){
-  h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(c.legacyId||sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
+  h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(c.legacyId||sessionRoute()),Boolean(sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
  }
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
   h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
@@ -7447,7 +7505,9 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
    ?newSessionModeDraft(item,item.preparation||(c.includeInbox?inbox:null)):null;
   afterModule().mountPendant?.(during,item,{planned,startEdit:()=>sessionModeDraft(item),finish:()=>finishModeSession(item)});
  }
- const after=B.querySelector('[data-psy-after]:not([data-psy-pendant])');
+ const steps=B.querySelector('[data-session-steps]');
+ if(steps){mountSessionSteps(steps,currentSession);window.__enPsyIcons?.(steps);}
+ const after=B.querySelector('[data-psy-after]:not([data-psy-pendant],[data-session-steps])');
  if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,
   review:c.review,onSelect:openSession,onExit:c.id?back:null,onConfirm:window.__enPsyBridge.exit,
   onViewChange:view=>{c.review=view==='review'}});
@@ -7514,6 +7574,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'psy-page':openPsyPage(d.k);break;
  case'session-open':openSession(d.i,d.k);break;
  case'session-archive':case'seopen':openArchive(d.i);break;
+ case'session-steps-all':window.__enShow('mpp');break;
  case'session-tab':
   if(cur().v==='avant-writing'){
    if(d.k==='avant')break;
