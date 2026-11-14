@@ -6,12 +6,12 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../psy-apres.js', import.meta.url), 'utf8');
 const model = () => {
-  const context = { crypto: webcrypto };
+  const context = { crypto: webcrypto, __enKeep: (key, state) => state };
   const api = 'globalThis.__enPsyAfter = {';
   vm.runInNewContext(source.replace(api,
     'globalThis.model = { calendarOccurrences, migrate, syncCalendar, modeContext, updateHistory }; ' + api),
   context);
-  return context.model;
+  return { ...context.model, after: context.__enPsyAfter };
 };
 const plain = value => JSON.parse(JSON.stringify(value));
 
@@ -84,4 +84,34 @@ test('un retour validé peut retrouver les éléments conservés dans l’histor
   assert.equal(session.completed, true);
   assert.deepEqual(plain(session.topics), [{ text: 'Sujet préparé', checked: false }]);
   assert.deepEqual(plain(session.rubrics.aborde.paragraphs), ['Premier sujet', 'Autre sujet']);
+});
+
+
+test('Pendant remplace et efface les anciennes notes sans dupliquer la note en cours', () => {
+  const { after } = model();
+  const history = [{
+    id: 'ancienne', date: '2026-11-09', q: 'Séance passée',
+    prev: ['Mon sujet'], suj: ['Mon sujet'],
+    notes: [['NOTE', '14:00', 'Première note'], ['NOTE', '14:01', 'À effacer'], ['NOTE', '14:02', 'Dernière note']],
+  }];
+  const [session] = after.prepare({}, history, []);
+  const draft = {
+    note: 'Dernière note réécrite',
+    noteHtml: '<strong>Dernière note réécrite</strong>',
+    replacesLegacyNote: 'Dernière note',
+    noteEdits: { 0: { text: 'Première note réécrite', html: '' }, 1: { text: '', html: '' } },
+  };
+  const mode = {
+    sessionDate: session.date, msSubjects: [{ id: 'topic', t: 'Mon sujet' }], msCk: {},
+    msNotes: { me: [['14:03', draft.note]] },
+  };
+
+  after.recordMode({}, mode, history, [], session.id, draft);
+
+  assert.deepEqual(plain(session.notes).map(note => note.text), ['Première note réécrite', 'Dernière note réécrite']);
+  assert.equal(session.notes[1].html, draft.noteHtml);
+  assert.equal(session.topics[0].checked, false);
+  assert.equal(session.completed, true);
+  assert.equal(session.finishedModeDraft.noteEdits, undefined);
+  assert.deepEqual(plain(history[0].notes).map(note => note[2]), ['Première note réécrite', 'Dernière note réécrite']);
 });

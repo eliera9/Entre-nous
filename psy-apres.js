@@ -640,23 +640,17 @@
         richWriting.write(node, paragraph, html, true);
         if (entry.checked) {
           const checked = entry.checked[index];
-          const label = element('span');
-          label.append(...node.childNodes);
-          if (entry.onCheck) {
-            const checkbox = element('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = checked;
-            checkbox.setAttribute('aria-label', 'Sujet abordé : ' + paragraph);
-            checkbox.addEventListener('change', () => entry.onCheck(paragraph, checkbox.checked));
-            node.append(checkbox, label);
-          } else {
-            const statusIcon = element('i');
-            statusIcon.dataset.lucide = checked ? 'circle-check' : 'circle';
-            statusIcon.setAttribute('aria-hidden', 'true');
-            if (checked) statusIcon.dataset.checked = '';
-            label.prepend(element('span', 'en-sr', checked ? 'Sujet abordé : ' : 'Sujet à aborder : '));
-            node.append(statusIcon, label);
-          }
+          const label = element('label', 'en-pendant-topic');
+          const checkbox = element('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = checked;
+          const mark = element('span', 'en-pendant-check');
+          mark.setAttribute('aria-hidden', 'true');
+          const text = element('span', 'en-pendant-topic-text');
+          text.append(...node.childNodes);
+          label.append(checkbox, mark, text);
+          checkbox.addEventListener('change', () => entry.onCheck(paragraph, checkbox.checked));
+          node.append(label);
         }
         body.append(node);
       });
@@ -918,21 +912,20 @@
       state.sessions.find(item => item.date === date && item.calendarKey && !item.fromMode && !item.completed);
     const context = { ...modeContext(current), fromMode: true };
     if (session) {
-      if (draft && (session.fromMode || session.completed || draft.replacesLegacyNote)) {
+      if (draft) {
         const topics = new Map(session.topics.map(topic => [topic.text, topic]));
         for (const topic of context.topics) topics.set(topic.text, topic);
         context.topics = [...topics.values()];
-        const previousNote = session.finishedModeDraft?.note?.trim() || draft.replacesLegacyNote?.trim();
-        const notes = [...session.notes];
-        if (previousNote) {
-          const index = notes.findLastIndex(note => note.text?.trim() === previousNote);
-          if (index !== -1) notes.splice(index, 1);
-        }
-        context.notes = [...notes, ...context.notes.filter(note => !notes.some(existing => existing.text === note.text))];
+        const notes = previousPendantNotes(session, draft)
+          .filter(note => note.text.trim())
+          .map(({ index, ...note }) => note);
+        const [currentNote] = context.notes;
+        if (currentNote && draft.noteHtml) currentNote.html = draft.noteHtml;
+        context.notes = [...notes, ...context.notes];
       }
       Object.assign(session, context);
       if (draft) {
-        const { replacesLegacyNote, ...finishedDraft } = draft;
+        const { replacesLegacyNote, noteEdits, ...finishedDraft } = draft;
         session.finishedModeDraft = finishedDraft;
       }
       if (session.completed) updateHistory(history, session);
@@ -1168,12 +1161,14 @@
     return topics;
   }
 
-  function previousPendantNotes(session) {
-    const notes = (session.notes || []).map(note => note.text);
-    const editableText = session.finishedModeDraft?.note?.trim() || session.modeDraft?.replacesLegacyNote?.trim();
-    const index = editableText ? notes.findLastIndex(text => text?.trim() === editableText) : -1;
-    if (index !== -1) notes.splice(index, 1);
-    return [...new Set(strings(notes))];
+  function previousPendantNotes(session, draft) {
+    const notes = session.notes || [];
+    const editableText = session.finishedModeDraft?.note?.trim() || draft?.replacesLegacyNote?.trim();
+    const current = editableText ? notes.findLastIndex(note => note.text?.trim() === editableText) : -1;
+    return notes.flatMap((note, index) => {
+      if (index === current || !note.text?.trim()) return [];
+      return [{ ...note, ...draft?.noteEdits?.[index], index }];
+    });
   }
 
   function mountPendant(host, session, { startEdit, finish, planned }) {
@@ -1182,7 +1177,7 @@
     const content = get('[data-reading-content]');
     const pencil = get('[data-edit]');
     const next = get('[data-finish]');
-    let noteField;
+    const noteFields = new Map();
     let draft;
     let formatting;
     let editing = false;
@@ -1216,28 +1211,26 @@
     tools.append(element('span', 'en-format-aa', 'Aa'), closeTools);
     pencil.before(tools);
 
+    function toggleTopic(text, checked) {
+      const active = startEdit();
+      const subject = active.subjects.find(entry => entry.t === text);
+      if (!subject) return;
+      active.checked = active.checked.filter(id => id !== subject.id);
+      if (checked) active.checked.push(subject.id);
+      save();
+    }
+
     function display(readingDraft, editable) {
       const topics = pendantTopics(session, readingDraft);
-      const earlier = previousPendantNotes(session);
-      if (readingDraft?.note?.trim()) {
-        const duplicate = earlier.findIndex(text => text.trim() === readingDraft.note.trim());
-        if (duplicate !== -1) earlier.splice(duplicate, 1);
-      }
-      const note = readingDraft?.note || '';
-      const hasNote = Boolean(note.trim());
-      const paragraphs = hasNote ? [...earlier, note] : earlier;
+      const earlier = previousPendantNotes(session, readingDraft);
+      const current = { text: readingDraft?.note || '', html: readingDraft?.noteHtml || '' };
+      const notes = [...earlier, current];
+      const visibleNotes = notes.filter(note => note.text.trim());
       content.replaceChildren();
+      noteFields.clear();
       renderRecapSections(content, [
-        { title: 'Sujets préparés', numeral: 'I', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true,
-          onCheck: editable ? (text, checked) => {
-            const subject = readingDraft.subjects.find(subject => subject.t === text);
-            if (!subject) return;
-            readingDraft.checked = readingDraft.checked.filter(id => id !== subject.id);
-            if (checked) readingDraft.checked.push(subject.id);
-            save();
-          } : undefined },
-        { title: 'Mes notes', numeral: 'II', paragraphs: paragraphs.length ? paragraphs : ['Aucune note pour cette séance.'],
-          rich: hasNote ? [...earlier.map(() => ''), readingDraft.noteHtml] : [], choices: [] },
+        { title: 'Sujets préparés', numeral: 'I', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true, onCheck: toggleTopic },
+        { title: 'Mes notes', numeral: 'II', paragraphs: [], choices: [] },
       ]);
       const topicsSection = content.firstElementChild;
       if (!topics.size) topicsSection.append(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
@@ -1245,33 +1238,48 @@
       const noteHeading = notesSection.firstElementChild;
       const box = element('div', 'en-pendant-note-box');
       notesSection.append(box);
-      const texts = [...notesSection.querySelectorAll(':scope > .en-recap-words')];
+
       if (editable) {
-        // Keep earlier entries visible while editing the current note.
-        for (const text of texts.slice(0, earlier.length)) box.append(text);
-        for (const text of texts.slice(earlier.length)) text.remove();
-        noteField = element('div', 'en-recap-words en-pendant-note-input');
-        richWriting.prepareField(noteField, 'Quelques mots, si j’en ai envie…', 'Mes notes');
-        richWriting.write(noteField, note, readingDraft.noteHtml);
-        box.append(noteField);
+        for (const [position, note] of notes.entries()) {
+          const field = element('div', 'en-recap-words en-pendant-note-input');
+          const label = note === current ? 'Mes notes' : 'Note précédente ' + (position + 1);
+          richWriting.prepareField(field, 'Quelques mots, si j’en ai envie…', label);
+          richWriting.write(field, note.text, note.html);
+          box.append(field);
+          noteFields.set(field, note.index);
+        }
       } else {
-        box.append(...texts);
-        if (!session.completed && session.modeDraft?.note?.trim()) {
+        for (const note of visibleNotes) {
+          const text = element(note.html ? 'div' : 'p', note.html ? 'en-recap-words en-formatted' : 'en-recap-words');
+          richWriting.write(text, note.text, note.html, true);
+          box.append(text);
+        }
+        if (!visibleNotes.length) box.append(element('p', 'en-recap-words', 'Aucune note pour cette séance.'));
+        if (!session.completed && (session.modeDraft?.note?.trim() || Object.keys(session.modeDraft?.noteEdits || {}).length)) {
           noteHeading.classList.add('en-recap-note-heading');
           noteHeading.append(element('span', 'en-recap-draft-status', 'Brouillon enregistré'));
         }
       }
-      globalThis.__enPsyIcons?.(content);
     }
 
-    function updateNote() {
-      const note = richWriting.read(noteField);
-      if (draft.note !== note.text || (draft.noteHtml || '') !== note.html) {
-        draft.note = note.text;
-        if (note.html) draft.noteHtml = note.html;
-        else delete draft.noteHtml;
-        save();
+    function updateNotes() {
+      let changed = false;
+      for (const [field, index] of noteFields) {
+        const { text, html } = richWriting.read(field);
+        field.classList.toggle('en-rich-empty', !text.trim());
+        if (index === undefined) {
+          if (draft.note === text && (draft.noteHtml || '') === html) continue;
+          draft.note = text;
+          if (html) draft.noteHtml = html;
+          else delete draft.noteHtml;
+        } else {
+          const previous = draft.noteEdits?.[index] || session.notes[index];
+          if (previous.text === text && (previous.html || '') === html) continue;
+          (draft.noteEdits ||= {})[index] = { text, html };
+        }
+        changed = true;
       }
+      if (changed) save();
       formatting.refresh();
     }
 
@@ -1292,7 +1300,7 @@
       busy = true;
       pencil.disabled = next.disabled = tools.disabled = true;
       try {
-        if (editing) updateNote();
+        if (editing) updateNotes();
         await save();
         if (!host.isConnected) return;
         if (continueToAfter) {
@@ -1320,7 +1328,7 @@
       if (editing) leaveEditing(false);
       else {
         openEditor();
-        noteField.focus({ preventScroll: true });
+        noteFields.keys().next().value?.focus({ preventScroll: true });
       }
     });
     tools.addEventListener('click', openEditor);
@@ -1335,7 +1343,7 @@
     status.setAttribute('role', 'status');
     content.before(panel, status);
     recap.dataset.sessionEditor = '';
-    formatting = richWriting.mount(recap, updateNote);
+    formatting = richWriting.mount(recap, updateNotes);
     host.replaceChildren(recap);
     display(session.modeDraft || session.finishedModeDraft || planned, false);
     globalThis.__enPsyIcons?.(host);

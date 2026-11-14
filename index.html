@@ -7237,7 +7237,7 @@ async function finishModeSession(item){
  if(draft){
   const previous=psySnapshot();
   const mode={
-   msNotes:draft.note.trim()?{me:[[hm(),draft.note.trim()]]}:null,
+   msNotes:draft.note.trim()?{me:[[hm(),draft.note]]}:null,
    msCk:Object.fromEntries(draft.checked.map(id=>[id,true])),
    msSubjects:draft.subjects,msDone:1,sessionDate:item.date,
   };
