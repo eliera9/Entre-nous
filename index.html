@@ -7179,7 +7179,7 @@ function sessionModeDraft(item){
  for(const [index,topic] of (item.topics||[]).entries()){
   if(!topic.text?.trim()||draft.subjects.some(subject=>subject.t===topic.text))continue;
   const id='past:'+index;
-  draft.subjects.push({id,t:topic.text});
+  draft.subjects.push({id,t:topic.text,...(topic.html?{html:topic.html}:{})});
   if(topic.checked)draft.checked.push(id);
  }
  return draft;
@@ -7239,7 +7239,7 @@ async function finishModeSession(item){
   const mode={
    msNotes:draft.note.trim()?{me:[[hm(),draft.note]]}:null,
    msCk:Object.fromEntries(draft.checked.map(id=>[id,true])),
-   msSubjects:draft.subjects.filter(subject=>!subject.removed).map(({id,t,editedTitle})=>({id,t:editedTitle||t})),msDone:1,sessionDate:item.date,
+   msSubjects:draft.subjects.filter(subject=>!subject.removed).map(({id,t,editedTitle,html})=>({id,t:editedTitle||t,...(html?{html}:{})})),msDone:1,sessionDate:item.date,
   };
   if(!item.completed){
    Object.assign(S,mode);

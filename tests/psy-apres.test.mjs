@@ -144,3 +144,24 @@ test('Pendant renomme un sujet coché dans une séance existante sans garder l�
   assert.deepEqual(plain(session.finishedModeDraft.subjects), mode.msSubjects);
   assert.deepEqual(plain(history[0].prev), ['Mon sujet reformulé', 'Sujet inchangé']);
 });
+
+test('Pendant conserve la mise en forme d’un sujet entre deux confirmations', () => {
+  const { after } = model();
+  const history = [{ id: 'ancienne', date: '2026-11-09', prev: ['Mon sujet'] }];
+  const [session] = after.prepare({}, history, []);
+  const html = '<strong>Mon sujet</strong>';
+  const draft = { subjects: [{ id: 'a', t: 'Mon sujet', html }], checked: ['a'], note: '' };
+  const mode = { sessionDate: session.date, msSubjects: draft.subjects, msCk: { a: true } };
+
+  after.recordMode({}, mode, history, [], session.id, draft);
+
+  assert.deepEqual(plain(session.topics), [{ text: 'Mon sujet', checked: true, html }]);
+  assert.deepEqual(plain(session.finishedModeDraft.subjects), mode.msSubjects);
+  assert.deepEqual(plain(history[0].prev), ['Mon sujet']);
+
+  const reopened = { ...draft, subjects: [{ id: 'a', t: 'Mon sujet' }] };
+  after.recordMode({}, { ...mode, msSubjects: reopened.subjects }, history, [], session.id, reopened);
+
+  assert.deepEqual(plain(session.topics), [{ text: 'Mon sujet', checked: true }]);
+  assert.deepEqual(plain(session.finishedModeDraft.subjects), reopened.subjects);
+});

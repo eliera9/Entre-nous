@@ -671,33 +671,26 @@
   display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start;
   gap: 9px; min-height: 44px; padding-block: 10px; cursor: pointer;
 }
-[data-psy-pendant] .en-pendant-topic-text { grid-area: 1 / 2; font: inherit; }
-[data-psy-pendant] .en-pendant-topic-editor { grid-area: 1 / 2; display: grid; min-width: 0; }
-[data-psy-pendant] .en-pendant-topic-editor::after,
-[data-psy-pendant] textarea.en-pendant-topic-text {
-  grid-area: 1 / 1; min-width: 0; width: 100%; padding: 0 0 3px; border: 0;
-  border-bottom: 1px solid var(--en-line); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere;
+[data-psy-pendant] .en-pendant-topic-text { grid-area: 1 / 2; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+[data-psy-pendant] .en-pendant-topic-text[contenteditable] {
+  min-height: 1lh; padding-bottom: 3px; border-bottom: 1px solid var(--en-line); cursor: text;
 }
-[data-psy-pendant] .en-pendant-topic-editor::after { content: attr(data-value) ' '; visibility: hidden; }
-[data-psy-pendant] textarea.en-pendant-topic-text {
-  min-height: 0; overflow: hidden; resize: none; border-radius: 0; background: transparent; color: inherit;
-}
-[data-psy-pendant] textarea.en-pendant-topic-text:focus-visible { outline: 0; border-color: var(--en-accent); }
-[data-psy-pendant] .en-pendant-topic input[type="checkbox"],
+[data-psy-pendant] .en-pendant-topic-text[contenteditable]:focus { outline: 0; border-color: var(--en-accent); }
+[data-psy-pendant] .en-pendant-topic > input[type="checkbox"],
 [data-psy-pendant] .en-pendant-check { grid-area: 1 / 1; width: 20px; height: 20px; margin: 0; }
-[data-psy-pendant] .en-pendant-topic input[type="checkbox"] { opacity: 0; cursor: inherit; }
+[data-psy-pendant] .en-pendant-topic > input[type="checkbox"] { opacity: 0; cursor: inherit; }
 [data-psy-pendant] .en-pendant-check {
   display: grid; place-items: center; pointer-events: none;
   border: 1px solid var(--en-muted); border-radius: 50%; background: transparent; color: var(--en-accent);
 }
-[data-psy-pendant] .en-pendant-topic input[type="checkbox"]:checked + .en-pendant-check { border-color: var(--en-accent); background: var(--en-selected); }
-[data-psy-pendant] .en-pendant-topic input[type="checkbox"]:checked + .en-pendant-check::after {
+[data-psy-pendant] .en-pendant-topic > input[type="checkbox"]:checked + .en-pendant-check { border-color: var(--en-accent); background: var(--en-selected); }
+[data-psy-pendant] .en-pendant-topic > input[type="checkbox"]:checked + .en-pendant-check::after {
   content: ''; width: 9px; height: 5px; border: solid currentColor; border-width: 0 0 2px 2px;
   transform: translateY(-1px) rotate(-45deg);
 }
-[data-psy-pendant] .en-pendant-topic input[type="checkbox"]:focus-visible + .en-pendant-check { outline: 2px solid var(--en-accent); outline-offset: 2px; }
+[data-psy-pendant] .en-pendant-topic > input[type="checkbox"]:focus-visible + .en-pendant-check { outline: 2px solid var(--en-accent); outline-offset: 2px; }
 @media (forced-colors: active) {
-  [data-psy-pendant] .en-pendant-topic input[type="checkbox"] { opacity: 1; }
+  [data-psy-pendant] .en-pendant-topic > input[type="checkbox"] { opacity: 1; }
   [data-psy-pendant] .en-pendant-topic .en-pendant-check { display: none; }
 }
 [data-psy-pendant] .en-pendant-note-box {

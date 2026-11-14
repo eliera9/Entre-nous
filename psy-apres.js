@@ -639,64 +639,66 @@
         if (html) node.classList.add('en-formatted');
         if (entry.topics) {
           const topic = entry.topics[index];
-          const row = element(entry.onRename ? 'div' : 'label', 'en-pendant-topic');
+          const row = element(entry.topicFields || topic.html ? 'div' : 'label', 'en-pendant-topic');
           const checkbox = element('input');
           checkbox.type = 'checkbox';
           checkbox.checked = topic.checked;
           const mark = element('span', 'en-pendant-check');
           mark.setAttribute('aria-hidden', 'true');
-          if (entry.onRename) {
-            const editor = element('div', 'en-pendant-topic-editor');
-            const input = element('textarea', 'en-pendant-topic-text');
-            input.rows = 1;
-            input.value = topic.text;
-            input.setAttribute('aria-label', 'Sujet ' + (index + 1));
-
-            function updateField() {
-              editor.dataset.value = input.value;
-              checkbox.setAttribute('aria-label', input.value.trim() || topic.text);
-            }
+          checkbox.setAttribute('aria-label', topic.text);
+          if (entry.topicFields) {
+            const field = element('div', 'en-pendant-topic-text');
+            richWriting.prepareField(field, '', 'Sujet ' + (index + 1));
+            richWriting.write(field, topic.text, topic.html);
+            entry.topicFields.set(field, { id: topic.id, checkbox });
 
             function removeIfEmpty(event) {
-              if (event.isComposing || input.value.trim()) return;
+              if (event.isComposing || richWriting.read(field).text) return;
               event.preventDefault();
               if (!entry.onRemove(topic.id)) return;
-              // Detach the row before focusing a neighbour, so blur cannot restore it.
-              input.removeEventListener('blur', restoreTitle);
-              const previous = node.previousElementSibling;
-              const neighbour = previous || node.nextElementSibling;
-              const target = neighbour?.querySelector('textarea') || entry.nextField();
+              field.removeEventListener('blur', restoreTitle);
+              entry.topicFields.delete(field);
+              const previous = node.previousElementSibling?.querySelector('[data-rich-field]');
+              const target = previous || node.nextElementSibling?.querySelector('[data-rich-field]') || entry.nextField();
               node.remove();
-              [...body.querySelectorAll('textarea')].forEach((field, position) => {
+              [...entry.topicFields.keys()].forEach((field, position) => {
                 field.setAttribute('aria-label', 'Sujet ' + (position + 1));
               });
               if (!body.childElementCount) {
                 body.replaceWith(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
               }
               target?.focus({ preventScroll: true });
-              if (previous && target) target.setSelectionRange(target.value.length, target.value.length);
+              if (previous) {
+                const range = document.createRange();
+                range.selectNodeContents(previous);
+                range.collapse(false);
+                const selection = document.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+              }
             }
 
             function restoreTitle() {
-              input.value = entry.currentTitle(topic.id);
-              updateField();
+              if (richWriting.read(field).text) return;
+              const subject = entry.currentTopic(topic.id);
+              richWriting.write(field, subject.editedTitle || subject.t, subject.html);
             }
 
-            updateField();
-            input.addEventListener('input', () => {
-              const text = input.value.trim();
-              if (text) entry.onRename(topic.id, text);
-              updateField();
-            });
-            input.addEventListener('blur', restoreTitle);
-            input.addEventListener('keydown', event => {
+            field.addEventListener('blur', restoreTitle);
+            field.addEventListener('keydown', event => {
               if (event.key === 'Backspace' || event.key === 'Delete') removeIfEmpty(event);
             });
-            input.addEventListener('beforeinput', event => {
+            field.addEventListener('beforeinput', event => {
               if (event.inputType === 'deleteContentBackward' || event.inputType === 'deleteContentForward') removeIfEmpty(event);
             });
-            editor.append(input);
-            row.append(checkbox, mark, editor);
+            row.append(checkbox, mark, field);
+          } else if (topic.html) {
+            const text = element('div', 'en-pendant-topic-text en-formatted');
+            richWriting.write(text, paragraph, topic.html, true);
+            row.append(checkbox, mark, text);
+            row.addEventListener('click', event => {
+              if (!event.target.closest('a, input')) checkbox.click();
+            });
           } else {
             row.append(checkbox, mark, element('span', 'en-pendant-topic-text', paragraph));
           }
@@ -781,7 +783,7 @@
     const subjects = legacy.msSubjects || [];
     return {
       topics: subjects.filter(subject => subject.t?.trim()).map(subject => ({
-        text: subject.t, checked: Boolean(legacy.msCk?.[subject.id]),
+        text: subject.t, checked: Boolean(legacy.msCk?.[subject.id]), ...(subject.html ? { html: subject.html } : {}),
       })),
       notes: Object.entries(legacy.msNotes || {}).flatMap(([id, entries]) =>
         (Array.isArray(entries) ? entries : []).filter(row => row[1]?.trim()).map(([time, text]) => ({
@@ -1209,11 +1211,11 @@
     const known = new Set(subjects.map(subject => subject.t));
     const checked = new Set(draft?.checked || []);
     const topics = subjects.filter(subject => !subject.removed).map(subject => ({
-      id: subject.id, text: subject.editedTitle || subject.t, checked: checked.has(subject.id),
+      id: subject.id, text: subject.editedTitle || subject.t, html: subject.html, checked: checked.has(subject.id),
     }));
     for (const [index, topic] of (session.topics || []).entries()) {
       if (topic.text?.trim() && !known.has(topic.text)) {
-        topics.push({ id: 'past:' + index, text: topic.text, checked: Boolean(topic.checked) });
+        topics.push({ id: 'past:' + index, text: topic.text, html: topic.html, checked: Boolean(topic.checked) });
         known.add(topic.text);
       }
     }
@@ -1236,6 +1238,7 @@
     const content = get('[data-reading-content]');
     const pencil = get('[data-edit]');
     const next = get('[data-finish]');
+    const topicFields = new Map();
     const noteFields = new Map();
     let draft;
     let formatting;
@@ -1281,14 +1284,6 @@
       return draft.subjects.find(subject => subject.id === id);
     }
 
-    function renameTopic(id, text) {
-      const subject = subjectById(id);
-      if (!subject || (subject.editedTitle || subject.t) === text) return;
-      if (text === subject.t) delete subject.editedTitle;
-      else subject.editedTitle = text;
-      save();
-    }
-
     function removeTopic(id) {
       const subject = subjectById(id);
       if (!subject || subject.removed) return false;
@@ -1306,15 +1301,12 @@
       const notes = [...earlier, current];
       const visibleNotes = notes.filter(note => note.text.trim());
       content.replaceChildren();
+      topicFields.clear();
       noteFields.clear();
       renderRecapSections(content, [
         { title: 'Sujets préparés', numeral: 'I', paragraphs: topics.map(topic => topic.text), topics, choices: [], bullets: true,
-          onCheck: toggleTopic, onRename: editable ? renameTopic : null, onRemove: removeTopic,
-          nextField: () => noteFields.keys().next().value,
-          currentTitle: id => {
-            const subject = subjectById(id);
-            return subject?.editedTitle || subject?.t || '';
-          } },
+          onCheck: toggleTopic, topicFields: editable ? topicFields : null, onRemove: removeTopic,
+          nextField: () => noteFields.keys().next().value, currentTopic: subjectById },
         { title: 'Mes notes', numeral: 'II', paragraphs: [], choices: [] },
       ]);
       const topicsSection = content.firstElementChild;
@@ -1347,8 +1339,20 @@
       }
     }
 
-    function updateNotes() {
+    function updateWriting() {
       let changed = false;
+      for (const [field, { id, checkbox }] of topicFields) {
+        const { text, html } = richWriting.read(field);
+        if (!text) continue;
+        const subject = subjectById(id);
+        if ((subject.editedTitle || subject.t) === text && (subject.html || '') === html) continue;
+        if (text === subject.t) delete subject.editedTitle;
+        else subject.editedTitle = text;
+        if (html) subject.html = html;
+        else delete subject.html;
+        checkbox.setAttribute('aria-label', text);
+        changed = true;
+      }
       for (const [field, index] of noteFields) {
         const { text, html } = richWriting.read(field);
         field.classList.toggle('en-rich-empty', !text.trim());
@@ -1385,7 +1389,7 @@
       busy = true;
       pencil.disabled = next.disabled = tools.disabled = true;
       try {
-        if (editing) updateNotes();
+        if (editing) updateWriting();
         await save();
         if (!host.isConnected) return;
         if (continueToAfter) {
@@ -1413,7 +1417,7 @@
       if (editing) leaveEditing(false);
       else {
         openEditor();
-        (get('textarea.en-pendant-topic-text') || noteFields.keys().next().value)?.focus({ preventScroll: true });
+        get('[data-rich-field]')?.focus({ preventScroll: true });
       }
     });
     tools.addEventListener('click', openEditor);
@@ -1428,7 +1432,7 @@
     status.setAttribute('role', 'status');
     content.before(panel, status);
     recap.dataset.sessionEditor = '';
-    formatting = richWriting.mount(recap, updateNotes);
+    formatting = richWriting.mount(recap, updateWriting);
     host.replaceChildren(recap);
     display(session.modeDraft || session.finishedModeDraft || planned, false);
     globalThis.__enPsyIcons?.(host);
