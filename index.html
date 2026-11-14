@@ -7164,6 +7164,26 @@ function newSessionModeDraft(item, prep){
  return {...window.__enPsyModeSession.newDraft(prep?.notes||[],prep?.prep?.stars||new Set(),first,
   [...questions,...window.__enPsyAvant.modeTopics(prep?.prep||{})]),date:item.date};
 }
+function sessionModeDraft(item){
+ if(!item.modeDraft){
+  item.modeDraft=item.finishedModeDraft?JSON.parse(JSON.stringify(item.finishedModeDraft)):
+   item.completed?{subjects:[],checked:[],note:'',notesOpen:false,date:item.date}:
+   newSessionModeDraft(item,sessionPreparation());
+  const previousNote=!item.finishedModeDraft&&item.notes?.findLast(note=>note.text?.trim())?.text;
+  if(previousNote){
+   item.modeDraft.note=previousNote;
+   item.modeDraft.replacesLegacyNote=previousNote;
+  }
+ }
+ const draft=item.modeDraft;
+ for(const [index,topic] of (item.topics||[]).entries()){
+  if(!topic.text?.trim()||draft.subjects.some(subject=>subject.t===topic.text))continue;
+  const id='past:'+index;
+  draft.subjects.push({id,t:topic.text});
+  if(topic.checked)draft.checked.push(id);
+ }
+ return draft;
+}
 function openMS(trigger){
  const session=window.__enPsyModeSession;
  const app=ph.closest('#en-app');
@@ -7181,8 +7201,7 @@ function openMS(trigger){
  }
  const item=activeSession();
  const returnFocus=trigger?.currentTarget||ph.querySelector('.psmsb');
- item.modeDraft||=item.finishedModeDraft?JSON.parse(JSON.stringify(item.finishedModeDraft)):
-  newSessionModeDraft(item,sessionPreparation());
+ sessionModeDraft(item);
  window.__vaultAutosave?.();
  closeSheet(1);unlock();
  const overlay=document.createElement('div');
@@ -7198,7 +7217,7 @@ function openMS(trigger){
   try{
    await window.__vaultAutosave?.();
    close();
-   if(finish){finishModeSession(item);return;}
+   if(finish){await finishModeSession(item);return;}
    const fromPencil=returnFocus?.hasAttribute('data-edit');
    if(cur().tab==='pendant')render();
    const focus=fromPencil?B.querySelector('[data-psy-pendant] [data-edit]'):returnFocus;
@@ -7213,19 +7232,27 @@ function openMS(trigger){
   finish:()=>leave(true),
  });
 }
-function finishModeSession(item){
+async function finishModeSession(item){
  const route=sessionRoute(),draft=item.modeDraft;
  if(draft){
   const previous=psySnapshot();
-  S.msNotes=draft.note.trim()?{me:[[hm(),draft.note]]}:null;
-  S.msCk=Object.fromEntries(draft.checked.map(id=>[id,true]));
-  S.msSubjects=draft.subjects;S.msDone=1;S.sessionDate=item.date;delete item.modeDraft;
-  if(S.mode==='first')S.mode='vide';
-  window.__enPsyAfter?.recordMode(previous,psySnapshot(),SEANCES,calendar(),item.id,draft);
+  const mode={
+   msNotes:draft.note.trim()?{me:[[hm(),draft.note.trim()]]}:null,
+   msCk:Object.fromEntries(draft.checked.map(id=>[id,true])),
+   msSubjects:draft.subjects,msDone:1,sessionDate:item.date,
+  };
+  if(!item.completed){
+   Object.assign(S,mode);
+   if(S.mode==='first')S.mode='vide';
+  }
+  delete item.modeDraft;
+  afterModule()?.recordMode(previous,mode,SEANCES,calendar(),item.id,draft);
+  await window.__vaultAutosave?.();
  }
- S.stack.splice(S.stack.indexOf(route)+1);route.tab='apres';route.review=false;
+ if(sessionRoute()!==route)return;
+ S.stack.splice(S.stack.indexOf(route)+1);route.tab='apres';route.review=Boolean(item.completed);
  render(1);
- B.querySelector('[data-psy-after] .en-heading')?.focus({preventScroll:true});
+ B.querySelector('[data-psy-after] .en-heading:not([hidden])')?.focus({preventScroll:true});
 }
 
 /* ---------- APRÈS ---------- */
@@ -7418,7 +7445,7 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   const item=currentSession,archived=c.v==='archive';
   const planned=!archived&&!item.modeDraft&&!item.finishedModeDraft&&!item.topics?.length
    ?newSessionModeDraft(item,item.preparation||(c.includeInbox?inbox:null)):null;
-  afterModule().mountPendant?.(during,item,{planned,edit:archived?null:openMS,finish:archived?null:()=>finishModeSession(item)});
+  afterModule().mountPendant?.(during,item,{planned,startEdit:()=>sessionModeDraft(item),finish:()=>finishModeSession(item)});
  }
  const after=B.querySelector('[data-psy-after]:not([data-psy-pendant])');
  if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,

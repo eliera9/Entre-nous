@@ -90,7 +90,9 @@
       onChange?.();
     });
     note.addEventListener('input', () => {
+      if (draft.note === note.value) return;
       draft.note = note.value;
+      delete draft.noteHtml;
       onChange?.();
     });
 

@@ -659,14 +659,32 @@
 :is([data-psy-after], [data-psy-avant-writing]) :is(.en-rich-field, .en-formatted) hr { margin: .5em 0; border: 0; border-top: 1px solid var(--en-line); }
 
 
-/* Pendant : seules les coches et le repère de brouillon complètent le récap commun. */
+/* Pendant : commandes et édition intégrées au récap. */
 [data-psy-pendant] h4.en-recap-return-title { margin: 0; cursor: auto; }
-[data-psy-pendant] ul.en-recap-words { padding-inline-start: 0; }
-[data-psy-pendant] ul.en-recap-words > li {
+[data-psy-pendant] .en-recap-title-row > .en-format-toggle { grid-column: 3; grid-row: 1; justify-self: end; margin-inline-end: 44px; }
+[data-psy-pendant] .en-recap-title-row > .en-edit-return { grid-column: 3; grid-row: 1; }
+[data-psy-pendant] .en-recap-title-row .en-heading { margin-inline: 44px; }
+[data-psy-pendant] .en-edit-return::before { inset: 6px; }
+[data-psy-pendant] [data-pendant-topics] { padding-inline-start: 0; }
+[data-psy-pendant] [data-pendant-topics] > li {
   display: grid; grid-template-columns: 14px minmax(0,1fr);
   align-items: start; gap: 7px; list-style: none;
 }
-[data-psy-pendant] .en-recap-words svg { width: 14px; height: 14px; margin-top: 3px; stroke-width: 1.5; color: var(--en-accent); }
-[data-psy-pendant] .en-recap-words svg:not([data-checked]) { color: var(--en-muted); }
-[data-psy-pendant] .en-recap-note-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; }
+[data-psy-pendant] [data-pendant-topics] svg { width: 14px; height: 14px; margin-top: 3px; stroke-width: 1.5; color: var(--en-accent); }
+[data-psy-pendant] [data-pendant-topics] svg:not([data-checked]) { color: var(--en-muted); }
+[data-psy-pendant] [data-pendant-topics] input { width: 14px; height: 14px; margin: 3px 0 0; accent-color: var(--en-accent); }
+[data-psy-pendant] .en-pendant-note-box {
+  min-width: 0; padding: 12px 14px; border: 1px solid var(--en-line);
+  border-radius: 12px; background: var(--en-field); overflow-wrap: anywhere;
+}
+[data-psy-pendant] .en-pendant-note-input { min-height: 88px; }
+[data-psy-pendant] .en-pendant-note-box > * + .en-pendant-note-input { margin-block-start: 10px; }
+[data-psy-pendant] .en-pendant-note-input:focus { outline: none; }
+[data-psy-pendant] .en-pendant-note-box:focus-within { border-color: var(--en-accent); }
+[data-psy-pendant] .en-recap-rubric .en-recap-note-heading { grid-template-columns: 28px minmax(0,1fr) auto; }
 [data-psy-pendant] .en-recap-draft-status { color: var(--en-accent); font: 400 11px/1.4 Figtree, sans-serif; letter-spacing: 0; }
+[data-psy-pendant] [data-format-panel]:not([hidden]) { margin-block: 9px 14px; }
+
+@container (max-width: 320px) {
+  [data-psy-pendant] .en-recap-title-row .en-heading { gap: 5px; letter-spacing: .02em; }
+}

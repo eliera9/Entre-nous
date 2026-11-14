@@ -609,7 +609,7 @@
     for (const entry of sections) {
       const section = element('section', 'en-recap-rubric');
       const heading = element('h4');
-      const numeral = romanNumerals[rubrics.findIndex(rubric => rubric.id === entry.id)];
+      const numeral = entry.numeral || romanNumerals[rubrics.findIndex(rubric => rubric.id === entry.id)];
       if (numeral) {
         heading.className = 'en-recap-numbered-heading';
         const number = element('span', 'en-recap-rubric-number', numeral);
@@ -632,6 +632,7 @@
       }
       const body = entry.bullets ? element('ul', 'en-recap-words') : section;
       if (entry.bullets) body.setAttribute('role', 'list');
+      if (entry.checked) body.dataset.pendantTopics = '';
       entry.paragraphs.forEach((paragraph, index) => {
         const html = entry.rich?.[index];
         const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', entry.bullets ? '' : 'en-recap-words');
@@ -639,14 +640,23 @@
         richWriting.write(node, paragraph, html, true);
         if (entry.checked) {
           const checked = entry.checked[index];
-          const statusIcon = element('i');
-          statusIcon.dataset.lucide = checked ? 'circle-check' : 'circle';
-          statusIcon.setAttribute('aria-hidden', 'true');
-          if (checked) statusIcon.dataset.checked = '';
-          const status = element('span', 'en-sr', checked ? 'Sujet abordé : ' : 'Sujet à aborder : ');
           const label = element('span');
-          label.append(status, ...node.childNodes);
-          node.append(statusIcon, label);
+          label.append(...node.childNodes);
+          if (entry.onCheck) {
+            const checkbox = element('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = checked;
+            checkbox.setAttribute('aria-label', 'Sujet abordé : ' + paragraph);
+            checkbox.addEventListener('change', () => entry.onCheck(paragraph, checkbox.checked));
+            node.append(checkbox, label);
+          } else {
+            const statusIcon = element('i');
+            statusIcon.dataset.lucide = checked ? 'circle-check' : 'circle';
+            statusIcon.setAttribute('aria-hidden', 'true');
+            if (checked) statusIcon.dataset.checked = '';
+            label.prepend(element('span', 'en-sr', checked ? 'Sujet abordé : ' : 'Sujet à aborder : '));
+            node.append(statusIcon, label);
+          }
         }
         body.append(node);
       });
@@ -908,20 +918,24 @@
       state.sessions.find(item => item.date === date && item.calendarKey && !item.fromMode && !item.completed);
     const context = { ...modeContext(current), fromMode: true };
     if (session) {
-      if (draft && session.fromMode) {
+      if (draft && (session.fromMode || session.completed || draft.replacesLegacyNote)) {
         const topics = new Map(session.topics.map(topic => [topic.text, topic]));
         for (const topic of context.topics) topics.set(topic.text, topic);
         context.topics = [...topics.values()];
-        const previousNote = session.finishedModeDraft?.note?.trim();
+        const previousNote = session.finishedModeDraft?.note?.trim() || draft.replacesLegacyNote?.trim();
         const notes = [...session.notes];
         if (previousNote) {
-          const index = notes.findLastIndex(note => note.text === previousNote);
+          const index = notes.findLastIndex(note => note.text?.trim() === previousNote);
           if (index !== -1) notes.splice(index, 1);
         }
         context.notes = [...notes, ...context.notes.filter(note => !notes.some(existing => existing.text === note.text))];
       }
       Object.assign(session, context);
-      if (draft) session.finishedModeDraft = draft;
+      if (draft) {
+        const { replacesLegacyNote, ...finishedDraft } = draft;
+        session.finishedModeDraft = finishedDraft;
+      }
+      if (session.completed) updateHistory(history, session);
     }
     else state.sessions.push(newSession(date, context));
     save();
@@ -1143,33 +1157,36 @@
     return { showRecap, backToRecap() { if (!archive || view !== 'write') return false; saveRecap(); return true; } };
   }
 
-  function mountPendant(host, session, { edit, finish, planned }) {
-    const recap = template('recap', 'psy-pendant').firstElementChild;
-    const get = selector => recap.querySelector(selector);
-    const { modeDraft, finishedModeDraft } = session;
-    const draft = modeDraft || finishedModeDraft || planned;
+  function pendantTopics(session, draft) {
     const topics = new Map();
     for (const subject of draft?.subjects || []) {
       if (subject.t?.trim()) topics.set(subject.t, Boolean(draft.checked?.includes(subject.id)));
     }
     for (const topic of session.topics || []) {
-      if (topic.text?.trim() && !topics.has(topic.text)) topics.set(topic.text, topic.checked);
+      if (topic.text?.trim() && !topics.has(topic.text)) topics.set(topic.text, Boolean(topic.checked));
     }
+    return topics;
+  }
+
+  function previousPendantNotes(session) {
     const notes = (session.notes || []).map(note => note.text);
-    const priorNote = finishedModeDraft?.note?.trim();
-    if (modeDraft && priorNote) {
-      const previous = notes.findLastIndex(text => text?.trim() === priorNote);
-      if (previous !== -1) notes.splice(previous, 1);
-    }
-    if (draft?.note?.trim()) notes.push(draft.note.trim());
-    const notesToRead = [...new Set(strings(notes))];
-    const sections = [];
-    if (topics.size) sections.push({
-      title: 'Sujets préparés', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true,
-    });
-    sections.push({
-      title: 'Mes notes', paragraphs: notesToRead.length ? notesToRead : ['Aucune note pour cette séance.'], choices: [],
-    });
+    const editableText = session.finishedModeDraft?.note?.trim() || session.modeDraft?.replacesLegacyNote?.trim();
+    const index = editableText ? notes.findLastIndex(text => text?.trim() === editableText) : -1;
+    if (index !== -1) notes.splice(index, 1);
+    return [...new Set(strings(notes))];
+  }
+
+  function mountPendant(host, session, { startEdit, finish, planned }) {
+    const recap = template('recap', 'psy-pendant').firstElementChild;
+    const get = selector => recap.querySelector(selector);
+    const content = get('[data-reading-content]');
+    const pencil = get('[data-edit]');
+    const next = get('[data-finish]');
+    let noteField;
+    let draft;
+    let formatting;
+    let editing = false;
+    let busy = false;
 
     const date = get('[data-reading-date]');
     date.dateTime = session.date;
@@ -1178,28 +1195,149 @@
     const heading = element('h4', title.querySelector('summary').className);
     heading.append(element('span', '', 'Le fil de ma séance'));
     title.replaceWith(heading);
+    const changeIcon = name => {
+      const icon = element('i');
+      icon.dataset.lucide = name;
+      icon.setAttribute('aria-hidden', 'true');
+      pencil.replaceChildren(icon);
+      globalThis.__enPsyIcons?.(pencil);
+    };
 
-    const pencil = get('[data-edit]');
-    pencil.hidden = !edit;
-    if (edit) pencil.addEventListener('click', edit);
-    const next = get('[data-finish]');
-    next.hidden = !finish;
-    if (finish) {
-      next.querySelector('span').textContent = 'Passer à Après';
-      next.querySelector('[data-lucide]').dataset.lucide = 'arrow-right';
-      next.addEventListener('click', finish);
+    const tools = element('button', 'en-format-toggle cursor-interaction');
+    tools.type = 'button';
+    tools.dataset.formatToggle = '';
+    tools.setAttribute('aria-expanded', 'false');
+    tools.setAttribute('aria-label', 'Outils d’écriture');
+    tools.setAttribute('aria-controls', 'psy-pendant-format-tools-panel');
+    tools.setAttribute('data-tooltip', 'Outils d’écriture');
+    const closeTools = element('i');
+    closeTools.dataset.lucide = 'x';
+    closeTools.setAttribute('aria-hidden', 'true');
+    tools.append(element('span', 'en-format-aa', 'Aa'), closeTools);
+    pencil.before(tools);
+
+    function display(readingDraft, editable) {
+      const topics = pendantTopics(session, readingDraft);
+      const earlier = previousPendantNotes(session);
+      if (readingDraft?.note?.trim()) {
+        const duplicate = earlier.findIndex(text => text.trim() === readingDraft.note.trim());
+        if (duplicate !== -1) earlier.splice(duplicate, 1);
+      }
+      const note = readingDraft?.note || '';
+      const hasNote = Boolean(note.trim());
+      const paragraphs = hasNote ? [...earlier, note] : earlier;
+      content.replaceChildren();
+      renderRecapSections(content, [
+        { title: 'Sujets préparés', numeral: 'I', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true,
+          onCheck: editable ? (text, checked) => {
+            const subject = readingDraft.subjects.find(subject => subject.t === text);
+            if (!subject) return;
+            readingDraft.checked = readingDraft.checked.filter(id => id !== subject.id);
+            if (checked) readingDraft.checked.push(subject.id);
+            save();
+          } : undefined },
+        { title: 'Mes notes', numeral: 'II', paragraphs: paragraphs.length ? paragraphs : ['Aucune note pour cette séance.'],
+          rich: hasNote ? [...earlier.map(() => ''), readingDraft.noteHtml] : [], choices: [] },
+      ]);
+      const topicsSection = content.firstElementChild;
+      if (!topics.size) topicsSection.append(element('p', 'en-recap-words', 'Aucun sujet préparé pour cette séance.'));
+      const notesSection = content.lastElementChild;
+      const noteHeading = notesSection.firstElementChild;
+      const box = element('div', 'en-pendant-note-box');
+      notesSection.append(box);
+      const texts = [...notesSection.querySelectorAll(':scope > .en-recap-words')];
+      if (editable) {
+        // Keep earlier entries visible while editing the current note.
+        for (const text of texts.slice(0, earlier.length)) box.append(text);
+        for (const text of texts.slice(earlier.length)) text.remove();
+        noteField = element('div', 'en-recap-words en-pendant-note-input');
+        richWriting.prepareField(noteField, 'Quelques mots, si j’en ai envie…', 'Mes notes');
+        richWriting.write(noteField, note, readingDraft.noteHtml);
+        box.append(noteField);
+      } else {
+        box.append(...texts);
+        if (!session.completed && session.modeDraft?.note?.trim()) {
+          noteHeading.classList.add('en-recap-note-heading');
+          noteHeading.append(element('span', 'en-recap-draft-status', 'Brouillon enregistré'));
+        }
+      }
+      globalThis.__enPsyIcons?.(content);
     }
 
-    const content = get('[data-reading-content]');
+    function updateNote() {
+      const note = richWriting.read(noteField);
+      if (draft.note !== note.text || (draft.noteHtml || '') !== note.html) {
+        draft.note = note.text;
+        if (note.html) draft.noteHtml = note.html;
+        else delete draft.noteHtml;
+        save();
+      }
+      formatting.refresh();
+    }
+
+    function openEditor() {
+      if (editing) return;
+      editing = true;
+      draft = startEdit();
+      content.dataset.pane = 'free';
+      display(draft, true);
+      formatting.refresh();
+      pencil.setAttribute('aria-label', 'Enregistrer les modifications');
+      pencil.setAttribute('data-tooltip', 'Enregistrer les modifications');
+      changeIcon('check');
+    }
+
+    async function leaveEditing(continueToAfter) {
+      if (busy) return;
+      busy = true;
+      pencil.disabled = next.disabled = tools.disabled = true;
+      try {
+        if (editing) updateNote();
+        await save();
+        if (!host.isConnected) return;
+        if (continueToAfter) {
+          await finish();
+        } else {
+          formatting.close();
+          editing = false;
+          delete content.dataset.pane;
+          display(session.modeDraft || session.finishedModeDraft || planned, false);
+          pencil.setAttribute('aria-label', 'Modifier');
+          pencil.setAttribute('data-tooltip', 'Modifier');
+          changeIcon('pen-line');
+          pencil.disabled = false;
+          pencil.focus({ preventScroll: true });
+        }
+      } catch {
+        // Le coffre signale une erreur. La saisie reste accessible.
+      } finally {
+        busy = false;
+        pencil.disabled = next.disabled = tools.disabled = false;
+      }
+    }
+
+    pencil.addEventListener('click', () => {
+      if (editing) leaveEditing(false);
+      else {
+        openEditor();
+        noteField.focus({ preventScroll: true });
+      }
+    });
+    tools.addEventListener('click', openEditor);
+    next.querySelector('[data-lucide]').dataset.lucide = 'arrow-right';
+    next.addEventListener('click', () => leaveEditing(true));
+    next.hidden = false;
     get('[data-recap-return]').hidden = false;
-    renderRecapSections(content, sections);
-    if (edit && modeDraft?.note?.trim()) {
-      const noteHeading = content.lastElementChild.querySelector('h4');
-      noteHeading.classList.add('en-recap-note-heading');
-      noteHeading.append(element('span', 'en-recap-draft-status', 'Brouillon enregistré'));
-    }
     recap.hidden = false;
+    const panel = template('format', 'psy-pendant');
+    const status = element('p', 'en-format-feedback');
+    status.dataset.formatFeedback = '';
+    status.setAttribute('role', 'status');
+    content.before(panel, status);
+    recap.dataset.sessionEditor = '';
+    formatting = richWriting.mount(recap, updateNote);
     host.replaceChildren(recap);
+    display(session.modeDraft || session.finishedModeDraft || planned, false);
     globalThis.__enPsyIcons?.(host);
   }
 
