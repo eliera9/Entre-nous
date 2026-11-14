@@ -7300,59 +7300,171 @@ function vVrac(){const n=allNotes();return` <button class="ps-ia" data-a="ia" da
  <button class="ps-btn" data-a="range">PLUME RANGE</button><button class="ps-lk" data-a="ia" data-k="apres"><u>ou l'analyser avec ChatGPT ou Claude</u></button>`}
 
 /* ---------- PETITS PAS ---------- */
-const sessionStepOrigins={psy:'Avec ma psy',seule:'Seule'};
-const stepsForSession=item=>(window.__PP?.items||S.pas).filter(step=>step.sessionId===item.id);
-function sessionSteps(item, editing=false, editingId){
- const items=stepsForSession(item);
- const selected=editing&&items.find(step=>step.id===editingId);
- return `<section data-psy-after data-session-steps aria-labelledby="psy-step-recap-title">
-  <div class="en-reading en-recap" data-session-steps-header></div>
-  ${items.length?`<ul class="psy-session-steps">${items.map(step=>`<li>${editing?
-   `<button type="button" data-a="session-step-edit-item" data-i="${esc(step.id)}" aria-pressed="${step===selected}">${esc(step.t)}</button>`:
-   `<span>${esc(step.t)}</span>`}
-   ${step.origin||step.done?`<small>${esc([sessionStepOrigins[step.origin],step.done?'Fait':''].filter(Boolean).join(' · '))}</small>`:''}</li>`).join('')}</ul>`:'<p class="psy-session-steps-empty">Aucun petit pas pour cette séance.</p>'}
+const sessionStepOrigins={seule:'Seule',psy:'Par ma psy'};
+const sessionStepItems=()=>{const psySteps=S.pas;return window.__PP?.items||psySteps};
+const stepsForSession=item=>sessionStepItems().filter(step=>step.sessionId===item.id);
+function newSessionStep(){return {id:'p'+crypto.randomUUID(),t:'',origin:''};}
+function savedSessionSteps(item){
+ const steps=new Map(stepsForSession(item).map(step=>[step.id,step]));
+ for(const step of item.pendingSteps||[])if(!steps.has(step.id))steps.set(step.id,step);
+ if(!item.stepOrder)return [...steps.values()];
+ const ordered=item.stepOrder.map(id=>steps.get(id)).filter(Boolean);
+ const orderedIds=new Set(item.stepOrder);
+ return [...ordered,...[...steps.values()].filter(step=>!orderedIds.has(step.id))];
+}
+function sessionStepField(step,index){
+ const fieldId='psy-session-step-'+esc(step.id);
+ const position='<span class="en-sr"> · Petit pas '+(index+1)+'</span>';
+ return `<li data-step-id="${esc(step.id)}">
+  <fieldset class="psy-step-source">
+   <legend>Qui a proposé ce petit pas ?${position}</legend>
+   <div class="psy-step-choices">${Object.entries(sessionStepOrigins).map(([value,label],option)=>
+    `<label><input class="en-sr" type="radio" name="${fieldId}-origin" value="${value}"${step.origin===value?' checked':''}${!option&&step.t.trim()?' required':''}><span class="psy-step-dot" aria-hidden="true"></span><span>${label}</span></label>`).join('')}</div>
+  </fieldset>
+  <label class="psy-step-text-label" for="${fieldId}">Ce que je vais essayer${position}</label>
+  <textarea id="${fieldId}" rows="1" placeholder="Un petit pas pour la suite…">
+${esc(step.t)}</textarea>
+ </li>`;
+}
+function sessionSteps(item,editing=false){
+ const items=savedSessionSteps(item);
+ const fields=editing?(item.stepDraft?.rows||items):[];
+ return `<section data-psy-after data-session-steps class="en-recap" aria-labelledby="psy-step-recap-title">
+  <div data-session-steps-header></div>
   ${editing?`<form class="psy-session-step-form">
-   <label for="psy-session-step-text">Mon petit pas</label>
-   <textarea id="psy-session-step-text" name="step" rows="2" required placeholder="Écris une petite action à essayer…">${esc(selected?.t||'')}</textarea>
-   <fieldset><legend>Comment je l’ai trouvé</legend><div class="psy-session-step-origins">${Object.entries(sessionStepOrigins).map(([key,label])=>
-    `<label><input type="radio" name="origin" value="${key}"${selected?.origin===key?' checked':''}><span>${label}</span></label>`).join('')}</div></fieldset>
-   <button type="submit" class="en-main-action">${selected?'Enregistrer les modifications':'Ajouter mon petit pas'}</button>
-  </form>`:''}
-  <p class="psy-session-step-status" role="status"></p>
-  ${editing?'':'<button type="button" class="en-quiet-action" data-a="session-steps-all">Voir mes petits pas</button>'}
+   <ul class="psy-step-fields" role="list" aria-label="Petits pas de séance">${(fields.length?fields:[newSessionStep()]).map(sessionStepField).join('')}</ul>
+   <button type="button" class="en-quiet en-add-bullet cursor-interaction" data-add-step><span class="en-plus" aria-hidden="true">+</span><span>Ajouter un petit pas</span></button>
+   <div class="en-actions"><button type="submit" class="en-main-action cursor-interaction">Enregistrer</button></div>
+  </form>`:items.length?`<ul class="en-recap-words psy-session-steps" aria-label="Petits pas de séance">${items.map(step=>
+   `<li>${esc(step.t)}${Object.hasOwn(sessionStepOrigins,step.origin)?` <span class="psy-step-origin">${sessionStepOrigins[step.origin]}</span>`:''}</li>`).join('')}</ul>
+   <div class="en-actions en-review-actions"><button type="button" class="en-main-action en-confirm-session cursor-interaction" data-share-steps><span>Ajouter à mes petits pas</span><i data-lucide="house" aria-hidden="true"></i></button></div>`:
+   '<p class="en-recap-words psy-session-steps-empty">Aucun petit pas pour cette séance.</p>'}
  </section>`;
 }
-function mountSessionSteps(section,item,editingId){
+function saveSessionStepRecap(item,rows,removed){
+ const items=sessionStepItems();
+ const shared=new Map(stepsForSession(item).map(step=>[step.id,step]));
+ const removedIds=new Set(removed);
+ const pending=[];
+ let changed=false;
+ for(const row of rows){
+  const t=row.t.trim();
+  const record=shared.get(row.id);
+  if(!t){if(record)removedIds.add(record.id);continue;}
+  if(!record){pending.push({...row,t});continue;}
+  if(record.t!==t||record.origin!==row.origin){Object.assign(record,{t,origin:row.origin});changed=true;}
+ }
+ for(let i=items.length-1;i>=0;i--){
+  if(shared.has(items[i].id)&&removedIds.has(items[i].id)){items.splice(i,1);changed=true;}
+ }
+ item.pendingSteps=pending;
+ item.stepOrder=rows.filter(row=>row.t.trim()).map(row=>row.id);
+ delete item.stepDraft;
+ if(changed)window.__PP?.emit();
+}
+function shareSessionSteps(item){
+ const items=sessionStepItems();
+ const existing=new Set(items.map(step=>step.id));
+ const additions=(item.pendingSteps||[]).filter(step=>!existing.has(step.id)).map(step=>({
+  ...step,sessionId:item.id,why:'',r:'',rep:'une fois',when:'CETTE SEMAINE',done:0,f:'psy',fam:'psy'
+ }));
+ if(additions.length){items.unshift(...additions);window.__PP?.emit();}
+ delete item.pendingSteps;
+}
+function mountSessionSteps(section,item,route){
  const form=section.querySelector('form');
- const field=form.elements.step;
- const submit=form.querySelector('[type="submit"]');
- const selected=stepsForSession(item).find(step=>step.id===editingId);
- let pending=selected;
- field.addEventListener('input',()=>field.setCustomValidity(''));
+ const submit=section.querySelector('[data-share-steps], button[type="submit"]');
+ if(!submit)return;
+ const stillHere=()=>section.isConnected&&cur()===route&&route.tab==='petit-pas';
+ if(!form){
+  submit.addEventListener('click',async()=>{
+   if(submit.disabled)return;
+   submit.disabled=true;
+   try{
+    shareSessionSteps(item);
+    await window.__vaultAutosave?.();
+    if(stillHere())window.__enPsyBridge.exit();
+   }catch{
+    // Le coffre signale l’échec et le même bouton permet de réessayer.
+   }finally{submit.disabled=false;}
+  });
+  return;
+ }
+ const list=form.querySelector('.psy-step-fields');
+ const removed=new Set(item.stepDraft?.removed);
+ const fields=()=>[...list.querySelectorAll('textarea')];
+ const rows=()=>[...list.children].map(row=>({
+  id:row.dataset.stepId,t:row.querySelector('textarea').value,origin:row.querySelector('input:checked')?.value||''
+ }));
+ const resize=field=>{field.style.height='auto';field.style.height=field.scrollHeight+'px';};
+ const fit=()=>fields().forEach(resize);
+ const observer=new ResizeObserver(()=>{
+  if(!section.isConnected){observer.disconnect();return;}
+  if(list.clientWidth===width)return;
+  width=list.clientWidth;fit();
+ });
+ let width=list.clientWidth;
+ observer.observe(list);
+ fit();
+ document.fonts?.ready.then(()=>{if(section.isConnected)fit();});
+
+ function saveDraft(){
+  item.stepDraft={rows:rows(),removed:[...removed]};
+  window.__vaultAutosave?.();
+ }
+ form.addEventListener('input',event=>{
+  if(!event.target.matches('textarea'))return;
+  resize(event.target);
+  event.target.closest('[data-step-id]').querySelector('input[type="radio"]').required=Boolean(event.target.value.trim());
+  saveDraft();
+ });
+ form.addEventListener('change',event=>{if(event.target.matches('input[type="radio"]'))saveDraft()});
+ form.querySelector('[data-add-step]').addEventListener('click',()=>{
+  const last=list.lastElementChild.querySelector('textarea');
+  if(!last.value.trim()){last.focus();return;}
+  list.insertAdjacentHTML('beforeend',sessionStepField(newSessionStep(),list.children.length));
+  list.lastElementChild.querySelector('textarea').focus();
+  saveDraft();
+ });
+ function removeEmpty(event){
+  const field=event.target;
+  if(event.isComposing||!field.matches('textarea')||field.value||list.children.length===1)return;
+  event.preventDefault();
+  const row=field.closest('[data-step-id]');
+  const neighbor=row.previousElementSibling||row.nextElementSibling;
+  removed.add(row.dataset.stepId);
+  row.remove();
+  [...list.children].forEach((remaining,index)=>{
+   remaining.querySelectorAll('.en-sr:not(input)').forEach(label=>{label.textContent=' · Petit pas '+(index+1)});
+  });
+  const next=neighbor.querySelector('textarea');
+  next.focus();next.setSelectionRange(next.value.length,next.value.length);
+  saveDraft();
+ }
+ list.addEventListener('keydown',event=>{if(event.key==='Backspace'||event.key==='Delete')removeEmpty(event)});
+ list.addEventListener('beforeinput',event=>{
+  if(event.inputType==='deleteContentBackward'||event.inputType==='deleteContentForward')removeEmpty(event);
+ });
  form.addEventListener('submit',async event=>{
   event.preventDefault();
   if(submit.disabled)return;
-  const text=field.value.trim();
-  if(!text){field.setCustomValidity('Écris ton petit pas.');field.reportValidity();return;}
-  submit.disabled=true;
-  const origin=form.elements.origin.value;
-  if(!pending){
-   pending={id:'p'+crypto.randomUUID(),sessionId:item.id,t:text,origin,why:'',r:'',rep:'une fois',when:'CETTE SEMAINE',done:0};
-   enPushPas(pending);
-  }else{
-   Object.assign(pending,{t:text,origin});
-   window.__PP?.emit();
+  for(const row of list.children){
+   row.querySelector('input[type="radio"]').required=Boolean(row.querySelector('textarea').value.trim());
   }
-  const route=cur();
+  if(!form.reportValidity())return;
+  submit.disabled=true;
+  form.inert=true;
   try{
+   saveSessionStepRecap(item,rows(),removed);
    await window.__vaultAutosave?.();
-   if(!section.isConnected||cur()!==route)return;
-   back();
-   B.querySelector('.psy-session-step-status').textContent=selected?'Petit pas modifié.':'Ajouté à Mes petits pas.';
-   B.querySelector('[data-session-steps] [data-edit]').focus({preventScroll:true});
+   if(stillHere()){
+    route.stepEditing=false;
+    render(1);
+    B.querySelector('[data-session-steps] [data-edit]')?.focus({preventScroll:true});
+   }
   }catch{
-   // Le coffre signale l’échec. Le formulaire permet de réessayer avec le même petit pas.
-  }finally{submit.disabled=false;}
+   // Le coffre signale l’échec et la saisie reste ouverte.
+  }finally{form.inert=false;submit.disabled=false;}
  });
 }
 function tPas(){const P=S.pas;let h='';
@@ -7471,6 +7583,7 @@ function sessionTabs(tab, canOpenPendant=true, hasSession=canOpenPendant){
 function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('data-avant-ai');
  const currentSession=activeSession();
  ph.toggleAttribute('data-open-session',Boolean(c.legacyId==null&&currentSession&&!currentSession.completed));
+ ph.toggleAttribute('data-step-editing',c.tab==='petit-pas'&&Boolean(c.stepEditing));
  if(window.__enApprovedPsy&&window.__enApprovedPsy.render(c,top))return;let h='',cards;
  if(c.v==='psyhome'){
   const sessions=psySessions(),next=upcomingPsy(),home=window.__enPsyHome;
@@ -7486,12 +7599,8 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   h=sessionTabs(tab);
   if(tab==='apres')h+=tApres();
   else if(tab==='avant'){h+=tAvant(true,archived);ph.dataset.avantAi='';}
-  else if(tab==='petit-pas')h+=sessionSteps(item);
+  else if(tab==='petit-pas')h+=sessionSteps(item,c.stepEditing);
   else h+='<div data-psy-after data-psy-pendant></div>';
- }
- else if(c.v==='session-steps-edit'){
-  if(!currentSession)return back();
-  h=sessionSteps(currentSession,true,c.stepId);
  }
  else if(c.v==='avant-writing'||c.v==='avant-recap'){
   h=(c.v==='avant-writing'?sessionTabs('avant',Boolean(c.legacyId||sessionRoute()),Boolean(sessionRoute())):'')+'<div data-psy-avant-writing></div>';ph.dataset.avantAi='';
@@ -7499,7 +7608,7 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
  else if(c.v==='section'){if(c.page==='seances'||c.page==='evol'||c.page==='avant')psySessions();
   h=PSY_PAGES[c.page][1]();if(c.page==='avant')ph.dataset.avantAi='';}
  else h=({intro:vIntro,raconter:vRaconter,suivi:vSuivi,prep0:vPrepEntry,prep:vPrep,ia:vIA,copy:vCopy,iaback:vBack,read:vRead,parts:vParts,part:vPart,vrac:vVrac,seance:vSeance,firstr:vFirstR,firsthub:vFirstHub,fpage:vFirstPage}[c.v])(c);
- TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:c.v==='session-steps-edit'?TITLES.session:TITLES[c.v]||'MON ESPACE PSY';
+ TT.textContent=c.v==='section'?PSY_PAGES[c.page][0]:TITLES[c.v]||'MON ESPACE PSY';
  B.innerHTML=`<div class="ps-fadein">${h}</div>`;
  if(cards){window.__enPsyHome.mount(B,cards,cardPosition);window.__enPsyIcons?.(B)}
  const during=B.querySelector('[data-psy-pendant]');
@@ -7511,13 +7620,15 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
  }
  const steps=B.querySelector('[data-session-steps]');
  if(steps){
-  const editing=c.v==='session-steps-edit';
-  const title=editing?'Modifier mes petits pas':'Mes petits pas de séance';
-  steps.querySelector('[data-session-steps-header]').append(afterModule().recapHeader(currentSession,title,'psy-step',editing?null:()=>{
-   go('session-steps-edit');
+  const title=c.stepEditing?'Mes petits pas à noter':'Mes petits pas de séance';
+  const header=afterModule().recapHeader(currentSession,title,'psy-step',c.stepEditing?null:()=>{
+   c.stepEditing=true;
+   render(1);
    B.querySelector('#psy-step-recap-title')?.focus({preventScroll:true});
-  }));
-  if(editing)mountSessionSteps(steps,currentSession,c.stepId);
+  });
+  if(c.stepEditing)header.classList.add('psy-step-editor-header');
+  steps.querySelector('[data-session-steps-header]').append(header);
+  mountSessionSteps(steps,currentSession,c);
   window.__enPsyIcons?.(steps);
  }
  const after=B.querySelector('[data-psy-after]:not([data-psy-pendant],[data-session-steps])');
@@ -7572,7 +7683,7 @@ B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!
  if(f==='sv.mo'||f==='sv.an'||f==='sv.dj'||f==='sv.dm'){const a=document.activeElement,pos=a.selectionStart;render();const n=B.querySelector(`[data-f="${f}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}});
 ph.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(f&&f.startsWith('ed.'))setPath(f,e.target.value)});
 ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();act(t.dataset.a,t);if(/^(star|nck|rdnext|rdok|keep)$/.test(t.dataset.a))window.__vaultAutosave?.()});
-BK.addEventListener('click',e=>{if(cur().v==='session-steps-edit'){e.stopImmediatePropagation();back();B.querySelector('[data-session-steps] [data-edit]')?.focus({preventScroll:true});return}if(cur().v==='avant-recap'&&!activeSession()?.completed){e.stopImmediatePropagation();cur().v='avant-writing';render(1);return}if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
+BK.addEventListener('click',e=>{if(cur().tab==='petit-pas'&&cur().stepEditing){e.stopImmediatePropagation();cur().stepEditing=false;render(1);B.querySelector('[data-session-steps] [data-edit]')?.focus({preventScroll:true});return}if(cur().v==='avant-recap'&&!activeSession()?.completed){e.stopImmediatePropagation();cur().v='avant-writing';render(1);return}if(window.__enPsyAfter?.back()){e.stopImmediatePropagation();return}if(S.stack.length){e.stopImmediatePropagation();if(cur().v==='intro'&&ph.classList.contains('psy-approved-active'))window.__enPsyBridge.home();else back()}},true);
 
 /* ---------- actions ---------- */
 function saveAvantNote(){
@@ -7587,13 +7698,6 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'psy-page':openPsyPage(d.k);break;
  case'session-open':openSession(d.i,d.k);break;
  case'session-archive':case'seopen':openArchive(d.i);break;
- case'session-steps-all':window.__enShow('mpp');break;
- case'session-step-edit-item':
-  cur().stepId=cur().stepId===d.i?undefined:d.i;
-  render();
-  if(cur().stepId)B.querySelector('#psy-session-step-text')?.focus();
-  else B.querySelector('[data-session-steps] [data-i="'+CSS.escape(d.i)+'"]')?.focus({preventScroll:true});
-  break;
  case'session-tab':
   if(cur().v==='avant-writing'){
    if(d.k==='avant')break;
@@ -7607,6 +7711,7 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
    }).catch(()=>{});
    break;
   }
+  if(cur().tab==='petit-pas'&&d.k!=='petit-pas')cur().stepEditing=false;
   cur().tab=d.k;
   if(cur().v==='archive'&&d.k==='avant'){
    const item=activeSession();

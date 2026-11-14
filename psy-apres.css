@@ -108,6 +108,7 @@
 [data-psy-after] .en-date-editor { min-width: 0; max-width: 148px; margin: 0 auto 6px; }
 [data-psy-after] .en-date { min-width: 0; }
 [data-psy-after] .en-personal-meta { width: min(100%,460px); margin: 0 auto 18px; }
+[data-psy-after] .psy-session-step-form { --en-rose: #DDB3BB; }
 [data-psy-after] [data-pane="guided"] { --en-rose: #DDB3BB;
     --en-highlight: #583744;
     --en-note-paper: color-mix(in srgb,var(--en-paper) 96%,var(--en-rose));
@@ -215,14 +216,14 @@
     background: transparent;
     color: var(--en-response-ink);
     font: var(--en-response-font); }
-[data-psy-after] [data-pane="guided"] .en-quiet { box-sizing: border-box; width: fit-content; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--en-muted); font: inherit; font-size: 15px; text-align: left; }
-[data-psy-after] [data-pane="guided"] .en-plus { display: grid;
+[data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-quiet { box-sizing: border-box; width: fit-content; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--en-muted); font: inherit; font-size: 15px; text-align: left; }
+[data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-plus { display: grid;
     place-items: center;
     box-sizing: border-box;
     width: 22px;
     height: 22px;
     font: 400 16px/1 system-ui,sans-serif; }
-[data-psy-after] [data-pane="guided"] .en-add-bullet { display: flex;
+[data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-add-bullet { display: flex;
     justify-content: center;
     align-items: center;
     gap: 6px;

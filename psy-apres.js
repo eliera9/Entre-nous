@@ -910,7 +910,8 @@
       changed = true;
     }
     const filtered = state.sessions.filter(item => !item.calendarKey || active.has(item.calendarKey) ||
-      item.completed || item.title.trim() || hasContent(item) || item.fromMode || item.modeDraft || item.preparation);
+      item.completed || item.title.trim() || hasContent(item) || item.fromMode || item.modeDraft || item.preparation ||
+      item.stepOrder?.length || item.pendingSteps?.length || item.stepDraft?.rows.some(row => row.t.trim() || row.origin));
     if (filtered.length !== state.sessions.length) {
       state.sessions = filtered;
       changed = true;

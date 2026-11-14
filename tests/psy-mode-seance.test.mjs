@@ -11,74 +11,67 @@ runInNewContext(script, context);
 const { newDraft } = context.__enPsyModeSession;
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('un petit pas de séance rejoint la liste existante une seule fois, même après un échec de sauvegarde', async () => {
-  const existing = { id: 'independant', t: 'Une action personnelle', f: 'soin' };
-  const previous = { id: 'ancien', t: 'Un pas d’une autre séance', f: 'psy', sessionId: 'autre' };
-  const items = [existing, previous];
+test('le récap enregistre la saisie avant l’ajout à Mes petits pas, sans doublon en cas de nouvel essai', async () => {
+  const personal = { id: 'personnel', t: 'Une action personnelle', f: 'soin' };
+  const other = { id: 'autre', t: 'Une autre séance', f: 'psy', sessionId: 'autre' };
+  const legacy = { id: 'ancien', t: 'Un pas déjà publié', f: 'soin', sessionId: 'seance', done: 1 };
+  const items = [personal, other, legacy];
   const route = { tab: 'petit-pas' };
-  let storeAttempts = 0;
-  let renderCount = 0;
-  let submitForm;
-  const field = { value: '  Tester une idée  ', addEventListener() {} };
-  const submit = { disabled: false };
-  const status = {};
-  const form = {
-    elements: { step: field, origin: { value: 'psy' } },
-    querySelector: () => submit,
-    addEventListener: (_, listener) => { submitForm = listener; },
-  };
-  const section = { isConnected: true, querySelector: () => form };
+  let attempts = 0;
+  let exits = 0;
+  let confirm;
+  const button = { disabled: false, addEventListener: (_, listener) => { confirm = listener; } };
   const scope = {
     window: {
       __PP: { items, emit() {} },
-      __vaultAutosave: async () => { if (++storeAttempts === 1) throw new Error('Coffre indisponible'); },
+      __vaultAutosave: async () => { if (++attempts === 1) throw new Error('Coffre indisponible'); },
+      __enPsyBridge: { exit() { exits++; } },
     },
     S: { get pas() { return items.filter(step => step.f === 'psy'); } },
     crypto: { randomUUID: () => 'test' },
     cur: () => route,
-    back: () => { renderCount++; },
     esc: value => value,
-    B: { querySelector: selector => selector.includes('status') ? status : { focus() {} } },
   };
-  const bridge = html.slice(html.indexOf('function enPushPas('), html.indexOf('function sessionLabel('));
-  const steps = html.slice(html.indexOf('const sessionStepOrigins='), html.indexOf('function tPas()'));
-  const { mount, view } = runInNewContext(bridge + steps + '({ mount: mountSessionSteps, view: sessionSteps })', scope);
+  const source = html.slice(html.indexOf('const sessionStepOrigins='), html.indexOf('function tPas()'));
+  const { mount, view, save } = runInNewContext(source +
+    '({ mount: mountSessionSteps, view: sessionSteps, save: saveSessionStepRecap })', scope);
   const session = { id: 'seance', date: '2026-11-14' };
 
-  mount(section, session);
-  await submitForm({ preventDefault() {} });
-  field.value = 'Tester une autre idée';
-  await submitForm({ preventDefault() {} });
-
-  assert.equal(renderCount, 1);
-  assert.equal(status.textContent, 'Ajouté à Mes petits pas.');
+  save(session, [
+    { id: 'ancien', t: 'Un pas reformulé', origin: 'psy' },
+    { id: 'nouveau', t: '  Tester une idée  ', origin: 'seule' },
+    { id: 'vide', t: '  ', origin: '' },
+  ], []);
   assert.equal(items.length, 3);
+  assert.equal(legacy.t, 'Un pas reformulé');
+  assert.equal(legacy.done, 1);
+  assert.equal(legacy.f, 'soin');
+  assert.match(view(session), /Un pas reformulé.*Par ma psy/);
+  assert.match(view(session), /Tester une idée.*Seule/);
+  assert.doesNotMatch(view(session), /Une autre séance|Une action personnelle/);
+  assert.match(view(session, true), /Ajouter un petit pas/);
+  assert.match(view(session, true), />Enregistrer</);
+
+  mount({ isConnected: true, querySelector: selector => selector === 'form' ? null : button }, session, route);
+  await confirm();
+  assert.equal(exits, 0);
+  assert.equal(button.disabled, false);
+  await confirm();
+
+  assert.equal(exits, 1);
+  assert.equal(items.length, 4);
   assert.deepEqual(plain(items[0]), {
-    id: 'ptest', sessionId: 'seance', t: 'Tester une autre idée', origin: 'psy',
+    id: 'nouveau', sessionId: 'seance', t: 'Tester une idée', origin: 'seule',
     why: '', r: '', rep: 'une fois', when: 'CETTE SEMAINE', done: 0, f: 'psy', fam: 'psy',
   });
-  assert.equal(items[1], existing);
-  assert.match(view(session), /Tester une autre idée/);
-  assert.doesNotMatch(view(session), /Un pas d’une autre séance|Une action personnelle/);
-  assert.match(view({ ...session, id: 'autre' }), /Un pas d’une autre séance/);
-  items[0].f = 'soin';
-  items[0].done = 1;
-  assert.match(view(session), /Avec ma psy · Fait/);
-  assert.doesNotMatch(view(session), /<form/);
-  assert.match(view(session, true), /Ajouter mon petit pas/);
-  assert.match(view(session, true, 'ptest'), /Enregistrer les modifications/);
+  assert.equal(items[1], personal);
+  assert.equal(items[2], other);
+  assert.equal(session.pendingSteps, undefined);
+  assert.match(view(session), /Un pas reformulé[\s\S]*Tester une idée/);
 
-  mount(section, session, 'ptest');
-  field.value = 'Mon petit pas reformulé';
-  form.elements.origin.value = 'seule';
-  await submitForm({ preventDefault() {} });
-
-  assert.equal(status.textContent, 'Petit pas modifié.');
+  save(session, [{ id: 'nouveau', t: 'Tester une idée', origin: 'seule' }], ['ancien']);
   assert.equal(items.length, 3);
-  assert.equal(items[0].t, 'Mon petit pas reformulé');
-  assert.equal(items[0].origin, 'seule');
-  assert.equal(items[0].done, 1);
-  assert.equal(items[0].f, 'soin');
+  assert.doesNotMatch(view(session), /Un pas reformulé/);
 });
 
 test('le Mode séance ouvre un carnet neuf avec une liste vide et les notes repliées', () => {
