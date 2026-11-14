@@ -2,7 +2,27 @@
 (() => {
   'use strict';
   const richWriting = globalThis.__enPsyWriting;
+  const recapTemplate = `<section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
+        <header class="en-recap-header">
+          <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
+          <div class="en-recap-title-row">
+            <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
+            <button type="button" class="en-edit-return cursor-interaction" data-edit aria-label="Modifier" data-tooltip="Modifier"><i data-lucide="pen-line" aria-hidden="true"></i></button>
+          </div>
+          <details class="en-recap-title-wrap" data-reading-title-wrap hidden>
+            <summary class="en-recap-return-title"><span data-reading-title></span></summary>
+            <p class="en-recap-full-title" data-full-title></p>
+          </details>
+        </header>
+        <section class="en-recap-return" data-recap-return hidden>
+          <div data-reading-content></div>
+        </section>
+        <div class="en-actions en-review-actions">
+          <button type="button" class="en-main-action en-confirm-session cursor-interaction" data-finish hidden><span>Confirmer ma séance</span><i data-lucide="house" aria-hidden="true"></i></button>
+        </div>
+      </section>`;
   const templates = {
+    recap: recapTemplate,
     home: `<section class="en-home en-home-page" data-view="home" aria-labelledby="psy-after-home-title">
   <h3 class="en-home-heading" id="psy-after-home-title" tabindex="-1">Mes mots après la séance</h3>
   <p class="en-home-empty" data-empty>Aucune séance à noter</p>
@@ -103,25 +123,7 @@
         <button type="button" class="en-quiet-action cursor-interaction" data-later>Reprendre plus tard</button>
       </div>
       </div>
-      <section class="en-reading en-recap" data-view="review" aria-labelledby="psy-after-recap-title" hidden>
-        <header class="en-recap-header">
-          <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time data-reading-date></time></p>
-          <div class="en-recap-title-row">
-            <h3 class="en-heading" id="psy-after-recap-title" tabindex="-1">Récap de ma séance</h3>
-            <button type="button" class="en-edit-return cursor-interaction" data-edit aria-label="Modifier" data-tooltip="Modifier"><i data-lucide="pen-line" aria-hidden="true"></i></button>
-          </div>
-          <details class="en-recap-title-wrap" data-reading-title-wrap hidden>
-            <summary class="en-recap-return-title"><span data-reading-title></span></summary>
-            <p class="en-recap-full-title" data-full-title></p>
-          </details>
-        </header>
-        <section class="en-recap-return" data-recap-return hidden>
-          <div data-reading-content></div>
-        </section>
-        <div class="en-actions en-review-actions">
-          <button type="button" class="en-main-action en-confirm-session cursor-interaction" data-finish hidden><span>Confirmer ma séance</span><i data-lucide="house" aria-hidden="true"></i></button>
-        </div>
-      </section>
+      ${recapTemplate}
 </div>`,
     format: `<section class="en-format-panel" data-format-panel id="psy-after-format-tools-panel" aria-label="Outils d’écriture" hidden>
       <div class="en-format-categories" role="group" aria-label="Catégories d’outils">
@@ -603,6 +605,56 @@
     return node.content.cloneNode(true);
   }
 
+  function renderRecapSections(content, sections) {
+    for (const entry of sections) {
+      const section = element('section', 'en-recap-rubric');
+      const heading = element('h4');
+      const numeral = romanNumerals[rubrics.findIndex(rubric => rubric.id === entry.id)];
+      if (numeral) {
+        heading.className = 'en-recap-numbered-heading';
+        const number = element('span', 'en-recap-rubric-number', numeral);
+        number.setAttribute('aria-hidden', 'true');
+        heading.append(number, element('span', '', entry.title));
+      } else {
+        heading.textContent = entry.title;
+      }
+      section.append(heading);
+      if (entry.choices.length) {
+        const choices = element('ul', 'en-recap-reperes');
+        choices.setAttribute('aria-label', 'Repères retenus');
+        choices.setAttribute('role', 'list');
+        for (const choice of entry.choices) {
+          const item = element('li');
+          item.append(element('span', 'en-recap-repere-label', choice));
+          choices.append(item);
+        }
+        section.append(choices);
+      }
+      const body = entry.bullets ? element('ul', 'en-recap-words') : section;
+      if (entry.bullets) body.setAttribute('role', 'list');
+      entry.paragraphs.forEach((paragraph, index) => {
+        const html = entry.rich?.[index];
+        const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', entry.bullets ? '' : 'en-recap-words');
+        if (html) node.classList.add('en-formatted');
+        richWriting.write(node, paragraph, html, true);
+        if (entry.checked) {
+          const checked = entry.checked[index];
+          const statusIcon = element('i');
+          statusIcon.dataset.lucide = checked ? 'circle-check' : 'circle';
+          statusIcon.setAttribute('aria-hidden', 'true');
+          if (checked) statusIcon.dataset.checked = '';
+          const status = element('span', 'en-sr', checked ? 'Sujet abordé : ' : 'Sujet à aborder : ');
+          const label = element('span');
+          label.append(status, ...node.childNodes);
+          node.append(statusIcon, label);
+        }
+        body.append(node);
+      });
+      if (entry.bullets && entry.paragraphs.length) section.append(body);
+      content.append(section);
+    }
+  }
+
   const dayKey = date => [
     String(date.getFullYear()).padStart(4, '0'), String(date.getMonth() + 1).padStart(2, '0'),
     String(date.getDate()).padStart(2, '0'),
@@ -1037,42 +1089,7 @@
       get('[data-recap-return]').hidden = !sections.length;
       get('[data-reading-title]').textContent = title || 'Mon retour sur la séance';
       get('[data-full-title]').textContent = title || 'Mon retour sur la séance';
-      for (const entry of sections) {
-        const section = element('section', 'en-recap-rubric');
-        const heading = element('h4');
-        const numeral = romanNumerals[rubrics.findIndex(rubric => rubric.id === entry.id)];
-        if (numeral) {
-          heading.className = 'en-recap-numbered-heading';
-          const number = element('span', 'en-recap-rubric-number', numeral);
-          number.setAttribute('aria-hidden', 'true');
-          heading.append(number, element('span', '', entry.title));
-        } else {
-          heading.textContent = entry.title;
-        }
-        section.append(heading);
-        if (entry.choices.length) {
-          const choices = element('ul', 'en-recap-reperes');
-          choices.setAttribute('aria-label', 'Repères retenus');
-          choices.setAttribute('role', 'list');
-          for (const choice of entry.choices) {
-            const item = element('li');
-            item.append(element('span', 'en-recap-repere-label', choice));
-            choices.append(item);
-          }
-          section.append(choices);
-        }
-        const body = entry.bullets ? element('ul', 'en-recap-words') : section;
-        if (entry.bullets) body.setAttribute('role', 'list');
-        entry.paragraphs.forEach((paragraph, index) => {
-          const html = entry.rich?.[index];
-          const node = element(entry.bullets ? 'li' : html ? 'div' : 'p', entry.bullets ? '' : 'en-recap-words');
-          if (html) node.classList.add('en-formatted');
-          richWriting.write(node, paragraph, html, true);
-          body.append(node);
-        });
-        if (entry.bullets && entry.paragraphs.length) section.append(body);
-        content.append(section);
-      }
+      renderRecapSections(content, sections);
       show('review');
       get('.en-recap-header .en-heading').focus({ preventScroll: true });
     }
@@ -1124,6 +1141,66 @@
     controls();
     show('write');
     return { showRecap, backToRecap() { if (!archive || view !== 'write') return false; saveRecap(); return true; } };
+  }
+
+  function mountPendant(host, session, { edit, finish, planned }) {
+    const recap = template('recap', 'psy-pendant').firstElementChild;
+    const get = selector => recap.querySelector(selector);
+    const { modeDraft, finishedModeDraft } = session;
+    const draft = modeDraft || finishedModeDraft || planned;
+    const topics = new Map();
+    for (const subject of draft?.subjects || []) {
+      if (subject.t?.trim()) topics.set(subject.t, Boolean(draft.checked?.includes(subject.id)));
+    }
+    for (const topic of session.topics || []) {
+      if (topic.text?.trim() && !topics.has(topic.text)) topics.set(topic.text, topic.checked);
+    }
+    const notes = (session.notes || []).map(note => note.text);
+    const priorNote = finishedModeDraft?.note?.trim();
+    if (modeDraft && priorNote) {
+      const previous = notes.findLastIndex(text => text?.trim() === priorNote);
+      if (previous !== -1) notes.splice(previous, 1);
+    }
+    if (draft?.note?.trim()) notes.push(draft.note.trim());
+    const notesToRead = [...new Set(strings(notes))];
+    const sections = [];
+    if (topics.size) sections.push({
+      title: 'Sujets préparés', paragraphs: [...topics.keys()], checked: [...topics.values()], choices: [], bullets: true,
+    });
+    sections.push({
+      title: 'Mes notes', paragraphs: notesToRead.length ? notesToRead : ['Aucune note pour cette séance.'], choices: [],
+    });
+
+    const date = get('[data-reading-date]');
+    date.dateTime = session.date;
+    date.textContent = shortDate.format(dayValue(session.date));
+    const title = get('[data-reading-title-wrap]');
+    const heading = element('h4', title.querySelector('summary').className);
+    heading.append(element('span', '', 'Le fil de ma séance'));
+    title.replaceWith(heading);
+
+    const pencil = get('[data-edit]');
+    pencil.hidden = !edit;
+    if (edit) pencil.addEventListener('click', edit);
+    const next = get('[data-finish]');
+    next.hidden = !finish;
+    if (finish) {
+      next.querySelector('span').textContent = 'Passer à Après';
+      next.querySelector('[data-lucide]').dataset.lucide = 'arrow-right';
+      next.addEventListener('click', finish);
+    }
+
+    const content = get('[data-reading-content]');
+    get('[data-recap-return]').hidden = false;
+    renderRecapSections(content, sections);
+    if (edit && modeDraft?.note?.trim()) {
+      const noteHeading = content.lastElementChild.querySelector('h4');
+      noteHeading.classList.add('en-recap-note-heading');
+      noteHeading.append(element('span', 'en-recap-draft-status', 'Brouillon enregistré'));
+    }
+    recap.hidden = false;
+    host.replaceChildren(recap);
+    globalThis.__enPsyIcons?.(host);
   }
 
   function mount(host, { legacy, history, calendar, sessionId, review = false, onSelect, onExit, onConfirm = onExit, onViewChange = () => {} }) {
@@ -1238,7 +1315,7 @@
   }
 
   globalThis.__enPsyAfter = {
-    mount, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
+    mount, mountPendant, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
     formatTemplate: prefix => template('format', prefix),
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),

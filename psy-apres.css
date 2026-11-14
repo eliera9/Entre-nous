@@ -657,3 +657,16 @@
 :is([data-psy-after], [data-psy-avant-writing]) :is(.en-rich-field, .en-formatted) input[data-en-check] { accent-color: var(--en-accent); vertical-align: middle; }
 :is([data-psy-after], [data-psy-avant-writing]) :is(.en-rich-field, .en-formatted) a { color: var(--en-accent); text-decoration: underline; }
 :is([data-psy-after], [data-psy-avant-writing]) :is(.en-rich-field, .en-formatted) hr { margin: .5em 0; border: 0; border-top: 1px solid var(--en-line); }
+
+
+/* Pendant : seules les coches et le repère de brouillon complètent le récap commun. */
+[data-psy-pendant] h4.en-recap-return-title { margin: 0; cursor: auto; }
+[data-psy-pendant] ul.en-recap-words { padding-inline-start: 0; }
+[data-psy-pendant] ul.en-recap-words > li {
+  display: grid; grid-template-columns: 14px minmax(0,1fr);
+  align-items: start; gap: 7px; list-style: none;
+}
+[data-psy-pendant] .en-recap-words svg { width: 14px; height: 14px; margin-top: 3px; stroke-width: 1.5; color: var(--en-accent); }
+[data-psy-pendant] .en-recap-words svg:not([data-checked]) { color: var(--en-muted); }
+[data-psy-pendant] .en-recap-note-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; }
+[data-psy-pendant] .en-recap-draft-status { color: var(--en-accent); font: 400 11px/1.4 Figtree, sans-serif; letter-spacing: 0; }

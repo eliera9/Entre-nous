@@ -84,7 +84,11 @@
     const note = host.querySelector('textarea');
     note.value = draft.note;
     details.open = draft.notesOpen;
-    details.addEventListener('toggle', () => { draft.notesOpen = details.open; });
+    details.addEventListener('toggle', () => {
+      if (draft.notesOpen === details.open) return;
+      draft.notesOpen = details.open;
+      onChange?.();
+    });
     note.addEventListener('input', () => {
       draft.note = note.value;
       onChange?.();

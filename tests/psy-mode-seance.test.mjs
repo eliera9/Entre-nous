@@ -62,7 +62,7 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
   runInNewContext(avantSource, context);
   context.window = context;
   const preparation = html.slice(html.indexOf('function ensurePreparationStars('), html.indexOf('function psySessions('));
-  const avant = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function sessionTextList('));
+  const avant = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function aborder()'));
   const render = runInNewContext(preparation + avant + ';tAvant', context);
   assert.match(render(true), /Sujet conservé/);
   assert.match(render(true), /Préparer ma séance/);
@@ -72,7 +72,7 @@ test('Avant ouvre une séance déjà enregistrée avec des sujets et sans objet 
 
 test('Avant affiche seulement le message de préparation vide dans une séance terminée', () => {
   const model = {};
-  const script = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function sessionTextList('));
+  const script = html.slice(html.indexOf('function archivedAvantTopics('), html.indexOf('function aborder()'));
   const context = {
     S: { notes: [], prep: { stars: new Set() } },
     activeSession: () => model.item, upcomingPsy: () => null,

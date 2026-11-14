@@ -244,23 +244,8 @@
 }
 #psy .psy-session-tabs + [data-psy-after] { padding-block-start: 4px; }
 #psy .psy-session-tabs + [data-psy-after] .en-recap { padding-block-start: 0; }
-#psy .psy-session-date { margin: 4px 0 5px; color: var(--smuted); text-align: center; font: italic 500 15px/1.2 'Cormorant Garamond', Georgia, serif; }
-#psy .psy-session-during,
-#psy .psy-session-context { width: min(100%, 460px); margin: 12px auto 0; }
-#psy .psy-session-during > h3 { margin: 0; color: var(--sink); text-align: center; font: italic 500 21px/1.3 'Cormorant Garamond', Georgia, serif; }
-#psy .psy-session-context {
-  padding: 10px 14px;
-  border: 1px solid var(--sline);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--sbg) 94%, var(--sacc));
-}
-#psy .psy-session-context h3 { margin: 0; color: var(--sacc); font: 500 16px/1.2 'Cormorant SC', Georgia, serif; }
-#psy .psy-session-context ul { margin: 5px 0 0; padding-inline-start: 17px; color: var(--sink); font: 500 16px/1.4 'Cormorant Garamond', Georgia, serif; }
-#psy .psy-session-context li { white-space: pre-wrap; overflow-wrap: anywhere; }
-#psy .psy-session-context li + li { margin-top: 4px; }
-#psy .psy-session-during [data-a="ms"] { min-height: 44px; align-items: center; }
 #psy .psy-sections { display: flex; flex-wrap: wrap; gap: 0 14px; padding-bottom: 6px; }
-#psy:is([data-psy-route="archive"], [data-psy-route="session"]) .psmsb { display: none; }
+#psy:is([data-psy-route="archive"], [data-psy-route="session"]:not([data-open-session])) .psmsb { display: none; }
 
 @media (max-width: 380px) {
   #psy .psy-home .title-card-body { padding-inline: 10px; }
