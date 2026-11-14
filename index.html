@@ -7301,15 +7301,10 @@ function vVrac(){const n=allNotes();return` <button class="ps-ia" data-a="ia" da
 
 /* ---------- PETITS PAS ---------- */
 const sessionStepOrigins={psy:'Avec ma psy',seule:'Seule'};
-const sessionStepDate=new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 function sessionSteps(item){
- const date=sessionStepDate.format(new Date(item.date+'T12:00:00Z'));
  const items=(window.__PP?.items||S.pas).filter(step=>step.sessionId===item.id);
- return `<section data-psy-after data-session-steps aria-labelledby="psy-step-title">
-  <header class="en-recap-header">
-   <p class="en-recap-date-line"><i data-lucide="calendar-days" aria-hidden="true"></i><time datetime="${esc(item.date)}">${date}</time></p>
-   <h3 class="en-heading" id="psy-step-title">Mes petits pas de séance</h3>
-  </header>
+ return `<section data-psy-after data-session-steps aria-labelledby="psy-step-recap-title">
+  <div class="en-reading en-recap" data-session-steps-header></div>
   ${items.length?`<ul class="psy-session-steps">${items.map(step=>`<li><span>${esc(step.t)}</span>
    ${step.origin||step.done?`<small>${esc([sessionStepOrigins[step.origin],step.done?'Fait':''].filter(Boolean).join(' · '))}</small>`:''}</li>`).join('')}</ul>`:'<p class="psy-session-steps-empty">Aucun petit pas pour cette séance.</p>'}
   <form class="psy-session-step-form">
@@ -7506,7 +7501,11 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   afterModule().mountPendant?.(during,item,{planned,startEdit:()=>sessionModeDraft(item),finish:()=>finishModeSession(item)});
  }
  const steps=B.querySelector('[data-session-steps]');
- if(steps){mountSessionSteps(steps,currentSession);window.__enPsyIcons?.(steps);}
+ if(steps){
+  steps.querySelector('[data-session-steps-header]').append(afterModule().readOnlyRecapHeader(currentSession,'Mes petits pas de séance','psy-step'));
+  mountSessionSteps(steps,currentSession);
+  window.__enPsyIcons?.(steps);
+ }
  const after=B.querySelector('[data-psy-after]:not([data-psy-pendant],[data-session-steps])');
  if(after)window.__enPsyAfter.mount(after,{legacy:psySnapshot(),history:SEANCES,calendar:calendar(),sessionId:c.id,
   review:c.review,onSelect:openSession,onExit:c.id?back:null,onConfirm:window.__enPsyBridge.exit,

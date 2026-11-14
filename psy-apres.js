@@ -605,6 +605,20 @@
     return node.content.cloneNode(true);
   }
 
+  function setRecapDate(time, date) {
+    time.dateTime = date;
+    time.textContent = longDate.format(dayValue(date));
+  }
+
+  function readOnlyRecapHeader(session, title, prefix) {
+    const header = template('recap', prefix).querySelector('.en-recap-header');
+    setRecapDate(header.querySelector('[data-reading-date]'), session.date);
+    header.querySelector('.en-heading').textContent = title;
+    header.querySelector('[data-edit]').remove();
+    header.querySelector('[data-reading-title-wrap]').remove();
+    return header;
+  }
+
   function renderRecapSections(content, sections) {
     for (const entry of sections) {
       const section = element('section', 'en-recap-rubric');
@@ -1076,11 +1090,10 @@
 
     function dateDisplay() {
       const display = dayValue(session.date);
-      for (const [selector, label] of [['[data-date-caption]', shortDate], ['[data-reading-date]', longDate]]) {
-        const time = get(selector);
-        time.setAttribute('datetime', session.date);
-        time.textContent = label.format(display);
-      }
+      const caption = get('[data-date-caption]');
+      caption.dateTime = session.date;
+      caption.textContent = shortDate.format(display);
+      setRecapDate(get('[data-reading-date]'), session.date);
       dateToggle.setAttribute('aria-label', 'Modifier la date de la séance du ' + longDate.format(display));
     }
     function controls() {
@@ -1551,6 +1564,7 @@
 
   globalThis.__enPsyAfter = {
     mount, mountPendant, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
+    readOnlyRecapHeader,
     formatTemplate: prefix => template('format', prefix),
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),
