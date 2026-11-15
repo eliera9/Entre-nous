@@ -188,7 +188,9 @@
   padding: 5px 6px;
   border-radius: 7px;
   background: var(--home-note);
-  font: 500 15px/1.18 var(--home-garamond);
+}
+#psy :is(.psy-home .steps-overview-next, .psy-step-title) {
+  font: 500 15px/1.18 'Cormorant Garamond', Georgia, serif;
   letter-spacing: .03em;
   overflow-wrap: anywhere;
 }
@@ -248,6 +250,56 @@
 }
 #psy .psy-session-tabs + [data-psy-after] { padding-block-start: 4px; }
 #psy .psy-session-tabs + [data-psy-after] .en-recap { padding-block-start: 0; }
+
+/* Mes petits pas */
+#psy[data-psy-steps-page] .sbhas :is(.psmsb, [data-psy-form-shortcut]) { display: none !important; }
+#psy[data-psy-steps-page] .mvhd { position: relative; z-index: 8; }
+#psy .psy-steps-tabs { grid-template-columns: repeat(2, minmax(44px, 1fr)); }
+#psy .psy-steps-content { padding-block-start: 13px; }
+#psy [data-psy-steps-list] {
+  --en-paper: var(--sbg);
+  --en-ink: var(--sink);
+  --en-muted: var(--smuted);
+  --en-line: var(--sline);
+  --en-rose: #DDB3BB;
+  font: 500 18px/1.5 'EN Cormorant Garamond', Georgia, serif;
+}
+#psy [data-psy-steps-list] .en-add-bullet { margin-top: 12px; }
+#psy .psy-steps-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-height: 54px;
+  border-bottom: 1px solid var(--sline);
+}
+#psy .psy-step-check, #psy .psy-step-open {
+  display: grid;
+  min-height: 44px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sink);
+  text-align: left;
+}
+#psy .psy-step-check { place-items: center start; }
+#psy .psy-step-open { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; }
+#psy .psy-step-title { display: block; }
+#psy .psy-step-open small { display: block; margin-top: 3px; color: var(--sacc); font: 500 11px/1.2 'Cormorant SC', Georgia, serif; letter-spacing: .09em; }
+#psy .psy-step-open > svg { width: 16px; height: 16px; color: var(--sacc); stroke-width: 1.5; }
+#psy .psy-step-mark { display: grid; place-items: center; width: 18px; height: 18px; box-sizing: border-box; border: 1px solid var(--sacc); border-radius: 50%; color: var(--sacc); }
+#psy .psy-step-mark.is-checked { background: color-mix(in srgb, var(--sacc) 14%, var(--sbg)); }
+#psy .psy-step-mark svg { width: 12px; height: 12px; }
+#psy .psy-steps-month + .psy-steps-month { margin-top: 22px; }
+#psy .psy-steps-month h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: var(--sacc); font: 500 15px/1.2 'Cormorant SC', Georgia, serif; letter-spacing: .1em; }
+#psy .psy-steps-month h3::after { content: ''; height: 1px; flex: 1; background: var(--sline); }
+#psy .psy-steps-week + .psy-steps-week { margin-top: 12px; }
+#psy .psy-steps-week h4 { margin: 0 0 3px; color: var(--smuted); font: 500 12px/1.2 'Cormorant SC', Georgia, serif; letter-spacing: .08em; }
+#psy .psy-steps-empty { color: var(--smuted); font: 500 15px/1.25 'Cormorant Garamond', Georgia, serif; }
+#psy .psy-steps-sort .psy-steps-order { display: block; width: 100%; min-height: 44px; padding: 0 4px 0 23px; border-top: 1px solid var(--sline); color: inherit; text-align: left; }
+#psy .psy-steps-sort .psy-steps-order[aria-pressed="true"] { color: var(--sacc); }
+#psy [data-psy-steps-list] button:focus-visible, #psy .psy-steps-sort button:focus-visible { outline: 2px solid var(--sacc); outline-offset: -2px; }
+#psy.nuit #psy-step-planned-date { color-scheme: dark; }
 #psy .psy-sections { display: flex; flex-wrap: wrap; gap: 0 14px; padding-bottom: 6px; }
 #psy:is([data-psy-route="archive"], [data-psy-route="session"]:not([data-open-session]), [data-step-editing]) .psmsb { display: none; }
 

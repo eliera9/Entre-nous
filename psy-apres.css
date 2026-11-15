@@ -216,13 +216,16 @@
     background: transparent;
     color: var(--en-response-ink);
     font: var(--en-response-font); }
-[data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-quiet { box-sizing: border-box; width: fit-content; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--en-muted); font: inherit; font-size: 15px; text-align: left; }
+[data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-quiet,
+#psy [data-psy-steps-list] .en-quiet { box-sizing: border-box; width: fit-content; min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--en-muted); font: inherit; font-size: 15px; text-align: left; }
+#psy [data-psy-steps-list] .en-plus,
 [data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-plus { display: grid;
     place-items: center;
     box-sizing: border-box;
     width: 22px;
     height: 22px;
     font: 400 16px/1 system-ui,sans-serif; }
+#psy [data-psy-steps-list] .en-add-bullet,
 [data-psy-after] :is([data-pane="guided"], .psy-session-step-form) .en-add-bullet { display: flex;
     justify-content: center;
     align-items: center;

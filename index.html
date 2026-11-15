@@ -814,6 +814,7 @@ document.addEventListener('input',e=>{const t=e.target;if(t&&t.closest&&t.closes
 <script src="psy-date.js" defer></script>
 <script src="psy-accueil.js" defer></script>
 <script src="psy-historique.js" defer></script>
+<script src="psy-petits-pas.js" defer></script>
 <script src="psy-mode-seance.js" defer></script>
 </head>
 <body>
@@ -7469,27 +7470,34 @@ function mountSessionSteps(section,item,route){
   }finally{form.inert=false;submit.disabled=false;}
  });
 }
-function tPas(){const P=S.pas;let h='';
- if(!P.length&&S.mode!=='soir')return`<div class="ps-empty"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));display:flex;align-items:center;justify-content:center"><img alt="" src="${ico('pas')}" style="width:26px"></div><p class="ps-t">Pas encore de petit pas.</p><p class="ps-s">Ta psy t'a proposé quelque chose à essayer ?<br>Ou tu as une envie à toi ?</p></div><p class="ps-s" style="text-align:left;margin-top:14px">Plume a quelques idées :</p>${['Marcher 10 minutes après le travail','Écrire 3 gratitudes ce soir','Envoyer un message à quelqu\'un qui compte'].map(t=>`<button class="ps-sug" data-a="pasidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}<button class="ps-btn" data-a="pasnew">+ UN PETIT PAS</button>`;
- if(S.mode==='avant'){const cur=P.filter(p=>!p.done&&!S.veille[p.id]);if(cur.length)h+=`<div class="ps-card" style="margin-top:14px;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg))"><div class="ps-k">TA SÉANCE EST DEMAIN</div><p class="ps-t" style="font-size:16px">Que fait-on de tes petits pas en cours ?</p>${cur.map(p=>`<div class="ps-li"><span class="tx">${esc(p.t)}</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="c">CONTINUER</button><span class="ps-tag" style="color:var(--sline)">·</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="a">ARCHIVER</button></div>`).join('')}<p class="ps-s" style="margin-top:6px;font-size:12.5px">Sans réponse, ils passent dans « les séances d'avant ».</p></div>`}
- h+=`<div class="ps-k" style="margin-top:18px;color:var(--sink)">EN COURS</div>`;
- const grp=w=>P.filter(p=>!p.done&&p.when===w&&S.veille[p.id]!=='a');
- ['AUJOURD\'HUI','CETTE SEMAINE'].forEach(w=>{const g=grp(w);if(g.length)h+=H(w)+g.map(pasLine).join('')});
- const dn=P.filter(p=>p.done&&S.pasYay!==p.id);const yay=P.find(p=>p.id===S.pasYay);if(yay&&!grp(yay.when).includes(yay)){}
- if(dn.length)h+=H('ÇA M\'A FAIT DU BIEN')+dn.map(p=>`<div class="ps-li"><span class="ck on"></span><button class="tx" data-a="pasopen" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>FAIT ${p.day||'AUJOURD\'HUI'}${p.feel?' · « '+p.feel.toUpperCase()+' »':''}</small></button></div>`).join('');
- h+=`<button class="ps-add" data-a="pasnew">+ un petit pas</button>`;
- const old={};
- Object.keys(old).forEach(k=>{const L=old[k],d=L.filter(x=>x[1]).length;h+=`<div class="ps-card" style="padding:10px 12px">${fold('o'+k,'Séance du '+k,d+' sur '+L.length+' fait'+(d>1?'s':''),L.map(x=>`<div class="ps-li" style="padding:7px 0"><span class="ck${x[1]?' on':''}"></span><span class="tx">${esc(x[0])}<small>${x[1]?'FAIT'+(x[2]?' · « '+x[2].toUpperCase()+' »':''):'PAS FAIT, CE N\'EST PAS GRAVE'}</small></span></div>`).join(''))}</div>`});
- if(S.veille&&Object.values(S.veille).includes('a'))h+=`<p class="ps-s" style="margin-top:6px">${Object.values(S.veille).filter(v=>v==='a').length} petit pas archivé.</p>`;
- return h}
-function pasLine(p){const y=S.pasYay===p.id;let h=`<div class="ps-li"${y?' style="border:0"':''}><button class="ck${y?' on':''}" data-a="pasck" data-i="${p.id}"></button><button class="tx" data-a="pasopen" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>${p.r?p.r.toUpperCase()+' · ':''}${p.rep.toUpperCase()}</small></button></div>`;
- if(y){const W=['Bravo, ce n\'était pas rien.','Tu l\'as fait. Je suis fière de toi.','Un petit pas de plus, c\'est beau.'];h+=`<div class="ps-yay ps-fadein"><span class="s">✦</span><img alt="" src="${pet()}"><p>${W[(p.id.charCodeAt(1))%3]}</p></div><div class="ps-after ps-fadein" style="border-bottom:.7px solid var(--sline);padding-bottom:10px"><p class="ps-s" style="text-align:left">Comment tu t'es sentie ?</p>${['soulagée','fière','bizarre','pas grand-chose'].map(f=>`<button class="ps-pl" data-a="pasfeel" data-i="${p.id}" data-k="${f}">${f}</button>`).join('')}<button class="ps-pl dash" data-a="pasfeel" data-i="${p.id}" data-k="">passer</button><div class="ps-f"><input id="pasmot" placeholder="un mot de plus…">${MIC}</div></div>`}
- return h}
-function sheetPas(p,isNew){const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];S.ed=Object.assign({t:'',why:'',r:'21 h',rep:'une fois'},p||{});const e=S.ed;
+const onPsyStepsPage=()=>cur().v==='section'&&cur().page==='pas';
+function tPas(){
+ const P=S.pas, route=cur();
+ let intro='';
+ if(!P.length&&S.mode!=='soir')intro=`<div class="ps-empty"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));display:flex;align-items:center;justify-content:center"><img alt="" src="${ico('pas')}" style="width:26px"></div><p class="ps-t">Pas encore de petit pas.</p><p class="ps-s">Ta psy t'a proposé quelque chose à essayer ?<br>Ou tu as une envie à toi ?</p></div><p class="ps-s" style="text-align:left;margin-top:14px">Plume a quelques idées :</p>${['Marcher 10 minutes après le travail','Écrire 3 gratitudes ce soir','Envoyer un message à quelqu\'un qui compte'].map(t=>`<button class="ps-sug" data-a="pasidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}`;
+ if(S.mode==='avant'){const cur=P.filter(p=>!p.done&&!S.veille[p.id]);if(cur.length)intro+=`<div class="ps-card" style="margin-top:14px;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg))"><div class="ps-k">TA SÉANCE EST DEMAIN</div><p class="ps-t" style="font-size:16px">Que fait-on de tes petits pas en cours ?</p>${cur.map(p=>`<div class="ps-li"><span class="tx">${esc(p.t)}</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="c">CONTINUER</button><span class="ps-tag" style="color:var(--sline)">·</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="a">ARCHIVER</button></div>`).join('')}<p class="ps-s" style="margin-top:6px;font-size:12.5px">Sans réponse, ils passent dans « les séances d'avant ».</p></div>`}
+ return window.__enPsySteps.render({
+  items:P, tab:route.stepsTab, order:route.stepsOrder, archive:S.veille, expandedId:S.pasYay, finish:pasFeedback, intro
+ });
+}
+function pasFeedback(p){
+ const W=['Bravo, ce n\'était pas rien.','Tu l\'as fait. Je suis fière de toi.','Un petit pas de plus, c\'est beau.'];return `<div class="ps-yay ps-fadein"><span class="s">✦</span><img alt="" src="${pet()}"><p>${W[(String(p.id).charCodeAt(1)||0)%3]}</p></div><div class="ps-after ps-fadein" style="border-bottom:.7px solid var(--sline);padding-bottom:10px"><p class="ps-s" style="text-align:left">Comment tu t'es sentie ?</p>${['soulagée','fière','bizarre','pas grand-chose'].map(f=>`<button class="ps-pl" data-a="pasfeel" data-i="${p.id}" data-k="${f}">${f}</button>`).join('')}<button class="ps-pl dash" data-a="pasfeel" data-i="${p.id}" data-k="">passer</button><div class="ps-f"><input id="pasmot" placeholder="un mot de plus…">${MIC}</div></div>`;
+}
+function finishPsyStep(step, feeling){
+ if(!step || step.done)return;
+ window.__enPsySteps.complete(step,feeling);
+ S.pasYay=null;
+ window.__PP?.emit();
+ window.__vaultAutosave?.();
+ render();
+ B.querySelector('[data-a="steps-tab"][data-k="done"]')?.focus({preventScroll:true});
+}
+function sheetPas(p,isNew){const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];S.ed=Object.assign({t:'',why:'',r:'21 h',rep:'une fois',plannedDate:''},p||{});const e=S.ed;
  return`<div class="ps-grab" data-a="sclose"></div><div class="ps-k">${isNew?'UN PETIT PAS':'MON PETIT PAS'}</div>
  ${isNew?`<div class="ps-h">DES IDÉES DE PLUME</div>${['Envoyer un message à mon frère','Marcher 10 minutes après le travail'].map(t=>`<button class="ps-sug" data-a="edidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}`:''}
  <div class="ps-f" style="margin-top:10px"><textarea rows="1" data-f="ed.t" placeholder="${isNew?'ou écris le tien…':''}" style="font-size:17px">${esc(e.t)}</textarea>${MIC}</div>
  <div class="ps-h">POURQUOI</div><div class="ps-f"><input data-f="ed.why" placeholder="pour…" value="${esc(e.why)}"></div>
+ ${onPsyStepsPage()?`<label class="ps-h" for="psy-step-planned-date">Date prévue</label><div class="ps-f"><input type="date" id="psy-step-planned-date" data-f="ed.plannedDate" value="${window.__enPsySteps.validDate(e.plannedDate)?e.plannedDate:''}"></div>`:''}
  <div class="ps-h">RAPPEL</div><div class="ps-f"><input data-f="ed.r" value="${esc(e.r)}" placeholder="21 h"><span style="color:var(--sacc)">⌄</span></div>
  <div style="margin-top:6px">${reps.map(x=>`<button class="ps-pl${e.rep===x?' on':''}" data-a="edrep" data-k="${x}">${x}</button>`).join('')}</div>
  ${!isNew&&e.src?`<div class="ps-h">VIENT DE</div><button class="ps-lk" style="text-align:left;margin:0" data-a="sclose">séance du ${e.src} ›</button>`:''}
@@ -7592,7 +7600,9 @@ function sessionTabs(tab, canOpenPendant=true, hasSession=canOpenPendant){
 }
 function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('data-avant-ai');
  window.__enPsyHistory.unmount();
+ window.__enPsySteps.unmount();
  ph.toggleAttribute('data-psy-history-page',c.v==='section'&&c.page==='seances');
+ ph.toggleAttribute('data-psy-steps-page',c.v==='section'&&c.page==='pas');
  const currentSession=activeSession();
  ph.toggleAttribute('data-open-session',Boolean(c.legacyId==null&&currentSession&&!currentSession.completed));
  ph.toggleAttribute('data-step-editing',c.tab==='petit-pas'&&Boolean(c.stepEditing));
@@ -7635,6 +7645,15 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   const id=legacyId??record?.id??(currentSession&&afterModule().historyIdFor(currentSession));
   if(id!=null)window.__enPsyHistory.mountSubjectPicker(subjectPicker,id,route.subjectSelection||={});
   window.__enPsyHistory.updateSessionLead(B,currentSession);
+ }
+ const stepsList=B.querySelector('[data-psy-steps-list]');
+ if(stepsList){
+  window.__enPsyIcons?.(stepsList);
+  window.__enPsySteps.mountSort(ph,stepsList,{count:S.pas.length,order:c.stepsOrder,onOrder:order=>{
+   c.stepsOrder=order;
+   render();
+   ph.querySelector('.psy-steps-sort button')?.focus({preventScroll:true});
+  }});
  }
  const history=B.querySelector('[data-psy-history]');
  if(history){
@@ -7698,7 +7717,11 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   if(e.key==='Escape'){S.addNote=0;render()}
  };}
  const ns=$('psnewsj');if(ns)ns.onkeydown=e=>{if(e.key==='Enter'&&ns.value.trim()){S.ap.parler.extra.push(ns.value.trim());S.ap.parts.parler=1;render()}};
- const pm=$('pasmot');if(pm)pm.onkeydown=e=>{if(e.key==='Enter'){const p=S.pas.find(x=>x.id===S.pasYay);if(p){p.done=1;p.feel=pm.value.trim()||p.feel;p.day='AUJOURD\'HUI';S.pasYay=null;render()}}};
+ const pm=$('pasmot');if(pm)pm.onkeydown=e=>{
+  if(e.key!=='Enter'||e.isComposing)return;
+  const p=S.pas.find(x=>x.id===S.pasYay);
+  if(p)finishPsyStep(p,pm.value.trim()||p.feel);
+ };
  const ai=$('aidin');if(ai){ai.focus();ai.onkeydown=e=>{if(e.key==='Enter')act('aidok')}}
  const po=$('prown');if(po)po.onkeydown=e=>{if(e.key==='Enter'&&po.value.trim()){(S.first.p.pr_own=S.first.p.pr_own||[]).push(po.value.trim());S.first.p['pr_o'+(S.first.p.pr_own.length-1)]=1;render()}};
  sw();
@@ -7811,15 +7834,51 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
  case'range':if(!enVrac())break;S.stack=S.stack.filter(x=>x.v!=='vrac');go('parts');toast('Plume a rangé ton vrac dans tes quatre cartes');break;
  case'apsave':if(!ap.pasSynced){ap.pasSynced=1;(ap.pasAdded||[]).forEach((p,i)=>enPushPas({id:'p'+Date.now()+'_'+i,t:p.t,why:'',r:p.r||'',rep:p.rep||'une fois',when:p.rep==='chaque jour'?'AUJOURD\'HUI':'CETTE SEMAINE',done:0,src:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}))}ap.saved=1;ap.date=S.sessionDate;ap.subjects=(S.msSubjects||S.notes).filter(n=>ap.parler.ck[n.id]).map(n=>n.t);ap.prev=(S.msSubjects||[]).map(n=>n.t);ap.notes=allNotes();try{window.__enPsySeance&&window.__enPsySeance(SEANCES,ap)}catch(_){};S.stack=[];S.tab='seances';render(1);toast('✦ C\'est noté. Une perle s\'ajoute à ton fil.');break;
  /* petits pas */
- case'pasck':{const p=S.pas.find(x=>x.id===d.i);if(S.pasYay===p.id){S.pasYay=null}else S.pasYay=p.id;render();break}
- case'pasfeel':{const p=S.pas.find(x=>x.id===d.i);p.done=1;p.feel=d.k;p.day='AUJOURD\'HUI';S.pasYay=null;render();break}
- case'pasopen':{const p=S.pas.find(x=>x.id===d.i);S.edId=p.id;openSheet(sheetPas(p,0));break}
+ case'steps-tab':{
+  cur().stepsTab=d.k;
+  render(1);
+  B.querySelector('[data-a="steps-tab"][aria-current]')?.focus({preventScroll:true});
+  break;
+ }
+ case'pasck':{
+  const p=S.pas.find(x=>String(x.id)===d.i);
+  if(!p||p.done)break;
+  S.pasYay=S.pasYay===p.id?null:p.id;
+  render();
+  Array.from(B.querySelectorAll('[data-a="pasck"]')).find(button=>button.dataset.i===d.i)?.focus({preventScroll:true});
+  break;
+ }
+ case'pasfeel':finishPsyStep(S.pas.find(x=>String(x.id)===d.i),d.k);break;
+ case'pasopen':{
+  const p=S.pas.find(x=>String(x.id)===d.i);
+  if(p){S.edId=p.id;S.edFor='';openSheet(sheetPas(p,0));}
+  break;
+ }
  case'pasnew':S.edId=null;S.edFor=d.k||'';openSheet(sheetPas(null,1));break;
- case'pasidea':S.edId=null;openSheet(sheetPas({t:d.t},1));break;
+ case'pasidea':S.edId=null;S.edFor='';openSheet(sheetPas({t:d.t},1));break;
  case'edidea':S.ed.t=d.t;ph.querySelector('.ps-sheet [data-f="ed.t"]').value=d.t;break;
  case'edrep':S.ed.rep=d.k;ph.querySelectorAll('.ps-sheet [data-a="edrep"]').forEach(b=>b.classList.toggle('on',b.dataset.k===d.k));break;
- case'edsave':{const e=S.ed;if(!e.t.trim()){toast('Écris ton petit pas');return}if(S.edId){Object.assign(S.pas.find(x=>x.id===S.edId),{t:e.t,why:e.why,r:e.r,rep:e.rep})}else if(S.edFor==='apres'){ap.pasAdded.push({t:e.t,rep:e.rep,r:e.r})}else enPushPas({id:'p'+Date.now(),t:e.t,why:e.why,r:e.r,rep:e.rep,when:e.rep==='chaque jour'?'AUJOURD\'HUI':'CETTE SEMAINE',done:0,src:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'})});closeSheet();render();toast('✦ C\'est noté.');break}
- case'eddel':S.pas=S.pas.filter(x=>x.id!==S.edId);closeSheet();render();toast('Petit pas retiré');break;
+ case'edsave':{
+  const e=S.ed;
+  if(!e.t.trim()){toast('Écris ton petit pas');return;}
+  if(t.disabled)break;
+  t.disabled=true;
+  const fields={t:e.t,why:e.why,r:e.r,rep:e.rep};
+  if(onPsyStepsPage())fields.plannedDate=window.__enPsySteps.validDate(e.plannedDate)?e.plannedDate:'';
+  if(S.edId!=null){
+   const step=S.pas.find(x=>x.id===S.edId);
+   if(!step)break;
+   Object.assign(step,fields);
+   window.__PP?.emit();
+  }else if(S.edFor==='apres'){
+   ap.pasAdded.push({t:e.t,rep:e.rep,r:e.r});
+  }else{
+   enPushPas({...fields,id:'p'+crypto.randomUUID(),when:e.rep==='chaque jour'?"AUJOURD'HUI":'CETTE SEMAINE',done:0,src:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long'})});
+  }
+  window.__vaultAutosave?.();
+  closeSheet();render();toast('✦ C’est noté.');break;
+ }
+ case'eddel':S.pas=S.pas.filter(x=>x.id!==S.edId);window.__vaultAutosave?.();closeSheet();render();toast('Petit pas retiré');break;
  case'sclose':closeSheet();break;
  case'veille':S.veille[d.i]=d.k;render();break;
  /* séances */
@@ -7995,7 +8054,7 @@ function render(){if(!B)return;let h=`<div class="ps-bub"><img alt="" src="${pet
  const dn=PP.items.filter(p=>p.done&&PP.yay!==p.id);if(dn.length)h+=`<div class="ps-h">ÇA M'A FAIT DU BIEN</div>`+dn.map(p=>`<div class="ps-li"><span class="ck on"></span><button class="tx" data-a="open" data-i="${p.id}" style="text-align:left">${esc(p.t)}<small>FAIT ${p.day||'AUJOURD\'HUI'}${p.feel?' · « '+p.feel.toUpperCase()+' »':''}</small></button>${tag(p.f,ph)}</div>`).join('');
  h+=`<button class="ps-add" data-a="new">+ un petit pas</button>`;
  B.innerHTML=h;
- const m=$('mppmot');if(m)m.onkeydown=e=>{if(e.key==='Enter'){const p=PP.items.find(x=>x.id===PP.yay);if(p){p.done=1;p.feel=m.value.trim()||p.feel;p.day='AUJOURD\'HUI';PP.yay=null;PP.emit()}}}}
+ const m=$('mppmot');if(m)m.onkeydown=e=>{if(e.key==='Enter'){const p=PP.items.find(x=>x.id===PP.yay);if(p){window.__enPsySteps.complete(p,m.value.trim()||p.feel);PP.yay=null;PP.emit()}}}}
 function lock(o){o.style.top=ph.scrollTop+'px';o.style.height=ph.clientHeight+'px';ph.style.overflowY='hidden'}
 function toast(t){const o=document.createElement('div');o.className='ps-toast ps-fadein';o.textContent=t;o.style.top=(ph.scrollTop+ph.clientHeight-86)+'px';ph.appendChild(o);setTimeout(()=>o.remove(),2400)}
 let ED=null,EDID=null;
@@ -8017,7 +8076,7 @@ if(ph){
  ph.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||!ph.contains(t))return;e.stopPropagation();const d=t.dataset;
   switch(d.a){
   case'ck':PP.yay=PP.yay===d.i?null:d.i;PP.emit();break;
-  case'feel':{const p=PP.items.find(x=>x.id===d.i);p.done=1;p.feel=d.k;p.day='AUJOURD\'HUI';PP.yay=null;PP.emit();break}
+  case'feel':{const p=PP.items.find(x=>x.id===d.i);window.__enPsySteps.complete(p,d.k);PP.yay=null;PP.emit();break}
   case'open':sheet(PP.items.find(x=>x.id===d.i),0);break;
   case'new':sheet(null,1);break;
   case'idea':ED.t=d.t;ED.f=d.k;ph.querySelector('.ps-sheet [data-f="t"]').value=d.t;ph.querySelectorAll('.ps-sheet [data-a="fam"]').forEach(b=>b.classList.toggle('on',b.dataset.k===d.k));break;
@@ -8043,7 +8102,7 @@ const H=$('home'),hum=$('humeur');
 if(H&&hum){const c=document.createElement('div');c.className='mppc';hum.after(c);
  const rc=()=>{const L=PP.items.filter(p=>p.when==='AUJOURD\'HUI'&&(!p.done||PP.homeDone===p.id));if(!L.length){c.hidden=true;return}c.hidden=false;
   c.innerHTML=`<p class="k">TES PETITS PAS DU JOUR</p>${L.map(p=>`<div class="r"><button class="ck${p.done?' on':''}" data-i="${p.id}" aria-label="C'est fait"></button><span class="t">${esc(p.t)}</span>${tag(p.f,H)}</div>`).join('')}<button class="lk">tous mes petits pas ›</button>`};
- c.addEventListener('click',e=>{const b=e.target.closest('.ck');if(b){e.stopPropagation();const p=PP.items.find(x=>x.id===b.dataset.i);if(p&&!p.done){p.done=1;p.day='AUJOURD\'HUI';PP.homeDone=p.id;PP.emit();setTimeout(()=>{PP.homeDone=null;PP.emit()},1500)}return}
+ c.addEventListener('click',e=>{const b=e.target.closest('.ck');if(b){e.stopPropagation();const p=PP.items.find(x=>x.id===b.dataset.i);if(p&&!p.done){window.__enPsySteps.complete(p,p.feel);PP.homeDone=p.id;PP.emit();setTimeout(()=>{PP.homeDone=null;PP.emit()},1500)}return}
   if(e.target.closest('.lk')){const m=$('mpp');m&&m.scrollIntoView({behavior:'smooth',block:'center'})}});
  PP.subs.push(rc);new MutationObserver(rc).observe(H,{attributes:true,attributeFilter:['class']});rc()}
 
@@ -9097,11 +9156,11 @@ if(PP&&old){card=document.createElement('div');card.className='mppc acpp';old.re
   dim.onclick=close;s.querySelector('.cl').onclick=close;
   s.querySelector('.mo').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();close()}};
   s.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{p.feel=b.dataset.f;s.querySelectorAll('[data-f]').forEach(x=>x.classList.toggle('on',x===b));PP.emit();setTimeout(close,animOn()?450:0)});
-  s.querySelector('.un').onclick=()=>{Object.assign(p,prev);if(prev.feel===undefined)delete p.feel;if(prev.day===undefined)delete p.day;PP.emit();close()};
+  s.querySelector('.un').onclick=()=>{Object.assign(p,prev);if(prev.feel===undefined)delete p.feel;if(prev.day===undefined)delete p.day;if(prev.completedOn===undefined)delete p.completedOn;PP.emit();close()};
   let y0=null;s.addEventListener('pointerdown',e=>{if(e.target.classList.contains('gr'))y0=e.clientY});s.addEventListener('pointerup',e=>{if(y0!=null&&e.clientY-y0>40)close();y0=null});
   requestAnimationFrame(()=>{dim.classList.add('on');s.classList.add('on')})}
  card.addEventListener('click',e=>{const b=e.target.closest('.ck');if(b){e.stopPropagation();const p=PP.items.find(x=>x.id===b.dataset.i);if(!p||p.done)return;
-   const prev={done:p.done,feel:p.feel,day:p.day};p.done=1;p.day='AUJOURD\'HUI';hold=p.id;PP.emit();sheet(p,prev);return}
+   const prev={done:p.done,feel:p.feel,day:p.day,completedOn:p.completedOn};window.__enPsySteps.complete(p,p.feel);hold=p.id;PP.emit();sheet(p,prev);return}
   if(e.target.closest('.lk')){const m=$('mpp');m&&m.scrollIntoView({behavior:behav(),block:'center'})}});
  PP.subs.push(rc);new MutationObserver(rc).observe(H,{attributes:true,attributeFilter:['class']});rc()}
 
