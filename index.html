@@ -7471,15 +7471,17 @@ function mountSessionSteps(section,item,route){
  });
 }
 const onPsyStepsPage=()=>cur().v==='section'&&cur().page==='pas';
-function tPas(){
+function psyStepsOptions(){
  const P=S.pas, route=cur();
  let intro='';
  if(!P.length&&S.mode!=='soir')intro=`<div class="ps-empty"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--sacc) 12%,var(--sbg));display:flex;align-items:center;justify-content:center"><img alt="" src="${ico('pas')}" style="width:26px"></div><p class="ps-t">Pas encore de petit pas.</p><p class="ps-s">Ta psy t'a proposé quelque chose à essayer ?<br>Ou tu as une envie à toi ?</p></div><p class="ps-s" style="text-align:left;margin-top:14px">Plume a quelques idées :</p>${['Marcher 10 minutes après le travail','Écrire 3 gratitudes ce soir','Envoyer un message à quelqu\'un qui compte'].map(t=>`<button class="ps-sug" data-a="pasidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}`;
  if(S.mode==='avant'){const cur=P.filter(p=>!p.done&&!S.veille[p.id]);if(cur.length)intro+=`<div class="ps-card" style="margin-top:14px;background:color-mix(in srgb,var(--sacc) 8%,var(--sbg))"><div class="ps-k">TA SÉANCE EST DEMAIN</div><p class="ps-t" style="font-size:16px">Que fait-on de tes petits pas en cours ?</p>${cur.map(p=>`<div class="ps-li"><span class="tx">${esc(p.t)}</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="c">CONTINUER</button><span class="ps-tag" style="color:var(--sline)">·</span><button class="ps-tag" data-a="veille" data-i="${p.id}" data-k="a">ARCHIVER</button></div>`).join('')}<p class="ps-s" style="margin-top:6px;font-size:12.5px">Sans réponse, ils passent dans « les séances d'avant ».</p></div>`}
- return window.__enPsySteps.render({
-  items:P, tab:route.stepsTab, order:route.stepsOrder, archive:S.veille, expandedId:S.pasYay, finish:pasFeedback, intro
- });
+ return {
+  items:P, tab:route.stepsTab, order:route.stepsOrder, archive:S.veille, expandedId:S.pasYay, finish:pasFeedback, intro,
+  filters:route.stepsFilters||={}
+ };
 }
+function tPas(){return window.__enPsySteps.render(psyStepsOptions())}
 function pasFeedback(p){
  const W=['Bravo, ce n\'était pas rien.','Tu l\'as fait. Je suis fière de toi.','Un petit pas de plus, c\'est beau.'];return `<div class="ps-yay ps-fadein"><span class="s">✦</span><img alt="" src="${pet()}"><p>${W[(String(p.id).charCodeAt(1)||0)%3]}</p></div><div class="ps-after ps-fadein" style="border-bottom:.7px solid var(--sline);padding-bottom:10px"><p class="ps-s" style="text-align:left">Comment tu t'es sentie ?</p>${['soulagée','fière','bizarre','pas grand-chose'].map(f=>`<button class="ps-pl" data-a="pasfeel" data-i="${p.id}" data-k="${f}">${f}</button>`).join('')}<button class="ps-pl dash" data-a="pasfeel" data-i="${p.id}" data-k="">passer</button><div class="ps-f"><input id="pasmot" placeholder="un mot de plus…">${MIC}</div></div>`;
 }
@@ -7492,12 +7494,16 @@ function finishPsyStep(step, feeling){
  render();
  B.querySelector('[data-a="steps-tab"][data-k="done"]')?.focus({preventScroll:true});
 }
-function sheetPas(p,isNew){const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];S.ed=Object.assign({t:'',why:'',r:'21 h',rep:'une fois',plannedDate:''},p||{});const e=S.ed;
+function sheetPas(p,isNew){
+ if(onPsyStepsPage()){
+  S.ed={t:'',why:'',r:'',rep:'',plannedDate:'',...p,subjects:window.__enPsyHistory.validSubjects(p?.subjects)};
+  return window.__enPsySteps.editor(S.ed,isNew);
+ }
+ const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];S.ed=Object.assign({t:'',why:'',r:'21 h',rep:'une fois'},p||{});const e=S.ed;
  return`<div class="ps-grab" data-a="sclose"></div><div class="ps-k">${isNew?'UN PETIT PAS':'MON PETIT PAS'}</div>
  ${isNew?`<div class="ps-h">DES IDÉES DE PLUME</div>${['Envoyer un message à mon frère','Marcher 10 minutes après le travail'].map(t=>`<button class="ps-sug" data-a="edidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}`:''}
  <div class="ps-f" style="margin-top:10px"><textarea rows="1" data-f="ed.t" placeholder="${isNew?'ou écris le tien…':''}" style="font-size:17px">${esc(e.t)}</textarea>${MIC}</div>
  <div class="ps-h">POURQUOI</div><div class="ps-f"><input data-f="ed.why" placeholder="pour…" value="${esc(e.why)}"></div>
- ${onPsyStepsPage()?`<label class="ps-h" for="psy-step-planned-date">Date prévue</label><div class="ps-f"><input type="date" id="psy-step-planned-date" data-f="ed.plannedDate" value="${window.__enPsySteps.validDate(e.plannedDate)?e.plannedDate:''}"></div>`:''}
  <div class="ps-h">RAPPEL</div><div class="ps-f"><input data-f="ed.r" value="${esc(e.r)}" placeholder="21 h"><span style="color:var(--sacc)">⌄</span></div>
  <div style="margin-top:6px">${reps.map(x=>`<button class="ps-pl${e.rep===x?' on':''}" data-a="edrep" data-k="${x}">${x}</button>`).join('')}</div>
  ${!isNew&&e.src?`<div class="ps-h">VIENT DE</div><button class="ps-lk" style="text-align:left;margin:0" data-a="sclose">séance du ${e.src} ›</button>`:''}
@@ -7649,10 +7655,12 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
  const stepsList=B.querySelector('[data-psy-steps-list]');
  if(stepsList){
   window.__enPsyIcons?.(stepsList);
-  window.__enPsySteps.mountSort(ph,stepsList,{count:S.pas.length,order:c.stepsOrder,onOrder:order=>{
-   c.stepsOrder=order;
-   render();
-   ph.querySelector('.psy-steps-sort button')?.focus({preventScroll:true});
+  window.__enPsySteps.mountSort(ph,stepsList,{items:S.pas,order:c.stepsOrder,filters:c.stepsFilters,onChange:order=>{
+   if(order)c.stepsOrder=order;
+   const content=stepsList.querySelector('.psy-steps-content');
+   content.innerHTML=window.__enPsySteps.renderContent(psyStepsOptions());
+   window.__enPsyIcons?.(content);
+   bindPsyStepFeedback();
   }});
  }
  const history=B.querySelector('[data-psy-history]');
@@ -7717,21 +7725,43 @@ function render(top){const c=cur();ph.dataset.psyRoute=c.v;ph.removeAttribute('d
   if(e.key==='Escape'){S.addNote=0;render()}
  };}
  const ns=$('psnewsj');if(ns)ns.onkeydown=e=>{if(e.key==='Enter'&&ns.value.trim()){S.ap.parler.extra.push(ns.value.trim());S.ap.parts.parler=1;render()}};
- const pm=$('pasmot');if(pm)pm.onkeydown=e=>{
-  if(e.key!=='Enter'||e.isComposing)return;
-  const p=S.pas.find(x=>x.id===S.pasYay);
-  if(p)finishPsyStep(p,pm.value.trim()||p.feel);
- };
+ bindPsyStepFeedback();
  const ai=$('aidin');if(ai){ai.focus();ai.onkeydown=e=>{if(e.key==='Enter')act('aidok')}}
  const po=$('prown');if(po)po.onkeydown=e=>{if(e.key==='Enter'&&po.value.trim()){(S.first.p.pr_own=S.first.p.pr_own||[]).push(po.value.trim());S.first.p['pr_o'+(S.first.p.pr_own.length-1)]=1;render()}};
  sw();
+}
+function bindPsyStepFeedback(){
+ const input=$('pasmot');
+ if(input)input.onkeydown=e=>{
+  if(e.key!=='Enter'||e.isComposing)return;
+  const step=S.pas.find(x=>x.id===S.pasYay);
+  if(step)finishPsyStep(step,input.value.trim()||step.feel);
+ };
 }
 function sw(){B.querySelectorAll('[data-sw]').forEach(el=>{let x0=null;el.onpointerdown=e=>{x0=e.clientX};el.onpointerup=e=>{if(x0==null)return;const dx=e.clientX-x0;x0=null;if(Math.abs(dx)<36)return;const k=el.dataset.sw;if(k==='ni'){S.prep.ni=Math.max(0,Math.min(S.notes.length-1,S.prep.ni+(dx<0?1:-1)))}else{const L=B.querySelectorAll('[data-a="phi"]').length;S.phI=Math.max(0,Math.min(L-1,(S.phI||0)+(dx<0?1:-1)))}render()}})}
 function lock(o){const st=ph.scrollTop,h=ph.clientHeight;o.style.top=st+'px';o.style.height=h+'px';ph.style.overflowY='hidden'}
 function unlock(){ph.style.overflowY=''}
 function toast(t){const o=document.createElement('div');o.className='ps-toast ps-fadein';o.textContent=t;o.style.top=(ph.scrollTop+ph.clientHeight-86)+'px';ph.appendChild(o);setTimeout(()=>o.remove(),2200)}
-function openSheet(html){closeSheet(1);const d=document.createElement('div');d.className='ps-dim';const s=document.createElement('div');s.className='ps-sheet';s.innerHTML=`<div class="in">${html}</div>`;[d,s].forEach(x=>{lock(x);ph.appendChild(x)});d.onclick=()=>closeSheet();requestAnimationFrame(()=>{d.classList.add('on');s.classList.add('on')});let y0=null;const g=s.querySelector('.ps-grab');g.onpointerdown=e=>{y0=e.clientY};s.onpointerup=e=>{if(y0!=null&&e.clientY-y0>40)closeSheet();y0=null}}
-function closeSheet(now){const d=ph.querySelector('.ps-dim'),s=ph.querySelector('.ps-sheet');if(!d&&!s)return;if(now){d&&d.remove();s&&s.remove();return}d&&d.classList.remove('on');s&&s.classList.remove('on');setTimeout(()=>{d&&d.remove();s&&s.remove();unlock()},300)}
+function openSheet(html){
+ closeSheet(1);
+ const d=document.createElement('div'),s=document.createElement('div');
+ d.className='ps-dim';s.className='ps-sheet';s.innerHTML=`<div class="in">${html}</div>`;
+ [d,s].forEach(x=>{lock(x);ph.appendChild(x)});
+ if(s.querySelector('[data-psy-steps-editor]'))s.psyStepsEditor=window.__enPsySteps.mountEditor(s,S.ed,()=>closeSheet());
+ d.onclick=()=>closeSheet();
+ requestAnimationFrame(()=>{d.classList.add('on');s.classList.add('on')});
+ let y0=null;
+ s.querySelector('.ps-grab').onpointerdown=e=>{y0=e.clientY};
+ s.onpointerup=e=>{if(y0!=null&&e.clientY-y0>40)closeSheet();y0=null};
+}
+function closeSheet(now){
+ const d=ph.querySelector('.ps-dim'),s=ph.querySelector('.ps-sheet');
+ if(!d&&!s)return;
+ s?.psyStepsEditor?.cleanup();
+ if(now){d?.remove();s?.remove();return}
+ d?.classList.remove('on');s?.classList.remove('on');
+ setTimeout(()=>{d?.remove();s?.remove();if(!ph.querySelector('.ps-sheet.on'))unlock()},300);
+}
 function setPath(path,val){const p=path.split('.');let o=S;if(p[0]==='first'){o=S.first.p;p.shift()}else if(p[0]==='ed'){o=S.ed;p.shift()}else if(p[0]==='prep'){o=S.prep;p.shift()}else if(p[0]==='sv'){o=S.sv;p.shift()}else if(p[0]==='ap'){o=S.ap;p.shift()}
  for(let i=0;i<p.length-1;i++){if(o[p[i]]==null)o[p[i]]={};o=o[p[i]]}o[p[p.length-1]]=val}
 B.addEventListener('input',e=>{const f=e.target.dataset&&e.target.dataset.f;if(!f)return;if(f==='paste'){S.paste=e.target.value;return}if(f==='convtxt'){S.convTxt=e.target.value;return}if(f==='rdedit'){S.rd.dire[S.rd.i].t=e.target.value;return}setPath(f,e.target.value);
@@ -7862,12 +7892,18 @@ function act(a,t){const d=t?t.dataset:{};const ap=S.ap;
   const e=S.ed;
   if(!e.t.trim()){toast('Écris ton petit pas');return;}
   if(t.disabled)break;
+  const step=S.edId!=null?S.pas.find(x=>x.id===S.edId):null;
+  if(S.edId!=null&&!step)break;
   t.disabled=true;
+  const form=ph.querySelector('.ps-sheet')?.psyStepsEditor;
+  form?.syncTime();
   const fields={t:e.t,why:e.why,r:e.r,rep:e.rep};
-  if(onPsyStepsPage())fields.plannedDate=window.__enPsySteps.validDate(e.plannedDate)?e.plannedDate:'';
-  if(S.edId!=null){
-   const step=S.pas.find(x=>x.id===S.edId);
-   if(!step)break;
+  if(form){
+   fields.plannedDate=window.__enPsySteps.validDate(e.plannedDate)?e.plannedDate:'';
+   fields.subjects=window.__enPsyHistory.validSubjects(e.subjects);
+   fields.reminderStartsOn=window.__enPsySteps.reminderStart(e,step);
+  }
+  if(step){
    Object.assign(step,fields);
    window.__PP?.emit();
   }else if(S.edFor==='apres'){
@@ -9986,8 +10022,14 @@ function plan(){const L=[];const now=Date.now(),D=14;const add=(t,titre,b,k)=>{i
  /* ton anniversaire */
  if(RG.mien!==false&&RG.naissOk&&RG.naiss){for(let i=0;i<D;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);if(d.getDate()===RG.naiss[0]+1&&d.getMonth()===RG.naiss[1])add(at(d,9,0),'Joyeux anniversaire ✦','Regarde tout le chemin déjà fait.','moi')}}
  /* petits pas avec une heure */
- ((window.__PP&&window.__PP.items)||[]).forEach(x=>{if(!x||x.done&&x.rep!=='chaque jour')return;const m=String(x.r||'').match(/(\d{1,2})\s*h\s*(\d{2})?/);if(!m)return;
-  const n=x.rep==='chaque jour'?D:1;for(let i=0;i<n;i++){const d=new Date(t0);d.setDate(t0.getDate()+i);add(at(d,+m[1],+(m[2]||0)),'Ton petit pas','C’est le moment, si tu en as envie ✦','pas')}});
+ const nextPsy=(window.__calE||[]).filter(e=>e?.t==='psy').flatMap(e=>occ(e,D)).sort((a,b)=>a-b)[0];
+ const nextPsyDate=nextPsy?window.__enPsySteps.today(nextPsy):'';
+ for(const step of window.__PP?.items||[]){
+  if(!step)continue;
+  for(const time of window.__enPsySteps.reminderSchedule(step,new Date(now),D,nextPsyDate)){
+   add(time,'Ton petit pas','C’est le moment, si tu en as envie ✦','pas');
+  }
+ }
  /* petits mots de Plume */
  const fq=RG.freq??1;if(fq>0){const M=[];if(RG.m0!==false)M.push('Je pensais à toi. Ça va ?');if(RG.m1!==false)M.push('Tu as souri aujourd’hui ?');if(RG.m2)M.push('Je suis fière de toi, tu sais.');
   if(M.length)for(let i=1;i<D;i++){if(fq===1&&i%4)continue;const d=new Date(t0);d.setDate(t0.getDate()+i);add(at(d,11+(i*3)%7,(i*17)%60),(RG.petnom||'Plume'),M[i%M.length],'mot')}}

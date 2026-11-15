@@ -4,10 +4,10 @@
 
   const normalize = value => String(value ?? '').normalize('NFD').replace(/\p{M}/gu, '')
     .toLocaleLowerCase('fr-FR').replace(/œ/g, 'oe').replace(/[^a-z0-9]+/g, ' ').trim();
-  const subjects = [
+  const subjects = Object.freeze([
     'Famille', 'Amour', 'Travail', 'Amitiés', 'Émotions', 'Santé', 'Confiance en soi',
     'Limites personnelles', 'Intimité', 'Deuil et pertes', 'Changements de vie',
-  ];
+  ]);
   const sessionDateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'UTC' });
   const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char =>
@@ -400,5 +400,5 @@
     updateView();
   }
 
-  globalThis.__enPsyHistory = { render, mount, unmount, prepare, filtered, periodChoices, subjectPicker, sessionLead, updateSessionLead, mountSubjectPicker, saveSubjects };
+  globalThis.__enPsyHistory = { render, mount, unmount, prepare, filtered, periodChoices, subjectPicker, sessionLead, updateSessionLead, mountSubjectPicker, saveSubjects, subjects, validSubjects, choice };
 })();
