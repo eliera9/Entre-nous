@@ -1,6 +1,7 @@
 /* Mes séances : mêmes commandes de navigation que l’espace Psy. */
 #psy[data-psy-history-page] .sbhas :is(.psmsb, [data-psy-form-shortcut]) { display: none !important; }
 #psy[data-psy-history-page] .mvhd { position: relative; z-index: 8; }
+#psy[data-psy-history-page] .mvhd .mvtt p { font-size: 14px; }
 #psy .psy-history [hidden], #psy .psy-history-sort [hidden] { display: none !important; }
 
 #psy .psy-history-sort { position: relative; flex: none; }
@@ -141,6 +142,7 @@
 
 #psy .psy-history-search {
   display: flex;
+  margin-block-start: 8px;
   align-items: center;
   gap: 8px;
   min-height: 40px;
