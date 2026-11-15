@@ -62,18 +62,20 @@
     return `<section class="history-block" aria-labelledby="psy-history-title">
       <div class="history-header"><h3 class="history-heading" id="psy-history-title">${icon('archive')} Historique des séances</h3>
         <button type="button" class="history-all" data-a="psy-page" data-k="seances"><span class="history-all-core">Tout voir ${icon('chevron-right')}</span></button></div>
-      ${historyRows([...records].sort(newest).slice(0, 2))}</section>`;
+      ${historyRows([...records].sort(newest).slice(0, 3))}</section>`;
   }
 
   function steps(items) {
     const done = items.filter(item => item.done).length;
-    const next = items.find(item => !item.done);
+    const upcoming = items.filter(item => !item.done).slice(0, 5);
     const marks = Array.from({ length: Math.min(items.length, 8) }, (_, index) => icon(index < done ? 'circle-check' : 'circle')).join('');
     return `<section class="steps-overview" aria-labelledby="psy-steps-title">
       <div class="steps-header"><h3 class="steps-heading" id="psy-steps-title">${icon('footprints')} Mes petits pas</h3>
         <button type="button" class="steps-view" data-a="psy-page" data-k="pas" aria-label="Ouvrir Mes petits pas"><span class="steps-view-core">Ouvrir ${icon('chevron-right')}</span></button></div>
       ${items.length ? `<p class="steps-overview-count">${done} pas ${done > 1 ? 'faits' : 'fait'} sur ${items.length}<span class="steps-count-checks" aria-hidden="true">${marks}</span></p>` : ''}
-      ${next ? `<p class="steps-overview-next">${icon('circle')}<span>${escape(next.t)}</span></p>` : ''}
+      ${upcoming.length ? `<ul class="steps-overview-list" role="list">${upcoming.map(item =>
+        `<li class="steps-overview-next">${icon('circle')}<span>${escape(item.t)}</span></li>`
+      ).join('')}</ul>` : ''}
       ${items.length ? '' : '<p class="psy-home-empty">Tes petits pas apparaîtront ici.</p>'}</section>`;
   }
 

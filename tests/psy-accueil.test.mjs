@@ -93,6 +93,27 @@ test('l’historique regroupe les séances sous le mois abrégé et conserve leu
   assert.match(html, /data-a="psy-page" data-k="seances"/);
 });
 
+test('l’accueil affiche les trois séances les plus récentes et jusqu’à cinq petits pas en cours', () => {
+  const { home } = app();
+  const records = [
+    { id: 'ancien', date: '2026-09-05' },
+    { id: 'récent', date: '2026-11-13' },
+    { id: 'troisième', date: '2026-10-19' },
+    { id: 'deuxième', date: '2026-11-02' },
+  ];
+  const items = [
+    { t: 'Pas terminé', done: 1 },
+    ...Array.from({ length: 7 }, (_, index) => ({ t: 'Petit pas ' + (index + 1) })),
+  ];
+  const html = home.render({ records, items });
+  assert.deepEqual([...html.matchAll(/data-a="session-archive" data-i="([^"]+)"/g)].map(match => match[1]),
+    ['récent', 'deuxième', 'troisième']);
+  assert.deepEqual([...html.matchAll(/<li class="steps-overview-next">[^<]*<i [^>]+><\/i><span>([^<]+)<\/span>/g)].map(match => match[1]),
+    ['Petit pas 1', 'Petit pas 2', 'Petit pas 3', 'Petit pas 4', 'Petit pas 5']);
+  assert.match(html, /1 pas fait sur 8/);
+  assert.equal((home.render({ records: [], items: items.slice(1, 3) }).match(/<li class="steps-overview-next">/g) || []).length, 2);
+});
+
 test('un rendez-vous déplacé conserve sa fiche et sa préparation', () => {
   const { returns } = app();
   const event = { id: 1, t: 'psy', y: 2099, m: 10, d: 19, h: 10, mi: 0 };
