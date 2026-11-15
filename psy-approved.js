@@ -112,7 +112,7 @@
   for(const [key,value] of Object.entries({'psyf-qtc-month':sv.mo,'psyf-qtc-year':sv.an,'psyf-qtc-reason':sv.why,'psyf-parcours-topics':sv.ab,'psyf-present-changes':sv.sv,'psyf-next-wishes':sv.sus}))if(typeof value==='string'&&value.trim()&&!fields[key])fields[key]=value;
   state.migrationVersion=1;
  }
- function render(route){if(!initialized)return false;if(!phone.classList.contains('en-on')){deactivate();return false;}const mapping={intro:['first','entry'],firstr:['first','hub'],firsthub:['first','hub'],fpage:['first',({pq:'traverse',at:'attentes',hi:'histoire',pe:'confort',pr:'pratique'}[route.k]||'hub')],raconter:['ongoing','main'],suivi:['ongoing','main']},target=mapping[route.v];
+ function render(route){if(!initialized)return false;if(!phone.classList.contains('en-on')){deactivate();return false;}const mapping={intro:['first','entry'],firstr:['first','hub'],firsthub:['first','hub'],fpage:['first',({pq:'traverse',at:'attentes',hi:'histoire',pe:'confort',pr:'pratique'}[route.k]||'hub')],raconter:['ongoing','main'],suivi:['ongoing',route.review?'recap':'main']},target=mapping[route.v];
   if(!target){deactivate();return false;}const sig=JSON.stringify(route);if(view&&sig===signature){chrome();return true;}
   if(view)deactivate();signature=sig;view=document.createElement('div');view.className='psy-approved-host';view.innerHTML='<div data-psy-first></div><div data-psy-ongoing hidden></div>';body.replaceChildren(view);phone.classList.add('psy-approved-active');
   for(const type of ['input','change','click','submit'])view.addEventListener(type,later);if(target[0]==='first')showFirst(target[1]);else showOngoing(target[1]);return true;

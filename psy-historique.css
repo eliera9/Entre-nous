@@ -1,0 +1,233 @@
+/* Mes séances : mêmes commandes de navigation que l’espace Psy. */
+#psy[data-psy-history-page] .sbhas :is(.psmsb, [data-psy-form-shortcut]) { display: none !important; }
+#psy[data-psy-history-page] .mvhd { position: relative; z-index: 8; }
+#psy .psy-history [hidden], #psy .psy-history-sort [hidden] { display: none !important; }
+
+#psy .psy-history-sort { position: relative; flex: none; }
+#psy :where(.psy-history-sort) button {
+  appearance: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+#psy .psy-history-sort-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--sacc);
+  background: color-mix(in srgb, var(--sacc) 8%, var(--sbg));
+}
+#psy .psy-history-sort-button::before { content: ''; position: absolute; inset: -7px; }
+#psy .psy-history-sort-button svg, #psy .psy-history-shortcut svg { width: 15px; height: 15px; stroke-width: 1.55; }
+#psy .psy-history-sort-button[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--sline); }
+#psy .psy-history-sort-button span {
+  position: absolute;
+  inset: -4px -4px auto auto;
+  display: grid;
+  place-items: center;
+  min-width: 14px;
+  height: 14px;
+  padding-inline: 2px;
+  border-radius: 999px;
+  background: var(--sacc);
+  color: var(--sbg);
+  box-shadow: 0 0 0 1px var(--sbg);
+  font: 500 11px/1 'Cormorant Garamond', Georgia, serif;
+  pointer-events: none;
+}
+#psy .psy-history-sort-menu {
+  position: absolute;
+  inset: calc(100% + 8px) 0 auto auto;
+  z-index: 40;
+  box-sizing: border-box;
+  width: min(220px, calc(100vw - 70px));
+  max-block-size: min(512px, calc(100dvh - 115px));
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 4px 10px;
+  border: 1px solid var(--sline);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sacc) 11%, var(--sbg));
+  color: var(--sink);
+  font: 500 16px/1.2 'Cormorant Garamond', Georgia, serif;
+}
+#psy .psy-history-menu-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  box-sizing: border-box;
+  min-height: 40px;
+  padding-block: 8px;
+  border-bottom: 1px solid var(--sline);
+  color: var(--sacc);
+  font: 500 17px/1.15 'Cormorant SC', Georgia, serif;
+}
+#psy.nuit .psy-history-menu-title { color: #D6A7B7; }
+#psy .psy-history-menu-title span:last-child { font-size: 14px; white-space: nowrap; }
+#psy .psy-history-shortcut, #psy .psy-history-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  color: inherit;
+  text-align: left;
+}
+#psy .psy-history-shortcut svg { color: var(--smuted); flex: none; }
+#psy .psy-history-chevron { margin-inline-start: auto; }
+#psy .psy-history-shortcut[aria-expanded="true"] .psy-history-chevron { transform: rotate(90deg); }
+#psy .psy-history-filters, #psy .psy-history-done { border-top: 1px solid var(--sline); }
+#psy .psy-history-done { justify-content: center; color: var(--sacc); }
+#psy .psy-history-options {
+  --option-height: 44px;
+  max-block-size: calc(3 * var(--option-height));
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--smuted) transparent;
+  border-bottom: 1px solid var(--sline);
+}
+#psy .psy-history-option {
+  position: relative;
+  box-sizing: border-box;
+  min-block-size: var(--option-height);
+  padding: 3px 4px 3px 23px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+#psy .psy-history-option + .psy-history-option { border-top: 1px solid var(--sline); }
+#psy .psy-history-option input {
+  appearance: none;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid var(--sacc);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+#psy .psy-history-option input:checked { border-color: #ECCBD2; background: #ECCBD2; }
+#psy .psy-history-option .psy-history-check {
+  position: absolute;
+  inset-inline-end: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  color: #784259;
+  stroke-width: 2.3;
+  visibility: hidden;
+  pointer-events: none;
+}
+#psy .psy-history-option input:checked + .psy-history-check { visibility: visible; }
+@media (forced-colors: active) {
+  #psy .psy-history-option input { appearance: auto; }
+  #psy .psy-history-option .psy-history-check { display: none; }
+}
+#psy .psy-history-option:has(input:checked) { color: var(--sacc); }
+
+#psy .psy-history-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding-inline: 11px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--sacc) 11%, var(--sbg));
+  color: var(--sacc);
+}
+#psy .psy-history-search svg { width: 15px; height: 15px; flex: none; stroke-width: 1.55; }
+#psy .psy-history-search:focus-within svg { color: var(--sink); stroke-width: 2.25; }
+#psy .psy-history-search input, #psy .psy-history-search input:focus {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--sink);
+  font: italic 500 16px/1.2 'Cormorant Garamond', Georgia, serif;
+}
+#psy .psy-history-search input::placeholder { color: var(--smuted); opacity: 1; }
+#psy .psy-history .psy-home-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+#psy .psy-history-month { margin-top: 8px; }
+#psy .psy-history-month h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 3px;
+  color: var(--sacc);
+  font: 500 12px/1.2 'Cormorant SC', Georgia, serif;
+  letter-spacing: .09em;
+}
+#psy .psy-history-month h3::after { content: ''; height: 1px; flex: 1; background: var(--sline); }
+#psy .psy-history-row {
+  display: grid;
+  grid-template-columns: 19px minmax(0, 1fr) 44px;
+  gap: 8px;
+  min-height: 54px;
+}
+#psy .psy-history-pearl {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8px;
+  isolation: isolate;
+}
+#psy .psy-history-row:not(:last-child) .psy-history-pearl::after {
+  content: '';
+  position: absolute;
+  inset: 20px auto -4px;
+  width: 1px;
+  background: var(--sline);
+  z-index: -1;
+}
+#psy .psy-history-session { display: block; min-height: 44px; padding: 3px 0 5px; text-align: left; }
+#psy .psy-history-session :is(time, span) { display: block; overflow-wrap: anywhere; }
+#psy .psy-history-session time { color: var(--smuted); font: 500 12px/1.1 'Cormorant SC', Georgia, serif; }
+#psy .psy-history-phrase { color: var(--sink); font: italic 500 17px/1.2 'Cormorant Garamond', Georgia, serif; }
+#psy .psy-history-subject-line { color: var(--smuted); font: italic 500 14px/1.15 'Cormorant Garamond', Georgia, serif; }
+#psy .psy-history-star {
+  display: grid;
+  align-self: start;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--smuted);
+}
+#psy .psy-history-star svg { width: 15px; height: 15px; stroke-width: 1.45; }
+#psy .psy-history-star[aria-pressed="true"] { color: var(--sacc); }
+#psy .psy-history-star[aria-pressed="true"] svg { fill: color-mix(in srgb, var(--sacc) 55%, transparent); }
+#psy .psy-history-empty, #psy .psy-history-favorites-title {
+  margin: 8px 0 0;
+  color: var(--smuted);
+  font: italic 500 16px/1.3 'Cormorant Garamond', Georgia, serif;
+}
+#psy .psy-history-favorites-title { display: flex; align-items: center; gap: 6px; color: var(--sacc); }
+#psy .psy-history-sort :is(button, input):focus-visible, #psy .psy-history button:focus-visible {
+  outline: 2px solid var(--sacc);
+  outline-offset: -2px;
+}
