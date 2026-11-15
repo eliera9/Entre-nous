@@ -231,3 +231,72 @@
   outline: 2px solid var(--sacc);
   outline-offset: -2px;
 }
+
+#psy :is(.psy-session-identity, .psy-session-subjects) [hidden] { display: none !important; }
+#psy .psy-session-identity {
+  margin-block: 8px 9px;
+  text-align: center;
+}
+#psy .psy-session-identity time {
+  color: var(--smuted);
+  font: 500 12px/1.2 'Cormorant SC', Georgia, serif;
+}
+#psy .psy-session-identity .en-avant-date { margin-block: 0; }
+#psy .psy-session-identity p {
+  margin: 4px 0 0;
+  color: var(--sink);
+  font: italic 500 24px/1.12 'Cormorant Garamond', Georgia, serif;
+  overflow-wrap: anywhere;
+}
+#psy .psy-session-identity ~ [data-psy-after] .en-recap-header > :is(.en-recap-date-line, [data-reading-title-wrap]) {
+  display: none;
+}
+#psy .psy-session-subjects {
+  margin-block: 4px 7px;
+  border-block: 1px solid var(--sline);
+  color: var(--sink);
+  font: 500 16px/1.2 'Cormorant Garamond', Georgia, serif;
+}
+#psy button.psy-session-subject-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 47px;
+  padding: 5px 1px;
+  color: var(--sacc);
+  text-align: left;
+}
+#psy .psy-session-subject-toggle svg { width: 16px; height: 16px; flex: none; stroke-width: 1.55; }
+#psy .psy-session-subject-toggle[aria-expanded="true"] .psy-history-chevron { transform: rotate(90deg); }
+#psy .psy-session-subject-text { flex: 1; min-width: 0; }
+#psy .psy-session-subject-text strong { display: block; font-weight: 600; }
+#psy .psy-session-subject-text [data-subject-current] {
+  display: block;
+  color: var(--smuted);
+  font: italic 500 14px/1.15 'Cormorant Garamond', Georgia, serif;
+  overflow-wrap: anywhere;
+}
+#psy .psy-session-subject-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-block: 4px;
+}
+#psy .psy-session-subject-actions button {
+  min-height: 44px;
+  padding-inline: 12px;
+  color: var(--sacc);
+}
+#psy .psy-session-subject-actions .psy-session-subject-save {
+  border-radius: 22px;
+  background: #ECCBD2;
+  color: #543246;
+  font-weight: 600;
+}
+#psy .psy-session-subjects :is(button, input):focus-visible {
+  outline: 2px solid var(--sacc);
+  outline-offset: -2px;
+}
+#psy .psy-session-subjects button:disabled { opacity: .65; cursor: wait; }
+#psy .psy-session-subject-status { margin: 5px 0 8px; color: var(--sacc); }

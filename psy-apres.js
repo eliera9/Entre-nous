@@ -1007,12 +1007,14 @@
     save();
   }
 
+  const historyIdFor = session => session.historyId || 'apres-' + session.id;
+
   function toHistory(session) {
     const [year, , day] = session.date.split('-').map(Number);
     const locale = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const emotion = session.rubrics.apres?.choices || [];
     return {
-      id: session.historyId || 'apres-' + session.id, afterId: session.id, date: session.date,
+      id: historyIdFor(session), afterId: session.id, date: session.date,
       y: year, mo: locale.format(dayValue(session.date)).toUpperCase(),
       j: fullLabel(session.date).split(' ')[0].toUpperCase() + ' ' + day, jl: fullLabel(session.date),
       q: session.title.trim() || words(session, 'mots')[0] || 'Mon retour sur la séance',
@@ -1060,7 +1062,7 @@
     return true;
   }
 
-  function mountEditor(host, session, onHome, onFinish, onConfirm, onViewChange, archive) {
+  function mountEditor(host, session, onHome, onFinish, onConfirm, onViewChange, archive, onIdentityChange) {
     const prefix = 'psy-after-' + session.id;
     const editor = template('editor', prefix).firstElementChild;
     const get = selector => editor.querySelector(selector);
@@ -1105,6 +1107,7 @@
       later.textContent = session.completed ? 'Revenir au récapitulatif' : 'Reprendre plus tard';
       later.hidden = archive;
       review.textContent = archive ? 'Enregistrer' : 'Mes mots à revoir';
+      onIdentityChange?.(session);
     }
     function update() {
       const sections = guided.sections();
@@ -1454,7 +1457,7 @@
     globalThis.__enPsyIcons?.(host);
   }
 
-  function mount(host, { legacy, history, calendar, sessionId, review = false, onSelect, onExit, onConfirm = onExit, onViewChange = () => {} }) {
+  function mount(host, { legacy, history, calendar, sessionId, review = false, onSelect, onExit, onConfirm = onExit, onViewChange = () => {}, onIdentityChange }) {
     prepare(legacy, history, calendar);
     let active;
     function home(focusId) {
@@ -1556,7 +1559,7 @@
       }
       const exit = () => leave(onExit);
       active = { session, exit, editor: mountEditor(host, session, exit, item => updateHistory(history, item),
-        () => leave(onConfirm), onViewChange, Boolean(session.completed)) };
+        () => leave(onConfirm), onViewChange, Boolean(session.completed), onIdentityChange) };
       if (recap) active.editor.showRecap();
       else host.closest('.phone')?.scrollTo({ top: 0 });
       return true;
@@ -1567,7 +1570,7 @@
 
   globalThis.__enPsyAfter = {
     mount, mountPendant, recordMode, prepare, appointment, migrateModeDraft, createModeSession, restoreArchive, legacyDate, hasContent, setDate,
-    recapHeader,
+    recapHeader, historyIdFor,
     formatTemplate: prefix => template('format', prefix),
     find: id => state?.sessions.find(item => item.id === id),
     isDeleted: next => Boolean(state?.deletedCalendarKeys?.includes(calendarKey(next.e, dayKey(next.dt)))),

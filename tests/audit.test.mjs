@@ -199,7 +199,7 @@ test('Après reste accessible après une vraie fin de séance dans un carnet vid
 });
 
 test('une séance avec seulement Ce que je retiens reste lisible dans l’historique', () => {
-  const source = between('function vSeance(o)', '/* ---------- ÉVOLUTION ---------- */');
+  const source = between('function vSeance(', '/* ---------- ÉVOLUTION ---------- */');
   const session = { id: 's-test', emo: [], star: '', jl: 'mercredi 4 novembre 2026', q: 'Phrase fictive', prev: [], notes: [], apres: { parler: '', retiens: 'Ce que je retiens fictif' } };
   const render = runInNewContext(`${source};vSeance`, {
     S: { seTab: 'apres' }, SEANCES: [session], seList: () => [session], perle: () => '', esc: String,

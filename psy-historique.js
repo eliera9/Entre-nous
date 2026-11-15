@@ -1,22 +1,14 @@
-/* Historique Psy : filtres locaux et favoris du coffre. */
+/* Historique Psy : sujets principaux, filtres et favoris du coffre. */
 (() => {
   'use strict';
 
   const normalize = value => String(value ?? '').normalize('NFD').replace(/\p{M}/gu, '')
     .toLocaleLowerCase('fr-FR').replace(/œ/g, 'oe').replace(/[^a-z0-9]+/g, ' ').trim();
   const subjects = [
-    ['Famille', /\b(famille|familial\w*|parents?|mere|maman|pere|papa|freres?|soeurs?|enfants?|parentalite)\b/],
-    ['Amour', /\b(amour|amoureu\w*|couple|conjoint\w*|partenaire|copain|copine|rupture)\b/],
-    ['Travail', /\b(travail\w*|emploi|professionnel\w*|collegues?|carriere|bureau|etudes?)\b/],
-    ['Amitiés', /\b(amitie\w*|amis?|amies?)\b/],
-    ['Émotions', /\b(emotion\w*|sentiments?|ressenti\w*|colere|peur|angoisse\w*|anxiete|tristesse|culpabilite|honte|joie|stress)\b/],
-    ['Santé', /\b(sante|maladie|medecin|douleurs?|sommeil|fatigue|traitement|hospitalis\w*)\b/],
-    ['Confiance en soi', /\b(confiance en (soi|moi)|estime de (soi|moi)|image de (soi|moi)|syndrome de l imposteur)\b/],
-    ['Limites personnelles', /\b(limites?( personnelles?)?|dire non|poser (mes|ses|des) limites|exprimer (mes|ses) besoins)\b/],
-    ['Intimité', /\b(intimite|sexuel\w*|sexualite|libido|desir|consentement)\b/],
-    ['Deuil et pertes', /\b(deuil\w*|deces|perte d un proche|perte d une proche|mort d un proche)\b/],
-    ['Changements de vie', /\b(changements? de vie|reconversion|demenag\w*|transition\w*|nouvelle etape|nouveau depart)\b/],
+    'Famille', 'Amour', 'Travail', 'Amitiés', 'Émotions', 'Santé', 'Confiance en soi',
+    'Limites personnelles', 'Intimité', 'Deuil et pertes', 'Changements de vie',
   ];
+  const sessionDateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'UTC' });
   const icon = name => `<i data-lucide="${name}" aria-hidden="true"></i>`;
   const escape = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -37,16 +29,44 @@
       .filter(topic => typeof topic === 'string' && topic.trim()).map(topic => topic.trim()))];
   }
 
-  function prepare(records, dateFor) {
+  function preferences() {
+    saved ||= globalThis.__enKeep('psy-history-v1', { favorites: [], subjectsBySession: {} });
+    if (!Array.isArray(saved.favorites)) saved.favorites = [];
+    if (!saved.subjectsBySession || typeof saved.subjectsBySession !== 'object' || Array.isArray(saved.subjectsBySession)) {
+      saved.subjectsBySession = {};
+    }
+    return saved;
+  }
+
+  const subjectKey = id => 'session:' + id;
+  const validSubjects = values => Array.isArray(values) ? subjects.filter(label => values.includes(label)) : [];
+
+  async function saveSubjects(id, values) {
+    const registry = preferences().subjectsBySession;
+    const key = subjectKey(id);
+    const previous = registry[key];
+    const next = validSubjects(values);
+    registry[key] = next;
+    try {
+      await (globalThis.__vaultAutosave?.() ?? globalThis.__vaultPushNow?.());
+    } catch (error) {
+      if (registry[key] === next) {
+        if (previous === undefined) delete registry[key];
+        else registry[key] = previous;
+      }
+      throw error;
+    }
+  }
+
+  function prepare(records, dateFor, subjectsBySession = {}) {
     return records.map(record => {
       const date = dateFor(record) || '';
-      const topics = sourceTopics(record);
-      const subjectText = normalize(topics.join(' '));
-      const phrase = [record.q, record.title].find(value => typeof value === 'string' && value.trim())?.trim() || 'Ma séance';
+      const selection = validSubjects(subjectsBySession[subjectKey(record.id)]);
+      const phrase = [record.displayTitle, record.title, record.q]
+        .find(value => typeof value === 'string' && value.trim())?.trim() || 'Ma séance';
       return {
-        record, date, month: date.slice(0, 7), topics, phrase,
-        search: normalize([phrase, ...(record.recapPhrases || []), ...topics].join(' ')),
-        subjects: subjects.filter(([, pattern]) => pattern.test(subjectText)).map(([label]) => label),
+        record, date, month: date.slice(0, 7), phrase, subjects: selection,
+        search: normalize([phrase, record.q, ...(record.recapPhrases || []), ...sourceTopics(record), ...selection].join(' ')),
       };
     }).sort((a, b) => b.date.localeCompare(a.date));
   }
@@ -73,11 +93,130 @@
     ]);
   }
 
+  const choice = ([value, caption], checked = false) => `<label class="psy-history-option cursor-interaction">
+    <span>${escape(caption)}</span><input type="checkbox" value="${escape(value)}"${checked ? ' checked' : ''}>
+    <i class="psy-history-check" data-lucide="check" aria-hidden="true"></i>
+  </label>`;
+
+  function subjectPicker() {
+    return `<section class="psy-session-subjects" data-session-subjects aria-label="Sujets principaux">
+      <button type="button" class="psy-session-subject-toggle cursor-interaction" data-subject-toggle
+        aria-expanded="false" aria-controls="psy-session-subject-form">
+        ${icon('tag')}<span class="psy-session-subject-text"><strong>Sujets principaux</strong><span data-subject-current></span></span>
+        <i class="psy-history-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
+      </button>
+      <div id="psy-session-subject-form" data-subject-form hidden>
+        <div class="psy-history-options" data-subject-options role="group" aria-label="Choix des sujets principaux">
+          ${subjects.map(label => choice([label, label])).join('')}
+        </div>
+        <div class="psy-session-subject-actions">
+          <button type="button" class="cursor-interaction" data-subject-cancel>Annuler</button>
+          <button type="button" class="psy-session-subject-save cursor-interaction" data-subject-save>Enregistrer</button>
+        </div>
+      </div>
+      <p class="psy-session-subject-status" data-subject-status role="status" hidden></p>
+    </section>`;
+  }
+
+  function sessionLead(editableDate = '') {
+    return `<div class="psy-session-identity" data-session-identity>
+      ${editableDate || '<time data-session-identity-date hidden></time>'}
+      <p data-session-identity-title hidden></p>
+    </div>${subjectPicker()}`;
+  }
+
+  function updateSessionLead(body, session) {
+    const lead = body.querySelector('[data-session-identity]');
+    if (!lead || !session) return;
+    const time = lead.querySelector('[data-session-identity-date]');
+    if (time) {
+      const date = dateOf(session.date);
+      time.hidden = !Number.isFinite(+date);
+      if (!time.hidden) {
+        time.dateTime = session.date;
+        time.textContent = sessionDateFormat.format(date);
+      }
+    }
+    const title = lead.querySelector('[data-session-identity-title]');
+    title.textContent = session.title?.trim() || '';
+    title.hidden = !title.textContent;
+  }
+
+  function mountSubjectPicker(root, id, state) {
+    const registry = preferences().subjectsBySession;
+    const get = selector => root.querySelector(selector);
+    const toggle = get('[data-subject-toggle]');
+    const current = get('[data-subject-current]');
+    const form = get('[data-subject-form]');
+    const options = get('[data-subject-options]');
+    const cancel = get('[data-subject-cancel]');
+    const save = get('[data-subject-save]');
+    const status = get('[data-subject-status]');
+    const checks = [...options.querySelectorAll('input')];
+
+    function sync() {
+      const savedSubjects = validSubjects(registry[subjectKey(id)]);
+      const selection = state.draft || savedSubjects;
+      current.textContent = savedSubjects.join(' · ') || 'Choisir les sujets';
+      form.hidden = !state.open;
+      toggle.setAttribute('aria-expanded', String(Boolean(state.open)));
+      toggle.disabled = save.disabled = cancel.disabled = Boolean(state.pending);
+      for (const check of checks) {
+        check.checked = selection.includes(check.value);
+        check.disabled = Boolean(state.pending);
+      }
+      status.textContent = state.feedback || '';
+      status.hidden = !state.feedback;
+    }
+    function closePicker(focus = true) {
+      state.open = false;
+      delete state.draft;
+      delete state.feedback;
+      sync();
+      if (focus) toggle.focus({ preventScroll: true });
+    }
+    toggle.addEventListener('click', () => {
+      if (state.open) closePicker();
+      else {
+        state.open = true;
+        delete state.feedback;
+        sync();
+        options.scrollTop = 0;
+      }
+    });
+    cancel.addEventListener('click', () => closePicker());
+    options.addEventListener('change', () => {
+      state.draft = checks.filter(check => check.checked).map(check => check.value);
+    });
+    root.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !state.open || state.pending) return;
+      event.stopPropagation();
+      closePicker();
+    });
+    save.addEventListener('click', async () => {
+      if (state.pending) return;
+      state.pending = true;
+      delete state.feedback;
+      sync();
+      try {
+        await saveSubjects(id, state.draft || validSubjects(registry[subjectKey(id)]));
+        state.open = false;
+        delete state.draft;
+      } catch {
+        state.feedback = 'Les sujets n’ont pas pu être enregistrés. Réessaie.';
+      } finally {
+        state.pending = false;
+        state.sync?.();
+        if (root.isConnected && !state.open) toggle.focus({ preventScroll: true });
+      }
+    });
+
+    state.sync = sync;
+    sync();
+    globalThis.__enPsyIcons?.(root);
+  }
+
   function disclosure(name, label, glyph, choices, selected) {
-    const choice = ([value, caption], checked) => `<label class="psy-history-option">
-      <span>${escape(caption)}</span><input type="checkbox" value="${escape(value)}"${checked ? ' checked' : ''}>
-      <i class="psy-history-check" data-lucide="check" aria-hidden="true"></i>
-    </label>`;
     return `<button type="button" class="psy-history-shortcut" data-disclosure="${name}" aria-expanded="false" aria-controls="psy-history-${name}">
         ${icon(glyph)}<span>${label}</span><i class="psy-history-chevron" data-lucide="chevron-right" aria-hidden="true"></i>
       </button>
@@ -111,7 +250,7 @@
     }
     return [...groups].map(([month, group]) => `<section class="psy-history-month">
       <h3>${month ? monthLabel(month) : 'Date non renseignée'}</h3>
-      <div class="psy-history-rows">${group.map(({ record, date, topics, phrase }) => {
+      <div class="psy-history-rows">${group.map(({ record, date, subjects, phrase }) => {
         const favorite = favorites.includes(record.id);
         const label = favorite ? 'Retirer des favoris' : 'Ajouter aux favoris';
         const id = escape(record.id);
@@ -120,7 +259,7 @@
           <button type="button" class="psy-history-session" data-a="session-archive" data-i="${id}">
             ${date ? `<time datetime="${date}">${dayFormat.format(dateOf(date))}</time>` : ''}
             <span class="psy-history-phrase">${escape(phrase)}</span>
-            ${topics.length ? `<span class="psy-history-subject-line">${escape(topics.join(' · '))}</span>` : ''}
+            ${subjects.length ? `<span class="psy-history-subject-line">${escape(subjects.join(' · '))}</span>` : ''}
           </button>
           <button type="button" class="psy-history-star" data-history-star="${id}" aria-pressed="${favorite}"
             aria-label="${escape(label + ' · ' + phrase)}">${icon('star')}</button>
@@ -136,12 +275,11 @@
   }
 
   function mount(phone, root, { records, dateFor, pearl, state }) {
-    saved ||= globalThis.__enKeep('psy-history-v1', { favorites: [] });
-    if (!Array.isArray(saved.favorites)) saved.favorites = [];
+    const { subjectsBySession } = preferences();
     state.periods ||= [];
     state.subjects ||= [];
 
-    const entries = prepare(records, dateFor);
+    const entries = prepare(records, dateFor, subjectsBySession);
     const controller = new AbortController();
     const listener = { signal: controller.signal };
     const search = root.querySelector('[data-history-search]');
@@ -162,7 +300,7 @@
         <button type="button" class="psy-history-shortcut" data-history-favorites>${icon('star')}<span>Mes favoris</span></button>
         <div class="psy-history-filters">
           ${disclosure('periods', 'Périodes', 'calendar-days', periodChoices(entries), state.periods)}
-          ${disclosure('subjects', 'Sujets', 'tag', subjects.map(([label]) => [label, label]), state.subjects)}
+          ${disclosure('subjects', 'Sujets', 'tag', subjects.map(label => [label, label]), state.subjects)}
         </div>
         <button type="button" class="psy-history-done" data-history-done>Voir les résultats</button>
       </div>`;
@@ -262,5 +400,5 @@
     updateView();
   }
 
-  globalThis.__enPsyHistory = { render, mount, unmount, prepare, filtered, periodChoices };
+  globalThis.__enPsyHistory = { render, mount, unmount, prepare, filtered, periodChoices, subjectPicker, sessionLead, updateSessionLead, mountSubjectPicker, saveSubjects };
 })();

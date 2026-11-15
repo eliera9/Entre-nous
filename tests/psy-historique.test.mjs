@@ -13,7 +13,12 @@ const records = [
   { id: 'previous', date: '2026-09-08', q: 'Prendre du recul', prev: ['Dire non', 'Intimité'] },
   { id: 'no-date', q: 'Première séance' },
 ];
-const entries = history.prepare(records, record => record.date);
+const storedSubjects = {
+  'session:older': ['Travail', 'Santé'],
+  'session:recent': ['Famille', 'Deuil et pertes'],
+  'session:previous': ['Limites personnelles', 'Intimité'],
+};
+const entries = history.prepare(records, record => record.date, storedSubjects);
 const ids = rows => Array.from(rows, row => row.record.id);
 const selection = values => ({ query: '', periods: [], subjects: [], ...values });
 
@@ -47,4 +52,27 @@ test('le parcours Tout voir charge l’historique et ses ressources restent disp
     assert.ok(source('sw.js').includes(file));
     assert.ok(source('scripts/build.mjs').includes(file));
   }
+});
+
+test('les notes anciennes restent consultables et recherchables sans devenir des sujets principaux', () => {
+  const old = { id: 'legacy', date: '2025-09-03', q: 'Séance', suj: ['Une note détaillée sur ma famille.'] };
+  const [entry] = history.prepare([old], record => record.date);
+  assert.deepEqual(Array.from(entry.subjects), []);
+  assert.deepEqual(ids(history.filtered([entry], selection({ subjects: ['Famille'] }), [])), []);
+  assert.deepEqual(ids(history.filtered([entry], selection({ query: 'note détaillée' }), [])), ['legacy']);
+});
+test('les sujets s’enregistrent par séance dans le coffre et une erreur permet de réessayer', async () => {
+  const store = { favorites: ['recent'] };
+  const env = vm.createContext({ __enKeep: () => store, __vaultAutosave: async () => {} });
+  vm.runInContext(source('psy-historique.js'), env);
+  const api = env.__enPsyHistory;
+  await api.saveSubjects('recent', ['Intimité', 'Famille', 'Intimité', 'Texte libre']);
+  assert.deepEqual(Array.from(store.subjectsBySession['session:recent']), ['Famille', 'Intimité']);
+  assert.deepEqual(store.favorites, ['recent']);
+  env.__vaultAutosave = async () => { throw new Error('coffre indisponible'); };
+  await assert.rejects(api.saveSubjects('recent', ['Émotions']));
+  assert.deepEqual(Array.from(store.subjectsBySession['session:recent']), ['Famille', 'Intimité']);
+  env.__vaultAutosave = async () => {};
+  await api.saveSubjects('recent', []);
+  assert.deepEqual(Array.from(store.subjectsBySession['session:recent']), []);
 });
