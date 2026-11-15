@@ -4,8 +4,21 @@ import test from 'node:test';
 import vm from 'node:vm';
 
 const context = vm.createContext({});
+vm.runInContext(readFileSync(new URL('../psy-historique.js', import.meta.url), 'utf8'), context);
 vm.runInContext(readFileSync(new URL('../psy-petits-pas.js', import.meta.url), 'utf8'), context);
 const steps = context.__enPsySteps;
+
+test('les idées de Plume sont proposées dans l’ajout seulement', () => {
+  const add = steps.editor({}, true);
+  const edit = steps.editor({ t: 'Un pas commencé' }, false);
+  assert.match(add, /DES IDÉES DE PLUME/);
+  assert.match(add, /data-a="edidea" data-t="Envoyer un message à mon frère"/);
+  assert.doesNotMatch(edit, /DES IDÉES DE PLUME|data-a="edidea"/);
+  assert.match(edit, /Un pas commencé/);
+  for (const html of [add, edit]) {
+    assert.match(html, /Sujets principaux[\s\S]+Date prévue[\s\S]+Fréquence[\s\S]+Rappel/);
+  }
+});
 
 test('les dates prévues distinguent aujourd’hui, demain et les dates sans échéance', () => {
   assert.equal(steps.plannedLabel('2026-11-15', '2026-11-15'), 'Aujourd’hui');

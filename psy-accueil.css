@@ -334,6 +334,7 @@
 }
 #psy .psy-steps-icon-button svg, #psy .psy-steps-field-toggle svg, #psy .psy-steps-reminder svg { width: 17px; height: 17px; stroke-width: 1.5; }
 #psy .psy-steps-form > .psy-steps-editor-header .psy-steps-icon-button { background: color-mix(in srgb, var(--sacc) 7%, transparent); border-radius: 50%; }
+#psy .psy-steps-ideas .ps-h { margin-block-start: 0; }
 #psy .psy-steps-field { display: grid; gap: 4px; color: var(--sacc); font: 500 14px/1.2 'Cormorant SC', Georgia, serif; }
 #psy .psy-steps-form small { margin-inline-start: 5px; color: var(--smuted); font: 500 13px/1.2 'EN Cormorant Garamond', Georgia, serif; }
 #psy .psy-steps-field :is(input[type="date"], textarea), #psy .psy-steps-editor-menu, #psy .psy-steps-time, #psy .psy-steps-reminder {

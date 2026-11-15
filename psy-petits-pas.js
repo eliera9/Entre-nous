@@ -281,6 +281,13 @@
     return timestamps;
   }
 
+  function plumeIdeas() {
+    const ideas = ['Envoyer un message à mon frère', 'Marcher 10 minutes après le travail'];
+    return `<div class="ps-h">DES IDÉES DE PLUME</div>${ideas.map(title =>
+      `<button type="button" class="ps-sug" data-a="edidea" data-t="${escape(title)}">${escape(title)}<b>CHOISIR</b></button>`
+    ).join('')}`;
+  }
+
   function editor(draft, isNew) {
     const { choice, subjects, validSubjects } = globalThis.__enPsyHistory;
     const selectedSubjects = validSubjects(draft.subjects);
@@ -290,6 +297,7 @@
     return `<div class="ps-grab" aria-hidden="true"></div>
       <section class="psy-steps-form" data-psy-steps-editor role="dialog" aria-label="${isNew ? 'Un petit pas' : 'Mon petit pas'}">
         <div class="psy-steps-editor-header"><h2>${isNew ? 'Un petit pas' : 'Mon petit pas'}</h2><button class="psy-steps-icon-button" type="button" data-a="sclose" aria-label="Fermer le volet">${icon('x')}</button></div>
+        ${isNew ? `<div class="psy-steps-ideas">${plumeIdeas()}</div>` : ''}
         <label class="psy-steps-field">Petit pas<textarea rows="2" data-f="ed.t" placeholder="Écris ton petit pas…">${escape(draft.t)}</textarea></label>
         <details class="psy-steps-editor-menu" name="psy-steps-editor-menu">
           <summary class="psy-steps-field-toggle">${icon('tag')}<span>Sujets principaux</span><span data-steps-subject-count${selectedSubjects.length ? '' : ' hidden'}>${selectedSubjects.length}</span><i class="psy-steps-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
@@ -521,5 +529,5 @@
     return { syncTime, cleanup: closeCalendar };
   }
 
-  globalThis.__enPsySteps = { render, renderContent, mountSort, unmount, validDate, today, plannedLabel, complete, groupCompleted, matches, periodOptions, editor, mountEditor, reminderStart, reminderSchedule };
+  globalThis.__enPsySteps = { render, renderContent, mountSort, unmount, validDate, today, plannedLabel, complete, groupCompleted, matches, periodOptions, plumeIdeas, editor, mountEditor, reminderStart, reminderSchedule };
 })();

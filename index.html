@@ -7501,7 +7501,7 @@ function sheetPas(p,isNew){
  }
  const reps=['une fois','chaque jour','chaque semaine','jusqu\'à la séance'];S.ed=Object.assign({t:'',why:'',r:'21 h',rep:'une fois'},p||{});const e=S.ed;
  return`<div class="ps-grab" data-a="sclose"></div><div class="ps-k">${isNew?'UN PETIT PAS':'MON PETIT PAS'}</div>
- ${isNew?`<div class="ps-h">DES IDÉES DE PLUME</div>${['Envoyer un message à mon frère','Marcher 10 minutes après le travail'].map(t=>`<button class="ps-sug" data-a="edidea" data-t="${esc(t)}">${t}<b>CHOISIR</b></button>`).join('')}`:''}
+ ${isNew?window.__enPsySteps.plumeIdeas():''}
  <div class="ps-f" style="margin-top:10px"><textarea rows="1" data-f="ed.t" placeholder="${isNew?'ou écris le tien…':''}" style="font-size:17px">${esc(e.t)}</textarea>${MIC}</div>
  <div class="ps-h">POURQUOI</div><div class="ps-f"><input data-f="ed.why" placeholder="pour…" value="${esc(e.why)}"></div>
  <div class="ps-h">RAPPEL</div><div class="ps-f"><input data-f="ed.r" value="${esc(e.r)}" placeholder="21 h"><span style="color:var(--sacc)">⌄</span></div>
